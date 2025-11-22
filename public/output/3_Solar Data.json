@@ -1,0 +1,149 @@
+[
+    {
+        "field1": "",
+        "Solar": "Month",
+        "field3": "Urban Renewables",
+        "field4": "Green House (KWh)",
+        "field5": "Total Solar Energy"
+    },
+    {
+        "field1": "2024",
+        "Solar": "Jan-24",
+        "field3": "80,484.38",
+        "field4": "2,332.84",
+        "field5": "82,817.2"
+    },
+    {
+        "field1": "",
+        "Solar": "Feb-24",
+        "field3": "93,228.96",
+        "field4": "2,691.76",
+        "field5": "95,920.7"
+    },
+    {
+        "field1": "",
+        "Solar": "Mar-24",
+        "field3": "104,270.16",
+        "field4": "2,992.70",
+        "field5": "107,262.9"
+    },
+    {
+        "field1": "",
+        "Solar": "Apr-24",
+        "field3": "84,001.85",
+        "field4": "2,585.83",
+        "field5": "86,587.7"
+    },
+    {
+        "field1": "",
+        "Solar": "May-24",
+        "field3": "72,025.00",
+        "field4": "2,204.16",
+        "field5": "74,229.2"
+    },
+    {
+        "field1": "",
+        "Solar": "Jun-24",
+        "field3": "75,250.19",
+        "field4": "2,282.59",
+        "field5": "77,532.8"
+    },
+    {
+        "field1": "",
+        "Solar": "Jul-24",
+        "field3": "98,728.71",
+        "field4": "2,925.17",
+        "field5": "101,653.9"
+    },
+    {
+        "field1": "",
+        "Solar": "Aug-24",
+        "field3": "95,418.72",
+        "field4": "2,910.49",
+        "field5": "98,329.2"
+    },
+    {
+        "field1": "",
+        "Solar": "Sep-24",
+        "field3": "97,554.42",
+        "field4": "2,632.77",
+        "field5": "100,187.2"
+    },
+    {
+        "field1": "",
+        "Solar": "Oct-24",
+        "field3": "89,054.45",
+        "field4": "389.37",
+        "field5": "89,443.8"
+    },
+    {
+        "field1": "",
+        "Solar": "Nov-24",
+        "field3": "71,433.22",
+        "field4": "2,310.53",
+        "field5": "73,743.8"
+    },
+    {
+        "field1": "",
+        "Solar": "Dec-24",
+        "field3": "83,470.70",
+        "field4": "2,588.05",
+        "field5": "86,058.8"
+    },
+    {
+        "field1": "2025",
+        "Solar": "Jan-25",
+        "field3": "64,929.97",
+        "field4": "2,009.12",
+        "field5": "66,939.1"
+    },
+    {
+        "field1": "",
+        "Solar": "Feb-25",
+        "field3": "91,599.06",
+        "field4": "2,432.90",
+        "field5": "94,032.0"
+    },
+    {
+        "field1": "",
+        "Solar": "Mar-25",
+        "field3": "87,040.80",
+        "field4": "1,431.37",
+        "field5": "88,472.2"
+    },
+    {
+        "field1": "",
+        "Solar": "Apr-25",
+        "field3": "91,938.36",
+        "field4": "2,652.97",
+        "field5": "94,591.3"
+    },
+    {
+        "field1": "",
+        "Solar": "May-25",
+        "field3": "93,780.37",
+        "field4": "2,844.53",
+        "field5": "96,624.9"
+    },
+    {
+        "field1": "",
+        "Solar": "Jun-25",
+        "field3": "91,181.45",
+        "field4": "1,984.07",
+        "field5": "93,165.5"
+    },
+    {
+        "field1": "",
+        "Solar": "Jul-25",
+        "field3": "93,725.89",
+        "field4": "1,761.42",
+        "field5": "95,487.3"
+    },
+    {
+        "field1": "",
+        "Solar": "Aug-25",
+        "field3": "",
+        "field4": "",
+        "field5": "0.0"
+    }
+]

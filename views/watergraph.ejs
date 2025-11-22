@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Water Usage</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        canvas { max-width: 900px; margin: 20px auto; display: block; }
+        select { display:block; margin:20px auto; padding:8px; font-size:16px; }
+    </style>
+</head>
+<body>
+
+<h2 style="text-align:center;">Water Usage (Cu3)</h2>
+
+<!-- Dropdown to select dataset -->
+<select id="datasetSelector">
+    <option value="field3">Cu3 (Portable Water)</option>
+    <option value="field4">Cu3 (NEWater)</option>
+    <option value="field5">Cu3 (Total)</option>
+</select>
+
+<!-- Chart -->
+<canvas id="usageChart" width="900" height="500"></canvas>
+
+<script type="module">
+    import { plotChart } from "/scripts/plotgraph.js";
+
+    const ctx = document.getElementById("usageChart").getContext("2d");
+    const selector = document.getElementById("datasetSelector");
+
+    let globalData = [];
+
+    async function loadData() {
+        try {
+            const response = await fetch('/output/2_Water Bill.json');
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            const data = await response.json();
+
+            // Keep only rows where field3 is numeric (skip header)
+            globalData = data.filter(item => !isNaN(Number(item.field3.replace(/,/g, ""))));
+
+            if(globalData.length === 0) {
+                console.error("No numeric data found in JSON!");
+                return;
+            }
+
+            // Initial plot: Cu3 (Portable Water)
+            plotChart(ctx, globalData, "Water", "field3", "Cu3 - Portable Water");
+
+        } catch (err) {
+            console.error("Error loading data:", err);
+        }
+    }
+
+    // Update chart when dropdown changes
+    selector.addEventListener("change", () => {
+        const selectedField = selector.value;
+
+        const titles = {
+            field3: "Cu3 - Portable Water",
+            field4: "Cu3 - NEWater",
+            field5: "Cu3 - Total"
+        };
+
+        plotChart(ctx, globalData, "Water", selectedField, titles[selectedField]);
+    });
+
+    // Load JSON and plot chart on page load
+    loadData();
+</script>
+
+</body>
+</html>

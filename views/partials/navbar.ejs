@@ -1,0 +1,73 @@
+<style>
+    .bottom-nav {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        padding: 10px 20px;
+        border-radius: 40px;
+        display: flex;
+        gap: 15px;
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.25);
+        z-index: 1000;
+    }
+
+    .nav-circle {
+        width: 60px;
+        height: 60px;
+        background: #343a40; 
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 12px;
+        text-decoration: none;
+        padding: 6px;
+        transition: 0.2s ease;
+    }
+
+    .nav-circle:hover {
+        background: #495057;
+        transform: scale(1.05);
+    }
+
+
+
+    .btn-home { background: #343a40; }
+    .btn-water { background: #007bff; }     
+    .btn-solar { background: orangered; }     
+    .btn-energy { background: #ffc107; color: black; }
+
+
+
+</style>
+
+<div class="bottom-nav">
+    <a href="/" class="nav-circle btn-home">Home</a>
+
+    
+    <a href="/electgraph" class="nav-circle btn-energy">Energy<br>Graph</a>
+
+    
+    <a href="/solargraph" class="nav-circle btn-solar">Solar<br>Graph</a>
+
+    
+    <a href="/watergraph" class="nav-circle btn-water">Water<br>Graph</a>
+
+    
+    <% if (session.isAdmin) { %>
+    <a href="/addVideo" class="nav-circle btn-home">Add<br>Video</a>
+<% } %>
+
+    <% if (session.isAdmin) { %>
+        <a href="/logout" class="nav-circle btn-home">Logout</a>
+    <% } else { %>
+        <a href="/login" class="nav-circle btn-home">Admin</a>
+    <% } %>
+</div>
+
+
+

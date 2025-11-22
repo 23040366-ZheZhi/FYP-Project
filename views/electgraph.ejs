@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Electricity Usage</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        canvas { max-width: 900px; margin: 20px auto; display: block; }
+    </style>
+</head>
+<body>
+    <h2 style="text-align:center;">Electricity Usage</h2>
+
+
+<canvas id="usageChart" width="900" height="500"></canvas>
+
+<script type="module">
+    // Import the plotChart function from public/scripts
+    import { plotChart } from "/scripts/plotgraph.js";
+
+    const ctx = document.getElementById("usageChart").getContext("2d");
+
+    async function loadDataAndPlot(filename) {
+        try {
+            // Fetch JSON from public/output
+            const response = await fetch(`/output/${encodeURIComponent(filename)}`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            const data = await response.json();
+
+            // Remove rows with missing fields
+            const filteredData = data.filter(item => item.Elect && item.field3);
+
+            console.log("Fetched data:", filteredData);
+
+            // Plot chart
+            plotChart(ctx, filteredData, "Elect", "field3", `Electricity Usage: Whole Campus`);
+        } catch (err) {
+            console.error("Error loading data:", err);
+        }
+    }
+
+    // Automatically load JSON file from /public/output
+    loadDataAndPlot("1_Elec Bill.json");
+</script>
+
+</body>
+</html>

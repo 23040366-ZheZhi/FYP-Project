@@ -1,0 +1,149 @@
+[
+    {
+        "field1": "",
+        "Water": "Month",
+        "field3": "Cu3 (Portable Water)",
+        "field4": "Cu3 (NEWater)",
+        "field5": "Cu3 (Total)"
+    },
+    {
+        "field1": "2024",
+        "Water": "Jan-24",
+        "field3": "9,387.4",
+        "field4": "2,809.4",
+        "field5": "12,196.8"
+    },
+    {
+        "field1": "",
+        "Water": "Feb-24",
+        "field3": "8,697.5",
+        "field4": "5,057.5",
+        "field5": "13,755.0"
+    },
+    {
+        "field1": "",
+        "Water": "Mar-24",
+        "field3": "7,831.7",
+        "field4": "4,168.9",
+        "field5": "12,000.6"
+    },
+    {
+        "field1": "",
+        "Water": "Apr-24",
+        "field3": "9,334.0",
+        "field4": "7,953.0",
+        "field5": "17,287.0"
+    },
+    {
+        "field1": "",
+        "Water": "May-24",
+        "field3": "-3,086.0",
+        "field4": "6,160.4",
+        "field5": "3,074.4"
+    },
+    {
+        "field1": "",
+        "Water": "Jun-24",
+        "field3": "2,893.1",
+        "field4": "5,582.9",
+        "field5": "8,476.0"
+    },
+    {
+        "field1": "",
+        "Water": "Jul-24",
+        "field3": "6,668.1",
+        "field4": "5,532.4",
+        "field5": "12,200.5"
+    },
+    {
+        "field1": "",
+        "Water": "Aug-24",
+        "field3": "7,120.8",
+        "field4": "6,435.2",
+        "field5": "13,556.0"
+    },
+    {
+        "field1": "",
+        "Water": "Sep-24",
+        "field3": "2,572.2",
+        "field4": "5,694.4",
+        "field5": "8,266.6"
+    },
+    {
+        "field1": "",
+        "Water": "Oct-24",
+        "field3": "4,478.4",
+        "field4": "5,685.8",
+        "field5": "10,164.2"
+    },
+    {
+        "field1": "",
+        "Water": "Nov-24",
+        "field3": "7,065.7",
+        "field4": "4,677.7",
+        "field5": "11,743.4"
+    },
+    {
+        "field1": "",
+        "Water": "Dec-24",
+        "field3": "2,912.0",
+        "field4": "5,354.4",
+        "field5": "8,266.4"
+    },
+    {
+        "field1": "2025",
+        "Water": "Jan-25",
+        "field3": "6,038.4",
+        "field4": "3,458.9",
+        "field5": "9,497.3"
+    },
+    {
+        "field1": "",
+        "Water": "Feb-25",
+        "field3": "6,754.0",
+        "field4": "4,406.7",
+        "field5": "11,160.7"
+    },
+    {
+        "field1": "",
+        "Water": "Mar-25",
+        "field3": "1,229.9",
+        "field4": "4,712.4",
+        "field5": "5,942.3"
+    },
+    {
+        "field1": "",
+        "Water": "Apr-25",
+        "field3": "4,099.2",
+        "field4": "4,791.4",
+        "field5": "8,890.6"
+    },
+    {
+        "field1": "",
+        "Water": "May-25",
+        "field3": "5,425.9",
+        "field4": "6,037.0",
+        "field5": "11,462.9"
+    },
+    {
+        "field1": "",
+        "Water": "Jun-25",
+        "field3": "2,816.3",
+        "field4": "5,239.5",
+        "field5": "8,055.8"
+    },
+    {
+        "field1": "",
+        "Water": "Jul-25",
+        "field3": "7,707.3",
+        "field4": "6,700.9",
+        "field5": "14,408.2"
+    },
+    {
+        "field1": "",
+        "Water": "Aug-25",
+        "field3": "6,034.9",
+        "field4": "5,585.1",
+        "field5": "11,620.0"
+    }
+]

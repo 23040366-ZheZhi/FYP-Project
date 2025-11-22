@@ -1,0 +1,102 @@
+[
+    {
+        "field1": "",
+        "Elect": "Month",
+        "field3": "kWh (SP Metered)"
+    },
+    {
+        "field1": "2024",
+        "Elect": "Jan-24",
+        "field3": "1,795,250.4"
+    },
+    {
+        "field1": "",
+        "Elect": "Feb-24",
+        "field3": "1,640,248.8"
+    },
+    {
+        "field1": "",
+        "Elect": "Mar-24",
+        "field3": "1,564,831.2"
+    },
+    {
+        "field1": "",
+        "Elect": "Apr-24",
+        "field3": "1,852,773.6"
+    },
+    {
+        "field1": "",
+        "Elect": "May-24",
+        "field3": "1,994,755.2"
+    },
+    {
+        "field1": "",
+        "Elect": "Jun-24",
+        "field3": "1,581,009.6"
+    },
+    {
+        "field1": "",
+        "Elect": "Jul-24",
+        "field3": "1,997,882.4"
+    },
+    {
+        "field1": "",
+        "Elect": "Aug-24",
+        "field3": "1,764,319.2"
+    },
+    {
+        "field1": "",
+        "Elect": "Sep-24",
+        "field3": "1,543,797.6"
+    },
+    {
+        "field1": "",
+        "Elect": "Oct-24",
+        "field3": "1,755,266.4"
+    },
+    {
+        "field1": "",
+        "Elect": "Nov-24",
+        "field3": "1,761,640.8"
+    },
+    {
+        "field1": "",
+        "Elect": "Dec-24",
+        "field3": "1,520,150.4"
+    },
+    {
+        "field1": "2025",
+        "Elect": "Jan-25",
+        "field3": "1,608,321.6"
+    },
+    {
+        "field1": "",
+        "Elect": "Feb-25",
+        "field3": "1,509,172.8"
+    },
+    {
+        "field1": "",
+        "Elect": "Mar-25",
+        "field3": "1,457,191.2"
+    },
+    {
+        "field1": "",
+        "Elect": "Apr-25",
+        "field3": "1,586,059.2"
+    },
+    {
+        "field1": "",
+        "Elect": "May-25",
+        "field3": "1,824,048.0"
+    },
+    {
+        "field1": "",
+        "Elect": "Jun-25",
+        "field3": "1,679,752.8"
+    },
+    {
+        "field1": "",
+        "Elect": "Jul-25",
+        "field3": "1,940,392.8"
+    }
+]

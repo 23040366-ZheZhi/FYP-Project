@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <title>Game Store</title>
+</head>
+<body>
+
+    <%- include ('partials/navbar.ejs') %>
+
+    <div class="container mt-3">
+        <h1>Almost done!</h1>
+        <p>Please enter the required details in the designated boxes.</p><br>
+        <form action="/paynow" method="GET">
+            <div class="mb-3 mt-3">
+                <p>Purchase Type:</p>
+                <input type="radio" id="option1" name="options" value="option1">
+                <label for="option1">Digital</label><br>
+                <input type="radio" id="option1" name="options" value="option1">
+                <label for="option1">Physical</label>
+            </div required>
+            <article>Warning: If you do not choose, you will not receive your goods.</article>
+            <div class="mb-3 mt-3">
+                <label for="name">Name:</label>
+                <input type="text" class="form-control" id="name" placeholder="Enter your name" style="font-weight: bold; outline: auto;" name="name" required>
+            </div>
+            <div class="mb-3 mt-3">
+                <label for="phone">Contact Number:</label>
+                <input type="text" class="form-control" id="phone" style="max-width: 260px; outline: auto;" name="phone" required>
+            </div>
+            <div class="mb-3 mt-3">
+                <label for="email">Email Address:</label>
+                <input type="text" class="form-control" id="email" placeholder="Enter email address" style="max-width: 600px; outline: auto; font-weight: bold;" name="email" required>
+            </div>
+            <div class="mb-3 mt-3">
+                <label for="add">Address Line 1:</label>
+                <input type="text" class="form-control" id="add" style="outline: auto;" name="add" required>
+            </div>
+            <div class="mb-3 mt-3">
+                <label for="add2">Address Line 2:</label>
+                <input type="text" class="form-control" id="add2" style="outline: auto;" name="add2" >
+            </div>
+            <div class="mb-3 mt-3">
+                <label for="building">Bulding Name:</label>
+                <input type="text" class="form-control" id="building" placeholder="If any" style="max-width: 400px; outline: auto; font-weight: bold;" name="building">
+            </div>
+            <div class="mb-3 mt-3">
+                <label for="code">Postal Code:</label>
+                <input type="text" class="form-control" id="code" style="max-width: 365px; outline: auto;" name="code" required>
+            </div>
+            <div class="text-center">
+                <button href="/paynow" class="btn btn-primary" type="submit">Next</button>
+            </div><br><br><br>
+        </form><br><br>
+
+</body>
+</html>

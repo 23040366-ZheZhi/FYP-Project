@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <style>
+    .image {
+      transition: transform 0.3s ease-in-out;
+    }
+    .image:hover {
+      transform: translateY(-10px);
+    }
+  </style>
+  <title>Game Store App</title>
+</head>
+<body>
+
+    <%- include ('partials/navbar.ejs') %>
+
+    <br><br><h1 class="text-center">Proceed to Checkout</h1><br>
+
+    <div class="text-center">
+        <form class="card">
+            <br>
+            <article style="font-weight: bold;">Please click on one of the payment methods provided to proceed.</article>
+            <br>
+            <a href="/cardmethod"><img class="image" src="/images/card.png" width="200" alt="Credit/Debit Card"></a>
+            <article>Credit/Debit Card</article>
+            <br>
+            <a href="/reachingend"><img class="image" src="/images/paynow.jpg" width="200" alt="PayNow"></a>
+            <article>PayNow</article>
+            <br>
+          </form>
+    </div><br>
+
+    <div class="text-center">
+        <a href="/cart" class="btn btn-primary">Cancel</a>
+    </div><br><br>
+</body>
+</html>

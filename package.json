@@ -1,0 +1,26 @@
+{
+  "name": "cag-revamped",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "csvtojson": "^2.0.14",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "express-session": "^1.18.2",
+    "fs": "^0.0.1-security",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.10.2",
+    "nodemailer": "^7.0.10",
+    "nodemon": "^3.1.4",
+    "qrcode": "^1.5.3",
+    "session": "^0.1.0",
+    "xlsx": "^0.18.5"
+  }
+}
