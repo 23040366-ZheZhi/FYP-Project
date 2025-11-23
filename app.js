@@ -83,7 +83,6 @@ const upload = multer({ storage: storage });
 const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    port: '3307',
     password: '',
     database: 'gamelist'
 });
@@ -325,9 +324,13 @@ const PORT = process.env.PORT || 3000;
 
 //HTTPS module 2
 const httpsOptions = {
-    key: fs.readFileSync('./cert/server.key'),
-    cert: fs.readFileSync('./cert/server.crt')
+    key: fs.readFileSync('./cert/mtls/server.key'),
+    cert: fs.readFileSync('./cert/mtls/server.crt'),
+    ca: fs.readFileSync('./cert/mtls/ca.crt'),
+    requestCert: true,
+    rejectUnauthorized: true
 };
+
 
 https.createServer(httpsOptions, app)
     .listen(PORT, () => {
