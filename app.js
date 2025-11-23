@@ -200,6 +200,30 @@ app.get('/deleteGame/:id', (req, res) => {
     });
 });
 
+app.get("/api/summary", (req, res) => {
+  try {
+    const electricity = require("./public/output/1_Elec Bill.json");
+    const water = require("./public/output/2_Water Bill.json");
+    const solar = require("./public/output/3_Solar Data.json");
+
+    // Skip header rows and map values correctly
+    const last6Energy = electricity.slice(1).slice(-6).map(r => Number(r["field3"].replace(/,/g, "")));
+    const last6Solar  = solar.slice(1).slice(-6).map(r => Number(r["field3"].replace(/,/g, "")));
+    const last6Water  = water.slice(1).slice(-6).map(r => Number(r["field3"].replace(/,/g, "")));
+
+    res.json({
+      energy: last6Energy,
+      solar: last6Solar,
+      water: last6Water
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Could not load summary data" });
+  }
+});
+
+
+
 
 
 app.post('/addVideo', upload.array('videos[]'), (req, res) => {
@@ -318,6 +342,9 @@ app.get('/logout', (req, res) => {
         res.redirect('/');
     });
 });
+
+
+
 
 
 const PORT = process.env.PORT || 3000;

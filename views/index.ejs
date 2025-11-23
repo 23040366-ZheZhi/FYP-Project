@@ -172,19 +172,35 @@
 
   document.addEventListener('DOMContentLoaded', () => {
 
-    // Example numbers (replace with database values)
-    const energy = [120,140,160,150,170,180];
-    const solar = [30,40,45,50,55,60];
-    const water = [90,100,95,110,120,130];
+    fetch(window.location.origin + "/api/summary")
+      .then(res => res.json())
+      .then(data => {
+        const energy = data.energy;
+        const solar = data.solar;
+        const water = data.water;
 
-    document.getElementById("miniEnergyValue").textContent = energy[energy.length-1] + " kWh";
-    document.getElementById("miniSolarValue").textContent = solar[solar.length-1] + " kWp";
-    document.getElementById("miniWaterValue").textContent = water[water.length-1] + " m³";
+        document.getElementById("miniEnergyValue").textContent =
+          energy[energy.length-1].toLocaleString() + " kWh";
 
-    createMiniChart("miniEnergyChart", energy, "#ffc107");
-    createMiniChart("miniSolarChart", solar, "orangered");
-    createMiniChart("miniWaterChart", water, "#007bff");
-  });
+        document.getElementById("miniSolarValue").textContent =
+          solar[solar.length-1].toLocaleString() + " kWp";
+
+        document.getElementById("miniWaterValue").textContent =
+          water[water.length-1].toLocaleString() + " m³";
+
+        createMiniChart("miniEnergyChart", energy, "#ffc107");
+        createMiniChart("miniSolarChart", solar, "orangered");
+        createMiniChart("miniWaterChart", water, "#007bff");
+      });
+
+        document.getElementById("miniEnergyValue").textContent = energy[energy.length-1] + " kWh";
+        document.getElementById("miniSolarValue").textContent = solar[solar.length-1] + " kWp";
+        document.getElementById("miniWaterValue").textContent = water[water.length-1] + " m³";
+
+        createMiniChart("miniEnergyChart", energy, "#ffc107");
+        createMiniChart("miniSolarChart", solar, "orangered");
+        createMiniChart("miniWaterChart", water, "#007bff");
+      });
 
 </script>
 
