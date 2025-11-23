@@ -171,7 +171,7 @@ app.post('/updateGame/:id', upload.single('image'), (req, res) => {
         image = req.file.filename;
     }
  
-    const sql = 'UPDATE games SET name = ? , price = ?, description = ?, age = ?, image = ? WHERE gameId = ?';
+    const sql = 'UPDATE games SET name = ? , description = ? , image = ? WHERE gameId = ?';
  
 
     connection.query( sql , [name, price, description, age, image, gameId], (error, results) => {
@@ -230,7 +230,7 @@ app.post('/addVideo', upload.array('videos[]'), (req, res) => {
     const descriptions = req.body.descriptions;
 
     videoFiles.forEach((file, index) => {
-        const sql = "INSERT INTO videos (filename, description, sequence) VALUES (?, ?, ?)";
+        const sql = "INSERT INTO games (name, description, image) VALUES (?, ?, ?)";
         connection.query(sql, [file.filename, descriptions[index], index], (err) => {
             if (err) console.error(err);
         });
@@ -341,8 +341,6 @@ app.get('/logout', (req, res) => {
         res.redirect('/');
     });
 });
-
-
 
 
 
