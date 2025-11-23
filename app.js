@@ -86,7 +86,6 @@ const connection = mysql.createConnection({
     user: 'root',
     password: '',
     database: 'gamelist',
-    port: '3307'
 });
 
 connection.connect((err) => {
