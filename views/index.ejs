@@ -50,8 +50,8 @@ body {
 
   /* Map */
   img#rpmapImg { width: 100%; max-width: 900px; }
-
 </style>
+
 <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 
 </head>
@@ -122,13 +122,12 @@ body {
   <h2 class="mb-3">Interactive 3D Campus Map</h2>
 
   <model-viewer 
-      src="/models/campus.glb"
-      camera-controls
-      rotation-per-second="20deg"
-      shadow-intensity="1"
-      exposure="1.2"
-      environment-image="neutral"
-      style="width: 100%; height: 600px; border-radius: 20px; background: #f9f9f9;">
+    id="campusModel"
+    src="/models/campus.glb"
+    camera-controls
+    shadow-intensity="1"
+    exposure="0.5"
+    style="width: 100%; height: 600px; background: #ffffff; border-radius: 20px;">
   </model-viewer>
 </div>
 
