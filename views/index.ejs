@@ -23,7 +23,7 @@
         <div class="carousel-inner">
             <% games.forEach((game, index) => { %>
                 <div class="carousel-item <%= index === 0 ? 'active' : '' %>">
-                  <video class="d-block w-100 game-image" autoplay muted loop playsinline>
+                  <video class="d-block w-100 game-image" autoplay loop playsinline>
                     <source src="/videos/<%= game.image %>" type="video/mp4">
                   </video>
                     <div class="carousel-caption d-none d-md-block">
