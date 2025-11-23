@@ -11,6 +11,8 @@
 
   <%- include ('partials/navbar.ejs') %>
 
+  <img src="/images/rplogo.jpg" class="mx-auto d-block" style="width: 400px; height: 300px;">  
+
   <div class="carousel-container">
     <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
         <div class="carousel-indicators">
@@ -21,10 +23,11 @@
         <div class="carousel-inner">
             <% games.forEach((game, index) => { %>
                 <div class="carousel-item <%= index === 0 ? 'active' : '' %>">
-                    <a href="/game/<%= game.gameId %>"><img src="/images/rplogo.jpg" class="d-block w-100 game-image" alt="<%= game.name %>"></a>
+                  <video class="d-block w-100 game-image" autoplay muted loop playsinline>
+                    <source src="/videos/<%= game.image %>" type="video/mp4">
+                  </video>
                     <div class="carousel-caption d-none d-md-block">
                         <h5><%=  %></h5>
-                        <p>Price: $<%= game.price %></p>
                     </div>
                 </div>
             <% }) %>
