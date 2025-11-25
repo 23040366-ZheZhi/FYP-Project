@@ -39,11 +39,11 @@ for (const file of files) {
         const jsonFilePath = path.join(outputFolder, `${safeName}.json`);
 
         fs.writeFileSync(csvFilePath, csvData);
-        console.log(`✔ CSV saved: ${csvFilePath}`);
+        console.log(`CSV saved: ${csvFilePath}`);
 
         const jsonArray = await csv().fromString(csvData);
         fs.writeFileSync(jsonFilePath, JSON.stringify(jsonArray, null, 4));
-        console.log(`✔ JSON saved: ${jsonFilePath}`);
+        console.log(`JSON saved: ${jsonFilePath}`);
     }
 }
 ``

@@ -16,7 +16,7 @@
         <div class="text-center"><h2>Update Game Details</h2></div>
         <br>
         <% if (game) { %>
-            <form action="/updateGame/<%= game.gameId %>" method="POST" enctype="multipart/form-data">
+            <form action="/updateGame/<%= game.id %>" method="POST" enctype="multipart/form-data">
                 <label for="name">Game Name:</label><br>
                 <input type="text" class="form-control" placeholder="Enter Game Name" id="name" name="name" value="<%= game.name %>" ><br><br>
 

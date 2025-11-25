@@ -124,36 +124,36 @@ app.use((req, res, next) => {
 
 
 app.get('/', (req, res) => {
-    const sql = 'SELECT * FROM games';
+    const sql = 'SELECT * FROM videos';
 
     connection.query( sql, (error, results) => {
         if (error) {
             console.error('Database query error:', error.message);
-            return res.status(500).send('Error retrieving games')
+            return res.status(500).send('Error retrieving videos')
         }
 
-        res.render('index', { games:results });
+        res.render('index', { videos:results });
     });
 });
 
 app.get('/game/:id', (req, res) => {
-    const gameId = req.params.id;
+    const id = req.params.id;
  
 
-    if (!Number.isInteger(Number(gameId))) {
+    if (!Number.isInteger(Number(id))) {
         return res.status(400).send('Invalid game ID');
     }
  
-    const sql = 'SELECT * FROM games WHERE gameId = ?';
+    const sql = 'SELECT * FROM videos WHERE id = ?';
  
-    connection.query(sql, [gameId], (error, results) => {
+    connection.query(sql, [id], (error, results) => {
         if (error) {
             console.error('Database query error:', error.message);
             return res.status(500).send('Internal Server Error');
         }
  
         if (results.length > 0) {
-            res.render('game', { game: results[0] });
+            res.render('video', { video: results[0] });
         } else {
             res.status(404).send('Game not found');
         }
@@ -161,16 +161,16 @@ app.get('/game/:id', (req, res) => {
 });
 
 app.get('/updateGame/:id', (req ,res) => {
-    const gameId = req.params.id;
-    const sql = 'SELECT * FROM games where gameId = ?';
+    const id = req.params.id;
+    const sql = 'SELECT * FROM videos where id = ?';
 
-    connection.query( sql, [gameId], (error, results) => {
+    connection.query( sql, [id], (error, results) => {
         if (error) {
             console.error('Database query error:', error.message);
             return res.status(500).send('Error retrieving game ID');
         }
         if (results.length > 0) {
-            res.render('updateGame', { game: results[0] });
+            res.render('updateGame', { video: results[0] });
         } else {
             res.status(404).send('Game not found');
         }
@@ -178,7 +178,7 @@ app.get('/updateGame/:id', (req ,res) => {
 });
 
 app.post('/updateGame/:id', upload.single('image'), (req, res) => {
-    const gameId = req.params.id;
+    const id = req.params.id;
 
     const { name, price, description, age } = req.body;
     let image = req.body.currentImage;
@@ -186,7 +186,7 @@ app.post('/updateGame/:id', upload.single('image'), (req, res) => {
         image = req.file.filename;
     }
  
-    const sql = 'UPDATE games SET name = ? , description = ? , image = ? WHERE gameId = ?';
+    const sql = 'UPDATE videos SET name = ? , description = ? , image = ? WHERE id = ?';
  
 
     connection.query( sql , [name, description, image], (error, results) => {
@@ -202,9 +202,9 @@ app.post('/updateGame/:id', upload.single('image'), (req, res) => {
 });
 
 app.get('/deleteGame/:id', (req, res) => {
-    const gameId = req.params.id;
-    const sql = 'DELETE FROM games WHERE gameId = ?';
-    connection.query( sql , [gameId], (error, results) => {
+    const id = req.params.id;
+    const sql = 'DELETE FROM videos WHERE id = ?';
+    connection.query( sql , [id], (error, results) => {
         if (error) {
             console.error("Error deleting game:", error);
             res.status(500).send('Error deleting game');
@@ -245,7 +245,7 @@ app.post('/addVideo', upload.array('videos[]'), (req, res) => {
     const descriptions = req.body.descriptions; // matching descriptions
 
     videoFiles.forEach((file, index) => {
-        const sql = "INSERT INTO games (name, description, image) VALUES (?, ?, ?)";
+        const sql = "INSERT INTO videos (name, description, image) VALUES (?, ?, ?)";
         connection.query(sql, [file.originalname, descriptions[index], file.filename], (err) => {
             if (err) console.error(err);
         });
@@ -299,7 +299,7 @@ app.get('/solargraph', (req, res) => res.render('solargraph'));
 
 //only accessible by admin to sequence videos
 app.get('/sequence', adminOnly, (req, res) => {
-    connection.query("SELECT * FROM games ORDER BY position ASC, gameId ASC", (err, results) => {
+    connection.query("SELECT * FROM videos ORDER BY position ASC, id ASC", (err, results) => {
         if (err) return res.status(500).send("Error loading videos");
 
         res.render('sequence', { videos: results });
@@ -308,10 +308,14 @@ app.get('/sequence', adminOnly, (req, res) => {
 
 //
 app.post('/sequence', adminOnly, (req, res) => {
+    console.log("BODY: ", req.body);
+    console.log("ORDER RECEIVED: ", req.body.order);
+
+
     const orderArray = req.body.order.split(",");
 
-    orderArray.forEach((gameId, index) => {
-        connection.query("UPDATE games SET position=? WHERE gameId=?", [index, gameId]);
+    orderArray.forEach((id, index) => {
+        connection.query("UPDATE videos SET position=? WHERE id=?", [index, id]);
     });
 
     res.redirect('/');

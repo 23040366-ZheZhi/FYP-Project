@@ -49,28 +49,14 @@
 </style>
 
 <div class="bottom-nav">
+    
     <a href="/" class="nav-circle btn-home">Home</a>
-
-    
     <a href="/electgraph" class="nav-circle btn-energy">Energy<br>Graph</a>
-
-    
     <a href="/solargraph" class="nav-circle btn-solar">Solar<br>Graph</a>
-
-    
     <a href="/watergraph" class="nav-circle btn-water">Water<br>Graph</a>
 
-    
-    <% if (session.isAdmin) { %>
-    <a href="/addVideo" class="nav-circle btn-home">Add<br>Video</a>
-<% } %>
-
-    <% if (session.isAdmin) { %>
-        <a href="/logout" class="nav-circle btn-home">Logout</a>
-    <% } else { %>
-        <a href="/login" class="nav-circle btn-home">Admin</a>
-    <% } %>
 </div>
+
 <% } %>
 
 
