@@ -78,6 +78,12 @@ const storage = multer.diskStorage({
     }
 });
 
+const videoStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, 'videos'),
+    filename: (req, file, cb) => cb(null, Date.now() + "_" + file.originalname)
+    });
+const uploadVideo = multer({ storage: videoStorage });
+
 const upload = multer({ storage: storage });
 
 
@@ -174,7 +180,7 @@ app.post('/updateGame/:id', upload.single('image'), (req, res) => {
     const sql = 'UPDATE games SET name = ? , description = ? , image = ? WHERE gameId = ?';
  
 
-    connection.query( sql , [name, price, description, age, image, gameId], (error, results) => {
+    connection.query( sql , [name, description, image], (error, results) => {
         if (error) {
 
             console.error("Error updating game:", error);
@@ -226,19 +232,18 @@ app.get("/api/summary", (req, res) => {
 
 
 app.post('/addVideo', upload.array('videos[]'), (req, res) => {
-    const videoFiles = req.files;
-    const descriptions = req.body.descriptions;
+    const videoFiles = req.files; //upload video files
+    const descriptions = req.body.descriptions; // matching descriptions
 
     videoFiles.forEach((file, index) => {
         const sql = "INSERT INTO games (name, description, image) VALUES (?, ?, ?)";
-        connection.query(sql, [file.filename, descriptions[index], index], (err) => {
+        connection.query(sql, [file.originalname, descriptions[index], file.filename], (err) => {
             if (err) console.error(err);
         });
     });
 
     res.redirect('/');
 });
-
 
 
 
@@ -282,6 +287,26 @@ app.get('/electgraph', (req, res) => res.render('electgraph'));
 app.get('/watergraph', (req, res) => res.render('watergraph'));
 // solar graph
 app.get('/solargraph', (req, res) => res.render('solargraph'));
+
+//only accessible by admin to sequence videos
+app.get('/sequence', adminOnly, (req, res) => {
+    connection.query("SELECT * FROM games ORDER BY position ASC, gameId ASC", (err, results) => {
+        if (err) return res.status(500).send("Error loading videos");
+
+        res.render('sequence', { videos: results });
+    });
+});
+
+//
+app.post('/sequence', adminOnly, (req, res) => {
+    const orderArray = req.body.order.split(",");
+
+    orderArray.forEach((gameId, index) => {
+        connection.query("UPDATE games SET position=? WHERE gameId=?", [index, gameId]);
+    });
+
+    res.redirect('/');
+});
 
 
 // LOGIN PAGE
