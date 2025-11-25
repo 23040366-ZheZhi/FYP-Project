@@ -38,7 +38,8 @@ app.use('/videos', express.static('videos'));
 app.use(session({
     secret: 'secret123',
     resave: false,
-    saveUninitialized: true
+    saveUninitialized: true,
+    cookie: { maxAge: 1 * 60 * 60 * 1000 }
 }));
 
 app.use((req, res, next) => {
@@ -124,7 +125,7 @@ app.use((req, res, next) => {
 
 
 app.get('/', (req, res) => {
-    const sql = 'SELECT * FROM videos';
+    const sql = 'SELECT * FROM videos ORDER BY position ASC, id ASC';
 
     connection.query( sql, (error, results) => {
         if (error) {
@@ -240,19 +241,33 @@ app.get("/api/summary", (req, res) => {
 
 
 
-app.post('/addVideo', upload.array('videos[]'), (req, res) => {
+app.post('/addVideo', uploadVideo.array('videos[]'), (req, res) => {
     const videoFiles = req.files; //upload video files
     const descriptions = req.body.descriptions; // matching descriptions
 
     videoFiles.forEach((file, index) => {
-        const sql = "INSERT INTO videos (name, description, image) VALUES (?, ?, ?)";
-        connection.query(sql, [file.originalname, descriptions[index], file.filename], (err) => {
+        const sql = "INSERT INTO videos (name, description, video, position) VALUES (?, ?, ?, ?)";
+        connection.query(sql, [file.originalname, descriptions[index], file.filename, 999], (err) => {                          //999 to push to end of sequence
             if (err) console.error(err);
         });
     });
 
-    res.redirect('/');
+    res.redirect('/sequence');
 });
+
+app.delete('/deleteVideo/:id', adminOnly, (req, res) => {
+    const id = req.params.id;
+
+    const sql = "DELETE FROM videos WHERE id = ?";
+    connection.query(sql, [id], (err) => {
+        if (err) {
+            console.error("Error deleting video:", err);
+            return res.json({ success: false });
+        }
+        res.json({ success: true });
+    });
+});
+
 
 
 

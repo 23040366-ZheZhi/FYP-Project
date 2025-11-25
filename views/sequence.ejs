@@ -9,12 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
     <style>
-        .list-group-item {
-            cursor: grab;
-        }
-        .list-group-item:active {
-            cursor: grabbing;
-        }
+        .list-group-item { cursor: grab; }
+        .list-group-item:active { cursor: grabbing; }
     </style>
 </head>
 <body>
@@ -28,9 +24,14 @@
 
         <ul id="videoList" class="list-group mb-3">
             <% videos.forEach(video => { %>
-                <li class="list-group-item" data-id="<%= video.id %>">
-                    <strong><%= video.name %></strong><br>
-                    <small><%= video.description %></small>
+                <li class="list-group-item d-flex justify-content-between align-items-center" data-id="<%= video.id %>">
+                    <div>
+                        <strong><%= video.name %></strong><br>
+                        <small><%= video.description %></small>
+                    </div>
+                    <button class="btn btn-danger btn-sm" onclick="deleteVideo(<%= video.id %>)" type="button">
+                        Delete
+                    </button>
                 </li>
             <% }); %>
         </ul>
@@ -38,20 +39,79 @@
         <input type="hidden" id="orderInput" name="order">
 
         <button type="submit" class="btn btn-primary">Save Order</button>
-        <a href="/" class="btn btn-secondary">Back</a>
+    </form>
+    <br><br>
+    <h2 class="text-center mb-4">Add New Videos</h2>
+
+    <form action="/addVideo" method="POST" enctype="multipart/form-data">
+        <div id="video-container">
+            <!-- FIRST VIDEO BLOCK -->
+            <div class="video-block mb-3">
+
+                <label>Video:</label>
+                <input type="file" class="form-control" name="videos[]" accept="video/*" required>
+
+                <label class="mt-2">Description:</label>
+                <input type="text" class="form-control" name="descriptions[]" placeholder="Enter description">
+
+            </div>
+            </div>
+            <!-- ADD BUTTON -->
+            <button type="button" class="btn btn-success mt-3" onclick="addMore()">+ Add More Videos</button>
+            <a href="/sequence" class="btn btn-success mt-3">Manage Video Sequence</a>
+            <br><br>
+            <!-- SUBMIT + BACK -->
+            <button class="btn btn-primary" type="submit">Add Video</button>
     </form>
 </div>
 
+
 <script>
+    // Drag & drop reorder
     new Sortable(videoList, {
         animation: 150,
         onEnd: () => {
             const newOrder = [...document.querySelectorAll("#videoList li")]
-                                .map(li => li.dataset.id);
-
+                .map(li => li.dataset.id);
             document.getElementById("orderInput").value = newOrder.join(",");
         }
     });
+
+    // Delete video
+    function deleteVideo(id) {
+        if (!confirm("Are you sure you want to delete this video?")) return;
+
+        fetch(`/deleteVideo/${id}`, {
+            method: "DELETE"
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert("Failed to delete video.");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Error deleting video.");
+        });
+    }
+
+    // Add more upload blocks
+    function addMore() {
+        const container = document.getElementById("video-container");
+        const block = document.createElement("div");
+        block.classList.add("video-block", "mb-3");
+        block.innerHTML = `
+            <label class="form-label">Video:</label>
+            <input type="file" class="form-control" name="videos[]" accept="video/*" required>
+
+            <label class="form-label mt-2">Description:</label>
+            <input type="text" class="form-control" name="descriptions[]" placeholder="Enter description">
+        `;
+        container.appendChild(block);
+    }
 </script>
 
 </body>
