@@ -37,3 +37,21 @@
 .metric-card canvas {
   filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25));
 }
+
+.navbar.glass {
+  padding: 14px 28px;
+  color: #ffffff;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.32),
+    rgba(255,255,255,0.10)
+  );
+}
+
+.navbar.glass a {
+  color: #ffffff;
+}
+
+.navbar.glass a:hover {
+  color: #e8e8e8;
+}
