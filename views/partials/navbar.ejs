@@ -24,18 +24,28 @@
           <a class="nav-link" href="/watergraph">Water</a>
         </li>
 
-        <% if (session.isAdmin) { %>
-          <li class="nav-item">
-            <a class="nav-link" href="/addVideo">Add Video</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/logout">Logout</a>
-          </li>
-        <% } else { %>
-          <li class="nav-item">
-            <a class="nav-link" href="/login">Admin</a>
-          </li>
-        <% } %>
+<% if (session.isAdmin) { %>
+  <li class="nav-item">
+    <% if (!disableInteractive) { %>
+      <a class="nav-link text-danger" href="/toggle-off">Disable Interactive</a>
+    <% } else { %>
+      <a class="nav-link text-success" href="/toggle-on">Enable Interactive</a>
+    <% } %>
+  </li>
+
+  <li class="nav-item">
+    <a class="nav-link" href="/addVideo">Add Video</a>
+  </li>
+
+  <li class="nav-item">
+    <a class="nav-link" href="/sequence">Reorder Videos</a>
+  </li>
+
+  <li class="nav-item">
+    <a class="nav-link" href="/logout">Logout</a>
+  </li>
+<% } %>
+
       </ul>
     </div>
   </div>

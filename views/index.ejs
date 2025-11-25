@@ -8,17 +8,11 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <title>ESG Centre Dashboard</title>
 
-<style>
-  html, body {
-    background: url('/images/gay1.png') no-repeat center center fixed;
-    background-size: cover;
-    image-rendering: optimizeQuality;
-  }
-</style>
+
 
 <style>
 body {
-    background-image: url("/images/gay.png");
+    background-image: url("/images/drew-saurus-unsplash.jpg");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -45,7 +39,7 @@ body {
   .mini-card canvas { height: 110px !important; }
 
   /* Carousel */
-  .carousel-item { height: 450px; }
+  .carousel-item { height: 600px; }
   .game-image { width: 100%; height: 100%; object-fit: cover; }
 
   /* Map */
@@ -62,7 +56,7 @@ body {
   <%- include('partials/navbar.ejs') %>
 
   <!-- RP LOGO -->
-  <img src="/images/rp.png" class="mx-auto d-block mt-3" style="width: 360px; height:auto; margin-bottom: 50px;">  
+  <img src="/images/RP-LOGO.png" class="mx-auto d-block mt-3" style="width: 360px; height:auto; margin-bottom: 50px;">  
 
 
   <!-- SNAPSHOT SECTION -->
@@ -108,8 +102,8 @@ body {
       <div class="carousel-inner">
         <% games.forEach((game, index) => { %>
           <div class="carousel-item <%= index === 0 ? 'active' : '' %>">
-            <video class="d-block w-100 game-image" autoplay loop muted playsinline>
-              <source src="/videos/<%= game.image %>" type="video/mp4">
+            <video class="d-block w-100 game-image" autoplay muted playsinline>
+              <source src="/videos/<%= game.video %>" type="video/mp4">
             </video>
           </div>
         <% }) %>
@@ -226,6 +220,32 @@ body {
       });
 
 </script>
+
+
+<!-- VIDEO CAROUSEL SCRIPT -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const carouselElement = document.querySelector('#productCarousel');
+    const carousel = new bootstrap.Carousel(carouselElement, {
+        interval: false,   // Disable built-in timer
+        ride: false
+    });
+
+    // For each video inside the carousel
+    document.querySelectorAll('#productCarousel video').forEach(video => {
+
+        // When the video finishes playing...
+        video.addEventListener('ended', () => {
+            carousel.next();   // Move to next slide
+        });
+    });
+
+    // Ensure the first video plays automatically when page loads
+    const activeVideo = document.querySelector('.carousel-item.active video');
+    if (activeVideo) activeVideo.play();
+});
+</script>
+
 
 </body>
 </html>

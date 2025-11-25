@@ -114,6 +114,15 @@ app.use(express.urlencoded({
 }));
 
 
+app.use((req, res, next) => {
+    if (req.session.disableInteractive === undefined) {
+        req.session.disableInteractive = false;
+    }
+    res.locals.disableInteractive = req.session.disableInteractive;
+    next();
+});
+
+
 app.get('/', (req, res) => {
     const sql = 'SELECT * FROM games';
 
@@ -360,6 +369,18 @@ app.post('/verify', (req, res) => {
 
     res.render('verify', { error: 'Incorrect verification code' });
 });
+
+
+app.get('/toggle-off', adminOnly, (req, res) => {
+    req.session.disableInteractive = true;
+    res.redirect('/');
+});
+
+app.get('/toggle-on', adminOnly, (req, res) => {
+    req.session.disableInteractive = false;
+    res.redirect('/');
+});
+
 
 app.get('/logout', (req, res) => {
     req.session.destroy(() => {
