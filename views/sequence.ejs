@@ -26,8 +26,8 @@
             <% videos.forEach(video => { %>
                 <li class="list-group-item d-flex justify-content-between align-items-center" data-id="<%= video.id %>">
                     <div>
-                        <strong><%= video.name %></strong><br>
-                        <small><%= video.description %></small>
+                        <strong>Name: <%= video.name %></strong><br>
+                        <small>Description: <%= video.description %></small>
                     </div>
                     <button class="btn btn-danger btn-sm" onclick="deleteVideo(<%= video.id %>)" type="button">
                         Delete
@@ -58,7 +58,6 @@
             </div>
             <!-- ADD BUTTON -->
             <button type="button" class="btn btn-success mt-3" onclick="addMore()">+ Add More Videos</button>
-            <a href="/sequence" class="btn btn-success mt-3">Manage Video Sequence</a>
             <br><br>
             <!-- SUBMIT + BACK -->
             <button class="btn btn-primary" type="submit">Add Video</button>
