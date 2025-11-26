@@ -29,7 +29,7 @@
                         <strong>Name: <%= video.name %></strong><br>
                         <small>Description: <%= video.description %></small>
                     </div>
-                    <button class="btn btn-danger btn-sm" onclick="deleteVideo(<%= video.id %>)" type="button">
+                    <button class="btn btn-danger btn-sm" onclick="deleteVideo(<%= video.id %>)" type="button"> <!-- Error is flagged, but code works -->
                         Delete
                     </button>
                 </li>
