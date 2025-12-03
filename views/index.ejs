@@ -106,48 +106,13 @@
       id="campusModel"
       src="/models/campuss.glb"
       camera-controls
-      environment-image="neutral"
-      interaction-prompt="none"
       touch-action="none"
       shadow-intensity="1"
       exposure="0.5"
       style="width: 100%; height: 600px; background: #ffffff; border-radius: 20px;">
     </model-viewer>
-    <script type="module">
-  const model = document.querySelector("#campusModel");
+    
 
-  // List of mesh names that should be clickable
-  const buildingNames = [
-    "E1", "E2", "E3", "E4", "E5", "E6",
-    "W1", "W2", "W3", "W4", "W5", "W6"
-  ];
-
-  model.addEventListener("click", (event) => {
-    const hit = model.positionAndNormalFromPoint(event.clientX, event.clientY);
-
-    if (!hit) return;
-
-    const clickedMesh = hit.mesh;
-
-    if (!clickedMesh || !clickedMesh.name) return;
-
-    const meshName = clickedMesh.name;
-
-    // Only respond if the object clicked is a building
-    if (buildingNames.includes(meshName)) {
-      console.log("Clicked building:", meshName);
-
-      // 🔥 Option 1: Redirect to a new page
-      window.location.href = "/building/" + meshName;
-
-      // 🔥 Option 2 (alternative): Show popup
-      // alert("You clicked " + meshName);
-
-      // 🔥 Option 3 (alternative): Call your function
-      // openMenu(meshName);
-    }
-  });
-</script>
 
 
   </div>
