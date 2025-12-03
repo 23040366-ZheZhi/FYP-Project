@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Building Charts</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Building Charts</h1>
+    <label for="buildingSelect">Select Building:</label>
+    <select id="buildingSelect"></select>
+
+    <canvas id="chart" width="600" height="400"></canvas>
+
+    <script type="module">
+        import { plotChart } from './scripts/plotindividual.js';
+
+        const ctx = document.getElementById("chart").getContext("2d");
+
+        async function init() {
+            const res = await fetch("/output/1.1_Individual Pod.json");
+            const data = await res.json();
+
+            // Get building names (skip "CY2024 Elect" and "CY2025 Elect")
+            const buildings = Object.entries(data[0])
+                .filter(([key]) => key !== "CY2024 Elect" && key !== "CY2025 Elect")
+                .map(([key, name]) => ({ key, name }));
+
+            const select = document.getElementById("buildingSelect");
+            buildings.forEach(b => {
+                const opt = document.createElement("option");
+                opt.value = b.key;
+                opt.textContent = b.name;
+                select.appendChild(opt);
+            });
+
+            // Show first building by default
+            plotSelected(buildings[0]);
+
+            // Update chart when selection changes
+            select.addEventListener("change", () => {
+                const building = buildings.find(b => b.key === select.value);
+                plotSelected(building);
+            });
+
+           function plotSelected(building) {
+    const { key, name } = building;
+
+    // Slice data for 2024 (rows 1-12) and 2025 (rows 15-27)
+    const data2024Rows = data.slice(1, 13);
+    const data2025Rows = data.slice(15, 27);
+
+    // Labels from 2024 (Jan-Dec)
+    const labels = data2024Rows.map(row => row["CY2024 Elect"]);
+
+    // 2024 values
+    const values2024 = data2024Rows.map(row => Number(row[key]?.replace(/,/g,"")) || 0);
+
+    // 2025 values: shift left by 1 to align months
+    const raw2025 = data2025Rows.map(row => Number(row[key]?.replace(/,/g,"")) || 0);
+    const values2025 = [];
+    for (let i = 0; i < labels.length; i++) {
+        values2025.push(raw2025[i + 1] || 0); // shift by 1
+    }
+
+    // Plot chart
+    plotChart(ctx, labels, values2024, values2025, name);
+}
+
+        }
+
+        init();
+    </script>
+</body>
+</html>

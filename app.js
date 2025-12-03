@@ -4,6 +4,9 @@ const mysql = require('mysql2');
 
 const app = express();
 
+
+
+
 const session = require('express-session');
 const runExcelConversion = require('./public/scripts/exceltojson.js');
 app.use(express.static('public'));
@@ -311,6 +314,12 @@ app.get('/electgraph', (req, res) => res.render('electgraph'));
 app.get('/watergraph', (req, res) => res.render('watergraph'));
 // solar graph
 app.get('/solargraph', (req, res) => res.render('solargraph'));
+// wastegraph
+app.get('/', (req, res) => res.render('wastegraph'));
+// IndivWater
+app.get('/', (req, res) => res.render('IndivWatergraph'));
+// IndivEnergy
+app.get('/indivelect', (req, res) => res.render('Indivelect'));
 
 //only accessible by admin to sequence videos
 app.get('/sequence', adminOnly, (req, res) => {
@@ -402,9 +411,9 @@ app.get('/toggle-on', adminOnly, (req, res) => {
 
 
 app.get('/logout', (req, res) => {
-    req.session.destroy(() => {
-        res.redirect('/');
-    });
+    req.session.isAdmin = false;     // logout admin
+    // DO NOT reset disableInteractive
+    res.redirect('/');
 });
 
 

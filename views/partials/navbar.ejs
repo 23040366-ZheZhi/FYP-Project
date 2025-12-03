@@ -1,3 +1,5 @@
+
+</style>
 <nav class="navbar navbar-expand-lg glass shadow-sm mb-3">
   <div class="container-fluid">
     <a class="navbar-brand d-flex align-items-center" href="/">
@@ -23,13 +25,23 @@
         <li class="nav-item">
           <a class="nav-link" href="/watergraph">Water</a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/">Waste</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/">IndivWater</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/">IndivEnergy</a>
+        </li>
+
 
         <% if (session.isAdmin) { %>
           <li class="nav-item">
             <% if (!disableInteractive) { %>
-              <a class="nav-link text-danger" href="/toggle-off">Disable Interactive</a>
+              <a class="nav-link" href="/toggle-off">Disable Interactive</a>
             <% } else { %>
-              <a class="nav-link text-success" href="/toggle-on">Enable Interactive</a>
+              <a class="nav-link" href="/toggle-on">Enable Interactive</a>
             <% } %>
           </li>
 
