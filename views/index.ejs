@@ -10,33 +10,65 @@
   <title>ESG Centre Dashboard</title>
 
   <style>
-  body {
+    body {
       background-image: url("/images/drew-saurus-unsplash.jpg");
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
       background-attachment: fixed;
-  }
-  </style>
+    }
 
-  <style>
-    .mini-dashboard { margin: 40px 0; }
+    .mini-dashboard {
+      margin: 40px 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+
     .mini-card {
-      border-radius: 16px;
+      border-radius: 18px;
       padding: 18px 20px;
       cursor: pointer;
-      transition: 0.2s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      min-height: 200px;
+      text-align: left;
     }
+
     .mini-card:hover {
       transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
     }
-    .mini-value { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; }
-    .mini-card canvas { height: 110px !important; }
 
-    .carousel-item { height: 600px; }
-    .video-video { width: 100%; height: 100%; object-fit: cover; }
+    .mini-card h5 {
+      margin-bottom: 6px;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
 
-    img#rpmapImg { width: 100%; max-width: 900px; }
+    .mini-value {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .mini-card canvas {
+      height: 120px !important;
+    }
+
+    .carousel-item {
+      height: 600px;
+    }
+
+    .video-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    img#rpmapImg {
+      width: 100%;
+      max-width: 900px;
+    }
   </style>
 
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
@@ -47,35 +79,45 @@
 
   <%- include('partials/navbar.ejs') %>
 
-  
-
   <div class="container mt-4 text-center">
     <h2 class="glass glass-heading text-center mb-4">Latest Month's Data</h2>
 
-    <div class="row g-4 mini-dashboard">
+    <div class="mini-dashboard">
 
-      <div class="col-md-4">
-        <div class="mini-card glass metric-card" onclick="window.location.href='/electgraph'">
-          <h5>Energy</h5>
-          <div id="miniEnergyValue">Loading...</div>
-          <canvas id="miniEnergyChart"></canvas>
-        </div>
+      <div class="mini-card glass metric-card" onclick="window.location.href='/electgraph'">
+        <h5>Energy</h5>
+        <div id="miniEnergyValue" class="mini-value">Loading...</div>
+        <canvas id="miniEnergyChart"></canvas>
       </div>
 
-      <div class="col-md-4">
-        <div class="mini-card glass metric-card" onclick="window.location.href='/solargraph'">
-          <h5>Solar</h5>
-          <div id="miniSolarValue">Loading...</div>
-          <canvas id="miniSolarChart"></canvas>
-        </div>
+      <div class="mini-card glass metric-card" onclick="window.location.href='/solargraph'">
+        <h5>Solar</h5>
+        <div id="miniSolarValue" class="mini-value">Loading...</div>
+        <canvas id="miniSolarChart"></canvas>
       </div>
 
-      <div class="col-md-4">
-        <div class="mini-card glass metric-card" onclick="window.location.href='/watergraph'">
-          <h5>Water</h5>
-          <div id="miniWaterValue">Loading...</div>
-          <canvas id="miniWaterChart"></canvas>
-        </div>
+      <div class="mini-card glass metric-card" onclick="window.location.href='/watergraph'">
+        <h5>Water</h5>
+        <div id="miniWaterValue" class="mini-value">Loading...</div>
+        <canvas id="miniWaterChart"></canvas>
+      </div>
+
+      <div class="mini-card glass metric-card">
+        <h5>Peak Monthly Energy</h5>
+        <div id="miniEnergyPeak" class="mini-value">Loading...</div>
+        <p class="mb-0">Highest value in the selected period</p>
+      </div>
+
+      <div class="mini-card glass metric-card">
+        <h5>Peak Monthly Solar</h5>
+        <div id="miniSolarPeak" class="mini-value">Loading...</div>
+        <p class="mb-0">Highest value in the selected period</p>
+      </div>
+
+      <div class="mini-card glass metric-card">
+        <h5>Peak Monthly Water</h5>
+        <div id="miniWaterPeak" class="mini-value">Loading...</div>
+        <p class="mb-0">Highest value in the selected period</p>
       </div>
 
     </div>
@@ -106,14 +148,30 @@
       id="campusModel"
       src="/models/campuss.glb"
       camera-controls
+      auto-rotate
+      environment-image="neutral"
+      interaction-prompt="none"
       touch-action="none"
       shadow-intensity="1"
       exposure="0.5"
       style="width: 100%; height: 600px; background: #ffffff; border-radius: 20px;">
     </model-viewer>
-    
+    <script>
+      document.getElementById("campusModel")
+        .addEventListener("click", (event) => {
+          const hit = event.detail;
+          if (hit && hit.mesh) {
+            console.log("Clicked:", hit.mesh.name);
 
-
+            switch (hit.mesh.name) {
+              case "E1": window.location.href = "/building/E1"; break;
+              case "E2": window.location.href = "/building/E2"; break;
+              case "W1": window.location.href = "/building/W1"; break;
+              // add more here
+            }
+          }
+        });
+    </script>
 
   </div>
 
@@ -144,12 +202,14 @@
 
   <script>
     function openMenu(buildingId) {
-      alert("You clicked " + buildingId)
-      console.log("Clicked:", buildingId)
+      alert("You clicked " + buildingId);
+      console.log("Clicked:", buildingId);
     }
 
     function createMiniChart(id, data, color) {
-      const ctx = document.getElementById(id)
+      const ctx = document.getElementById(id);
+      if (!ctx) return;
+
       new Chart(ctx, {
         type: 'line',
         data: {
@@ -166,74 +226,90 @@
           plugins: { legend: { display: false }},
           scales: { x: { display: false }, y: { display: false } }
         }
-      })
+      });
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       fetch(window.location.origin + "/api/summary")
         .then(res => res.json())
         .then(data => {
-          const energy = data.energy
-          const solar = data.solar
-          const water = data.water
+          const energy = data.energy;
+          const solar = data.solar;
+          const water = data.water;
+
+          const energyLatest = energy[energy.length - 1];
+          const solarLatest = solar[solar.length - 1];
+          const waterLatest = water[water.length - 1];
 
           document.getElementById("miniEnergyValue").textContent =
-            energy[energy.length - 1].toLocaleString() + " kWh"
+            energyLatest.toLocaleString() + " kWh";
 
           document.getElementById("miniSolarValue").textContent =
-            solar[solar.length - 1].toLocaleString() + " kWp"
+            solarLatest.toLocaleString() + " kWp";
 
           document.getElementById("miniWaterValue").textContent =
-            water[water.length - 1].toLocaleString() + " m³"
+            waterLatest.toLocaleString() + " m³";
 
-          createMiniChart("miniEnergyChart", energy, "#ffc107")
-          createMiniChart("miniSolarChart", solar, "orangered")
-          createMiniChart("miniWaterChart", water, "#007bff")
-        })
-    })
+          createMiniChart("miniEnergyChart", energy, "#ffc107");
+          createMiniChart("miniSolarChart", solar, "orangered");
+          createMiniChart("miniWaterChart", water, "#007bff");
+
+          const energyPeakEl = document.getElementById("miniEnergyPeak");
+          const solarPeakEl = document.getElementById("miniSolarPeak");
+          const waterPeakEl = document.getElementById("miniWaterPeak");
+
+          if (energyPeakEl) {
+            const energyMax = Math.max(...energy);
+            energyPeakEl.textContent = energyMax.toLocaleString() + " kWh";
+          }
+
+          if (solarPeakEl) {
+            const solarMax = Math.max(...solar);
+            solarPeakEl.textContent = solarMax.toLocaleString() + " kWp";
+          }
+
+          if (waterPeakEl) {
+            const waterMax = Math.max(...water);
+            waterPeakEl.textContent = waterMax.toLocaleString() + " m³";
+          }
+        });
+    });
   </script>
 
   <script>
-document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function () {
 
-    const carouselEl = document.getElementById("productCarousel");
+      const carouselEl = document.getElementById("productCarousel");
 
-    // Destroy any automatically initialized carousel
-    if (bootstrap.Carousel.getInstance(carouselEl)) {
+      if (bootstrap.Carousel.getInstance(carouselEl)) {
         bootstrap.Carousel.getInstance(carouselEl).dispose();
-    }
+      }
 
-    // Initialize manually with NO auto slide
-    const carousel = new bootstrap.Carousel(carouselEl, {
+      const carousel = new bootstrap.Carousel(carouselEl, {
         interval: false,
         pause: false,
         wrap: true
-    });
+      });
 
-    // Play the active video when the carousel loads
-    function playActiveVideo() {
+      function playActiveVideo() {
         const activeVideo = document.querySelector(".carousel-item.active video");
         if (activeVideo) {
-            activeVideo.currentTime = 0;
-            activeVideo.play();
+          activeVideo.currentTime = 0;
+          activeVideo.play();
         }
-    }
+      }
 
-    // When each video ends → move to next slide
-    document.querySelectorAll("#productCarousel video").forEach(video => {
+      document.querySelectorAll("#productCarousel video").forEach(video => {
         video.addEventListener("ended", () => {
-            carousel.next();
+          carousel.next();
         });
+      });
+
+      carouselEl.addEventListener("slid.bs.carousel", playActiveVideo);
+
+      playActiveVideo();
     });
-
-    // When slide changes → play the new active video
-    carouselEl.addEventListener("slid.bs.carousel", playActiveVideo);
-
-    // Start playing the first video
-    playActiveVideo();
-});
-</script>
-
+  </script>
 
 </body>
 </html>
