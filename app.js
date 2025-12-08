@@ -317,7 +317,7 @@ app.get('/solargraph', (req, res) => res.render('solargraph'));
 // wastegraph
 app.get('/', (req, res) => res.render('wastegraph'));
 // IndivWater
-app.get('/', (req, res) => res.render('IndivWatergraph'));
+app.get('/indivwater', (req, res) => res.render('IndivWater'));
 // IndivEnergy
 app.get('/indivelect', (req, res) => res.render('Indivelect'));
 

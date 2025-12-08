@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CY2025 Water Consumption</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial; padding: 12px; background: #f7f7f7; }
+    h2 { text-align:center; margin-bottom:20px; }
+    .controls { text-align:center; margin-bottom: 12px; }
+    select { padding:8px 12px; font-size:16px; border-radius:6px; }
+    .chart-wrap { max-width:1000px; margin:0 auto; background:#fff; padding:18px;
+                  border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
+    canvas { width:100% !important; height:450px !important; }
+  </style>
+</head>
+<body>
+
+<h2>CY2025 Water Consumption by Building</h2>
+
+<div class="controls">
+  <label for="buildingSelect">Select Building:</label>
+  <select id="buildingSelect"></select>
+</div>
+
+<div class="chart-wrap">
+  <canvas id="buildingChart"></canvas>
+</div>
+
+<script type="module">
+  import { plotChart } from "/scripts/plotindivW.js";
+
+  const ctx = document.getElementById("buildingChart").getContext("2d");
+  const select = document.getElementById("buildingSelect");
+  let globalData = [];
+
+  async function init() {
+    // Fetch the JSON
+    const res = await fetch("/output/2.1_Individual Pod.json");
+    const data = await res.json();
+
+    // Skip header row for charting
+    globalData = data.slice(1); 
+
+    // First row contains building names
+    const headerRow = data[0];
+    const buildings = Object.entries(headerRow)
+      .filter(([key]) => key !== "CY2025 Water")
+      .map(([key, name]) => ({ key, name }));
+
+    // Populate dropdown
+    buildings.forEach(b => {
+      const opt = document.createElement("option");
+      opt.value = b.key;
+      opt.textContent = b.name;
+      select.appendChild(opt);
+    });
+
+    // Plot default building
+    plotBuilding(buildings[0]);
+
+    // Update chart on dropdown change
+    select.addEventListener("change", () => {
+      const selected = buildings.find(b => b.key === select.value);
+      plotBuilding(selected);
+    });
+  }
+
+  function plotBuilding(building) {
+    plotChart(
+      ctx,
+      globalData,         // data rows
+      "CY2025 Water",     // X-axis = month
+      building.key,       // Y-axis = selected building
+      building.name       // chart label
+    );
+  }
+
+  init();
+</script>
+
+<style>
+.graph-back-nav {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.graph-back-btn {
+    width: 120px;
+    height: 60px;
+    background: #343a40;
+    color: white;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 14px;
+    text-decoration: none;
+    transition: 0.2s ease;
+}
+</style>
+
+<div class="graph-back-nav">
+    <a href="/" class="graph-back-btn">Back</a>
+</div>
+</body>
+</html>
