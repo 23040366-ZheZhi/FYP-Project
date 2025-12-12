@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Waste Data</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body { font-family: Arial; padding: 12px; background: #f7f7f7; }
+    h2 { text-align:center; margin-bottom:20px; }
+
+    .controls { text-align:center; margin-bottom: 12px; }
+    select { padding:8px 12px; font-size:16px; border-radius:6px; }
+
+    .chart-wrap {
+      max-width:1000px;
+      margin:0 auto;
+      background:#fff;
+      padding:18px;
+      border-radius:8px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    canvas { width:100% !important; height:450px !important; }
+
+    .totals {
+      text-align:center;
+      margin-top:14px;
+      font-weight:bold;
+      font-size:15px;
+    }
+
+    .graph-back-nav {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+    }
+
+    .graph-back-btn {
+      width: 120px;
+      height: 60px;
+      background: #343a40;
+      color: white;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Waste Data</h2>
+
+<div class="controls">
+  <label for="datasetSelector">Choose data:</label>
+  <select id="datasetSelector">
+    <option value="field2">General Waste (kg)</option>
+    <option value="field3">Recycled Waste (kg)</option>
+    <option value="field4">% (General Waste)</option>
+    <option value="field5">% (Recycled Waste)</option>
+  </select>
+</div>
+
+<div class="chart-wrap">
+  <canvas id="wasteChart"></canvas>
+</div>
+
+<div class="totals" id="totalsDisplay"></div>
+
+<script type="module">
+  import { plotWasteChart } from "/scripts/plotwaste.js";
+
+  const ctx = document.getElementById("wasteChart").getContext("2d");
+  const selector = document.getElementById("datasetSelector");
+  const totalsDiv = document.getElementById("totalsDisplay");
+
+  let monthlyData = [];
+  let fyTotals = {};
+
+  async function loadData() {
+    const res = await fetch("/output/4_Waste and Recycled (Pivot).json");
+    const data = await res.json();
+
+    // FY TOTAL ROWS (FY2023, FY2024, FY2025)
+    data.forEach(row => {
+      const key = row["General & Recyclable Waste"];
+      if (/^FY\d{4}$/.test(key)) {
+        fyTotals[key] = row;
+      }
+    });
+
+    // MONTHLY ROWS ONLY (Jan-2024, Feb-2025, etc.)
+    monthlyData = data.filter(row =>
+      /^[A-Za-z]{3}-\d{4}$/.test(row["General & Recyclable Waste"])
+    );
+
+    updateTotals(selector.value);
+    plotWasteChart(
+      ctx,
+      monthlyData,
+      selector.value,
+      selector.options[selector.selectedIndex].text
+    );
+  }
+
+  function updateTotals(field) {
+    const lines = Object.entries(fyTotals).map(([fy, row]) => {
+      const val = row[field] || "-";
+      return `${fy}: ${val}`;
+    });
+    totalsDiv.textContent = lines.join(" | ");
+  }
+
+  selector.addEventListener("change", () => {
+    updateTotals(selector.value);
+    plotWasteChart(
+      ctx,
+      monthlyData,
+      selector.value,
+      selector.options[selector.selectedIndex].text
+    );
+  });
+
+  loadData();
+</script>
+
+<div class="graph-back-nav">
+  <a href="/" class="graph-back-btn">Back</a>
+</div>
+
+</body>
+</html>
