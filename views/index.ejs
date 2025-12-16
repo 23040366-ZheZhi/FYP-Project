@@ -417,6 +417,42 @@ document.getElementById("miniWasteValue").textContent =
 </script>
 
 
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+      const carouselEl = document.getElementById("productCarousel");
+
+      if (bootstrap.Carousel.getInstance(carouselEl)) {
+        bootstrap.Carousel.getInstance(carouselEl).dispose();
+      }
+
+      const carousel = new bootstrap.Carousel(carouselEl, {
+        interval: false,
+        pause: false,
+        wrap: true
+      });
+
+      function playActiveVideo() {
+        const activeVideo = document.querySelector(".carousel-item.active video");
+        if (activeVideo) {
+          activeVideo.currentTime = 0;
+          activeVideo.play();
+        }
+      }
+
+      document.querySelectorAll("#productCarousel video").forEach(video => {
+        video.addEventListener("ended", () => {
+          carousel.next();
+        });
+      });
+
+      carouselEl.addEventListener("slid.bs.carousel", playActiveVideo);
+
+      playActiveVideo();
+    });
+  </script>
+
+
 
 
 </body>
