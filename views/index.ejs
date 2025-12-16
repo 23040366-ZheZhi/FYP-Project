@@ -102,6 +102,13 @@
         <canvas id="miniWaterChart"></canvas>
       </div>
 
+      <div class="mini-card glass" onclick="window.location.href='/waste'">
+        <h5>Monthly Waste</h5>
+        <div id="miniWasteValue" class="mini-value">Loading...</div>
+        <canvas id="miniWasteChart"></canvas>
+      </div>
+
+
       <div class="mini-card glass">
         <h5>Peak Monthly Energy (Last 6)</h5>
         <div id="miniEnergyPeak" class="mini-value">Loading...</div>
@@ -120,8 +127,15 @@
         <p>Highest month in the last 6 months</p>
       </div>
 
+      <div class="mini-card glass">
+        <h5>Peak Monthly Waste (Last 6)</h5>
+        <div id="miniWastePeak" class="mini-value">Loading...</div>
+        <p>Highest month in the last 6 months</p>
+      </div>
+
     </div>
   </div>
+
 
   <div class="carousel-container container mt-4">
     <div id="productCarousel" class="carousel slide">
@@ -326,10 +340,17 @@ document.addEventListener("DOMContentLoaded", () => {
       const energy = data.energy || [];
       const solar = data.solar || [];
       const water = data.water || [];
+      const waste = data.waste || [];
+
 
       const ePick = pickLatestDisplay(labels, energy, "any");
       const sPick = pickLatestDisplay(labels, solar, "positive"); // solar: last positive month
       const wPick = pickLatestDisplay(labels, water, "any");
+      const waPick = pickLatestDisplay(labels, waste, "any");
+
+document.getElementById("miniWasteValue").textContent =
+  waPick.value.toLocaleString() + " kg";
+
 
       document.getElementById("miniEnergyValue").textContent =
         ePick.value.toLocaleString() + " kWh";
@@ -349,6 +370,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       document.getElementById("miniWaterPeak").textContent =
         (water.length ? Math.max(...water.map(Number).filter(Number.isFinite)) : 0).toLocaleString() + " m³";
+
+      document.getElementById("miniWastePeak").textContent =
+        (waste.length ? Math.max(...waste.map(Number).filter(Number.isFinite)) : 0).toLocaleString() + " kg";
+
 
       createMiniTrendChart(
         "miniEnergyChart",
@@ -376,6 +401,16 @@ document.addEventListener("DOMContentLoaded", () => {
         "m³",
         "any"
       );
+
+      createMiniTrendChart(
+        "miniWasteChart",
+        labels,
+        waste,
+        "rgba(50,205,50,0.95)",
+        "kg",
+        "any"
+      );
+
     })
     .catch(err => console.error("Summary fetch failed:", err));
 });

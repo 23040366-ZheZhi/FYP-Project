@@ -225,6 +225,8 @@ app.get("/api/summary", (req, res) => {
     const electricity = require("./public/output/1_Elec Bill.json");
     const water = require("./public/output/2_Water Bill.json");
     const solar = require("./public/output/3_Solar Data.json");
+    const waste = require("./public/output/4_Waste and Recycled (Pivot).json");
+
 
     const cleanNum = v => Number(String(v ?? "").replace(/,/g, "").trim());
 
@@ -269,12 +271,21 @@ app.get("/api/summary", (req, res) => {
     const eSeries = toMonthlySeries(electricity).slice(-lastN);
     const sSeries = toMonthlySeries(solar).slice(-lastN);
     const wSeries = toMonthlySeries(water).slice(-lastN);
+    const wasteSeries = waste
+        .filter(r => /^[A-Za-z]{3}-\d{4}$/.test(String(r["General & Recyclable Waste"] || "").trim()))
+        .map(r => ({
+            month: String(r["General & Recyclable Waste"]).trim(),
+            value: cleanNum(String(r.field2 ?? "0").replace(/%/g, ""))
+        }))
+        .slice(-lastN);
+
 
     res.json({
       labels: eSeries.map(x => x.month),
       energy: eSeries.map(x => x.value),
       solar: sSeries.map(x => x.value),
-      water: wSeries.map(x => x.value)
+      water: wSeries.map(x => x.value),
+      waste: wasteSeries.map(x => x.value)
     });
   } catch (err) {
     console.error(err);
