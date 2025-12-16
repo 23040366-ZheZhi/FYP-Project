@@ -96,7 +96,7 @@ const connection = mysql.createConnection({
     user: 'root',
     password: '',
     database: 'gamelist',
-    port: '3307'
+    port: '3306'
 });
 
 connection.connect((err) => {
@@ -140,6 +140,66 @@ app.get('/', (req, res) => {
         res.render('index', { videos:results });
     });
 });
+
+// XLSX upload storage (output folder)
+const xlsxStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'public/excel');
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname); // keep original name
+    }
+});
+
+const uploadXlsx = multer({
+    storage: xlsxStorage,
+    fileFilter: (req, file, cb) => {
+        if (file.originalname.endsWith('.xlsx')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only .xlsx files allowed'));
+        }
+    }
+});
+
+app.post(
+    '/upload-xlsx',
+    adminOnly,
+    uploadXlsx.single('xlsx'),
+    async (req, res) => {
+        try {
+            if (!req.file) {
+                return res.status(400).send('No Excel file uploaded');
+            }
+
+            console.log('Excel uploaded:', req.file.originalname);
+
+            // 🔥 Run conversion immediately after upload
+            await runExcelConversion();
+
+            console.log('Excel conversion completed');
+
+            res.redirect('/manage_graph');
+        } catch (err) {
+            console.error('Excel conversion failed:', err);
+            res.status(500).send('Excel conversion failed');
+        }
+    }
+);
+
+
+app.delete('/delete-xlsx/:filename', adminOnly, (req, res) => {
+    const filePath = path.join(__dirname, 'public/excel', req.params.filename);
+
+    fs.unlink(filePath, err => {
+        if (err) {
+            console.error(err);
+            return res.json({ success: false });
+        }
+        res.json({ success: true });
+    });
+});
+
 
 app.get('/game/:id', (req, res) => {
     const id = req.params.id;
@@ -369,6 +429,21 @@ app.get('/sequence', adminOnly, (req, res) => {
         res.render('sequence', { videos: results });
     });
 });
+app.get('/manage_graph', adminOnly, (req, res) => {
+    const excelDir = path.join(__dirname, 'public/excel');
+
+    fs.readdir(excelDir, (err, files) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).send('Failed to load excel files');
+        }
+
+        const xlsxFiles = files.filter(f => f.endsWith('.xlsx'));
+        res.render('manage_graph', { files: xlsxFiles });
+    });
+});
+
+
 
 //
 app.post('/sequence', adminOnly, (req, res) => {
