@@ -156,119 +156,233 @@
 
   <%- include('partials/bottomnav.ejs') %>
 
-  <script>
-  const chartBgPlugin = {
-    id: "chartBg",
-    beforeDraw(chart) {
-      const { ctx, chartArea } = chart;
-      if (!chartArea) return;
-      ctx.save();
-      ctx.fillStyle = "rgba(0,0,0,0.12)";
-      ctx.fillRect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
-      ctx.restore();
+  
+
+<!-- index.ejs — REPLACE your entire bottom <script> block with this
+Changes:
+1) X axis shows all 6 months, slanted labels to fit.
+2) Solar chart does NOT plot 0 or negative values (they become null).
+3) Solar “Latest” value falls back to last positive month (so it will not show 0).
+-->
+
+<script>
+/* =======================
+   HELPERS
+======================= */
+
+function lastValidIndexAny(values) {
+  if (!Array.isArray(values) || values.length === 0) return -1;
+  for (let i = values.length - 1; i >= 0; i--) {
+    const n = Number(values[i]);
+    if (Number.isFinite(n)) return i; // includes 0 and negatives
+  }
+  return -1;
+}
+
+function lastValidIndexPositive(values) {
+  if (!Array.isArray(values) || values.length === 0) return -1;
+  for (let i = values.length - 1; i >= 0; i--) {
+    const n = Number(values[i]);
+    if (Number.isFinite(n) && n > 0) return i; // strictly > 0
+  }
+  return -1;
+}
+
+function pickLatestDisplay(labels, values, mode) {
+  const idx = mode === "positive" ? lastValidIndexPositive(values) : lastValidIndexAny(values);
+  if (idx < 0) return { label: "", value: 0, idx: -1 };
+  return { label: labels[idx] ?? "", value: Number(values[idx]), idx };
+}
+
+function toPlottable(values, mode) {
+  // Chart.js: null breaks the line and prevents plotting
+  if (mode !== "positive") return values.map(v => (Number.isFinite(Number(v)) ? Number(v) : null));
+  return values.map(v => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return null;
+    if (n <= 0) return null; // hide 0 and negatives
+    return n;
+  });
+}
+
+function maxPositive(values) {
+  const arr = (values || []).map(Number).filter(n => Number.isFinite(n) && n > 0);
+  if (arr.length === 0) return 0;
+  return Math.max(...arr);
+}
+
+/* =======================
+   CHART BACKGROUND
+======================= */
+
+const chartBgPlugin = {
+  id: "chartBg",
+  beforeDraw(chart) {
+    const { ctx, chartArea } = chart;
+    if (!chartArea) return;
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.12)";
+    ctx.fillRect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
+    ctx.restore();
+  }
+};
+
+/* =======================
+   MINI TREND LINE CHART
+======================= */
+
+function createMiniTrendChart(id, labels, rawValues, color, unit, mode) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  if (canvas._chart) canvas._chart.destroy();
+
+  const values = toPlottable(rawValues, mode);
+
+  // pick last visible point for highlight
+  const lastPlotIdx = (() => {
+    for (let i = values.length - 1; i >= 0; i--) {
+      const n = Number(values[i]);
+      if (Number.isFinite(n)) return i;
     }
-  };
+    return -1;
+  })();
 
-  function createMiniTrendChart(id, labels, values, color, unit) {
-    const canvas = document.getElementById(id);
-    if (!canvas) return;
-    if (canvas._chart) canvas._chart.destroy();
-
-    const ctx = canvas.getContext("2d");
-
-    canvas._chart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels,
-        datasets: [{
-          data: values,
-          borderColor: color,
-          backgroundColor: "rgba(255,255,255,0.08)",
-          tension: 0.35,
-          pointRadius: 5,
-          pointHoverRadius: 6,
-          pointBackgroundColor: "rgba(255,255,255,0.95)",
-          borderWidth: 5,
-          fill: true
-        }]
+  canvas._chart = new Chart(canvas.getContext("2d"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        borderColor: color,
+        backgroundColor: "rgba(255,255,255,0.08)",
+        tension: 0.35,
+        borderWidth: 5,
+        fill: true,
+        spanGaps: false,
+        pointRadius: values.map((_, i) => i === lastPlotIdx ? 6 : 4),
+        pointBackgroundColor: values.map((_, i) =>
+          i === lastPlotIdx
+            ? "rgba(255,255,255,0.98)"
+            : "rgba(255,255,255,0.75)"
+        )
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: t => `${Number(t.raw).toLocaleString()} ${unit}`
+          },
+          backgroundColor: "rgba(0,0,0,0.65)",
+          borderColor: "rgba(255,255,255,0.25)",
+          borderWidth: 1
+        }
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: { label: t => `${Number(t.raw).toLocaleString()} ${unit}` },
-            backgroundColor: "rgba(0,0,0,0.65)",
-            borderColor: "rgba(255,255,255,0.25)",
-            borderWidth: 1
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: "rgba(255,255,255,0.96)",
+            font: { size: 12, weight: "700" },
+            autoSkip: false,          // show all 6
+            maxRotation: 45,          // slant to fit
+            minRotation: 45,
+            padding: 6
           }
         },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: {
-              color: "rgba(255,255,255,0.96)",
-              font: { size: 12, weight: "600" }
-            }
-          },
-          y: {
-            beginAtZero: true,
-            grid: { color: "rgba(255,255,255,0.15)" },
-            ticks: {
-              color: "rgba(255,255,255,0.96)",
-              font: { size: 14, weight: "700" },
-              callback: v => {
-                const n = Number(v);
-                if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
-                if (n >= 1000) return (n / 1000).toFixed(0) + "K";
-                return n;
-              }
+        y: {
+          beginAtZero: true,
+          grid: { color: "rgba(255,255,255,0.15)" },
+          ticks: {
+            color: "rgba(255,255,255,0.96)",
+            font: { size: 14, weight: "700" },
+            callback: v => {
+              const n = Number(v);
+              if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+              if (n >= 1000) return (n / 1000).toFixed(0) + "K";
+              return n;
             }
           }
         }
-      },
-      plugins: [chartBgPlugin]
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    fetch("/api/summary")
-      .then(r => r.json())
-      .then(data => {
-        const labels = data.labels || [];
-        const energy = data.energy || [];
-        const solar = data.solar || [];
-        const water = data.water || [];
-
-        console.log("SUMMARY labels:", labels);
-
-        const energyLatest = energy.length ? energy[energy.length - 1] : 0;
-        const solarLatest = solar.length ? solar[solar.length - 1] : 0;
-        const waterLatest = water.length ? water[water.length - 1] : 0;
-
-        document.getElementById("miniEnergyValue").textContent =
-          Number(energyLatest).toLocaleString() + " kWh";
-        document.getElementById("miniSolarValue").textContent =
-          Number(solarLatest).toLocaleString() + " kWh";
-        document.getElementById("miniWaterValue").textContent =
-          Number(waterLatest).toLocaleString() + " m³";
-
-        document.getElementById("miniEnergyPeak").textContent =
-          (energy.length ? Math.max(...energy) : 0).toLocaleString() + " kWh";
-        document.getElementById("miniSolarPeak").textContent =
-          (solar.length ? Math.max(...solar) : 0).toLocaleString() + " kWh";
-        document.getElementById("miniWaterPeak").textContent =
-          (water.length ? Math.max(...water) : 0).toLocaleString() + " m³";
-
-        createMiniTrendChart("miniEnergyChart", labels, energy, "rgba(255,214,10,0.95)", "kWh");
-        createMiniTrendChart("miniSolarChart", labels, solar, "rgba(255,85,0,0.95)", "kWh");
-        createMiniTrendChart("miniWaterChart", labels, water, "rgba(0,190,255,0.95)", "m³");
-      })
-      .catch(err => console.error("Summary fetch failed:", err));
+      }
+    },
+    plugins: [chartBgPlugin]
   });
+}
+
+/* =======================
+   FETCH + RENDER
+======================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+  fetch("/api/summary")
+    .then(r => r.json())
+    .then(data => {
+      const labels = data.labels || [];
+      const energy = data.energy || [];
+      const solar = data.solar || [];
+      const water = data.water || [];
+
+      const ePick = pickLatestDisplay(labels, energy, "any");
+      const sPick = pickLatestDisplay(labels, solar, "positive"); // solar: last positive month
+      const wPick = pickLatestDisplay(labels, water, "any");
+
+      document.getElementById("miniEnergyValue").textContent =
+        ePick.value.toLocaleString() + " kWh";
+
+      document.getElementById("miniSolarValue").textContent =
+        sPick.value.toLocaleString() + " kWh";
+
+      document.getElementById("miniWaterValue").textContent =
+        wPick.value.toLocaleString() + " m³";
+
+      document.getElementById("miniEnergyPeak").textContent =
+        (energy.length ? Math.max(...energy.map(Number).filter(Number.isFinite)) : 0).toLocaleString() + " kWh";
+
+      // solar peak ignores 0 and negatives
+      document.getElementById("miniSolarPeak").textContent =
+        maxPositive(solar).toLocaleString() + " kWh";
+
+      document.getElementById("miniWaterPeak").textContent =
+        (water.length ? Math.max(...water.map(Number).filter(Number.isFinite)) : 0).toLocaleString() + " m³";
+
+      createMiniTrendChart(
+        "miniEnergyChart",
+        labels,
+        energy,
+        "rgba(255,214,10,0.95)",
+        "kWh",
+        "any"
+      );
+
+      createMiniTrendChart(
+        "miniSolarChart",
+        labels,
+        solar,
+        "rgba(255,85,0,0.95)",
+        "kWh",
+        "positive"   // solar: do not plot 0 or negative
+      );
+
+      createMiniTrendChart(
+        "miniWaterChart",
+        labels,
+        water,
+        "rgba(0,190,255,0.95)",
+        "m³",
+        "any"
+      );
+    })
+    .catch(err => console.error("Summary fetch failed:", err));
+});
 </script>
+
+
+
 
 </body>
 </html>
