@@ -95,7 +95,8 @@ const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: '',
-    database: 'gamelist'
+    database: 'gamelist',
+    port: '3307'
 });
 
 connection.connect((err) => {
@@ -218,29 +219,68 @@ app.get('/deleteGame/:id', (req, res) => {
     });
 });
 
+
 app.get("/api/summary", (req, res) => {
   try {
     const electricity = require("./public/output/1_Elec Bill.json");
     const water = require("./public/output/2_Water Bill.json");
     const solar = require("./public/output/3_Solar Data.json");
 
-    // Skip header rows and map values correctly
-    const last6Energy = electricity.slice(1).slice(-6).map(r => Number(r["field3"].replace(/,/g, "")));
-    const last6Solar  = solar.slice(1).slice(-6).map(r => Number(r["field3"].replace(/,/g, "")));
-    const last6Water  = water.slice(1).slice(-6).map(r => Number(r["field3"].replace(/,/g, "")));
+    const cleanNum = v => Number(String(v ?? "").replace(/,/g, "").trim());
+
+    const isMonthLike = s => {
+      const str = String(s ?? "").trim();
+      if (!str) return false;
+
+      // reject plain year like "2024"
+      if (/^\d{4}$/.test(str)) return false;
+
+      // common month formats
+      if (/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*[\s\-\/]?\d{2,4}$/i.test(str)) return true;
+      if (/^\d{4}[\-\/]\d{1,2}([\-\/*]\d{1,2})?$/.test(str)) return true; // 2025-08 or 2025/08
+      if (/^\d{1,2}[\-\/]\d{4}$/.test(str)) return true; // 08-2025
+      return false;
+    };
+
+    const pickMonthFromRow = r => {
+      // try known keys first
+      const preferredKeys = ["Month", "month", "DATE", "Date", "MonthYear", "monthYear", "field1", "field2"];
+      for (const k of preferredKeys) {
+        if (r && Object.prototype.hasOwnProperty.call(r, k) && isMonthLike(r[k])) {
+          return String(r[k]).trim();
+        }
+      }
+      // otherwise scan all fields and pick the first month-like value
+      for (const k of Object.keys(r || {})) {
+        if (isMonthLike(r[k])) return String(r[k]).trim();
+      }
+      return "";
+    };
+
+    const toMonthlySeries = (rows, valueKey = "field3") => {
+      return rows
+        .slice(1)
+        .map(r => ({ month: pickMonthFromRow(r), value: cleanNum(r[valueKey]) }))
+        .filter(x => x.month !== "" && Number.isFinite(x.value));
+    };
+
+    const lastN = 6;
+
+    const eSeries = toMonthlySeries(electricity).slice(-lastN);
+    const sSeries = toMonthlySeries(solar).slice(-lastN);
+    const wSeries = toMonthlySeries(water).slice(-lastN);
 
     res.json({
-      energy: last6Energy,
-      solar: last6Solar,
-      water: last6Water
+      labels: eSeries.map(x => x.month),
+      energy: eSeries.map(x => x.value),
+      solar: sSeries.map(x => x.value),
+      water: wSeries.map(x => x.value)
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Could not load summary data" });
+    res.status(500).json({ error: "Summary data load failed" });
   }
 });
-
-
 
 
 

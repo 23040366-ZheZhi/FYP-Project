@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <link rel="stylesheet" href="/stylesheets/glass.css">
   <title>ESG Centre Dashboard</title>
 
@@ -21,38 +23,37 @@
     .mini-dashboard {
       margin: 40px 0;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 28px;
     }
 
     .mini-card {
-      border-radius: 18px;
-      padding: 18px 20px;
+      border-radius: 22px;
+      padding: 22px 24px;
       cursor: pointer;
+      min-height: 240px;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
-      min-height: 200px;
-      text-align: left;
     }
 
     .mini-card:hover {
       transform: translateY(-4px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+      box-shadow: 0 14px 30px rgba(0,0,0,0.4);
     }
 
     .mini-card h5 {
+      font-size: 1.5rem;
+      font-weight: 700;
       margin-bottom: 6px;
-      font-size: 1.1rem;
-      font-weight: 600;
     }
 
     .mini-value {
-      font-size: 1.4rem;
-      font-weight: 600;
+      font-size: 2.4rem;
+      font-weight: 800;
       margin-bottom: 10px;
     }
 
     .mini-card canvas {
-      height: 120px !important;
+      height: 190px !important;
     }
 
     .carousel-item {
@@ -72,7 +73,6 @@
   </style>
 
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-
 </head>
 
 <body>
@@ -80,44 +80,44 @@
   <%- include('partials/navbar.ejs') %>
 
   <div class="container mt-4 text-center">
-    <h2 class="glass glass-heading text-center mb-4">Latest Month's Data</h2>
+    <h2 class="glass glass-heading mb-4">Monthly Trend (Last 6 Months)</h2>
 
     <div class="mini-dashboard">
 
-      <div class="mini-card glass metric-card" onclick="window.location.href='/electgraph'">
-        <h5>Energy</h5>
+      <div class="mini-card glass" onclick="window.location.href='/electgraph'">
+        <h5>Monthly Energy</h5>
         <div id="miniEnergyValue" class="mini-value">Loading...</div>
         <canvas id="miniEnergyChart"></canvas>
       </div>
 
-      <div class="mini-card glass metric-card" onclick="window.location.href='/solargraph'">
-        <h5>Solar</h5>
+      <div class="mini-card glass" onclick="window.location.href='/solargraph'">
+        <h5>Monthly Solar</h5>
         <div id="miniSolarValue" class="mini-value">Loading...</div>
         <canvas id="miniSolarChart"></canvas>
       </div>
 
-      <div class="mini-card glass metric-card" onclick="window.location.href='/watergraph'">
-        <h5>Water</h5>
+      <div class="mini-card glass" onclick="window.location.href='/watergraph'">
+        <h5>Monthly Water</h5>
         <div id="miniWaterValue" class="mini-value">Loading...</div>
         <canvas id="miniWaterChart"></canvas>
       </div>
 
-      <div class="mini-card glass metric-card">
-        <h5>Peak Monthly Energy</h5>
+      <div class="mini-card glass">
+        <h5>Peak Monthly Energy (Last 6)</h5>
         <div id="miniEnergyPeak" class="mini-value">Loading...</div>
-        <p class="mb-0">Highest value in the selected period</p>
+        <p>Highest month in the last 6 months</p>
       </div>
 
-      <div class="mini-card glass metric-card">
-        <h5>Peak Monthly Solar</h5>
+      <div class="mini-card glass">
+        <h5>Peak Monthly Solar (Last 6)</h5>
         <div id="miniSolarPeak" class="mini-value">Loading...</div>
-        <p class="mb-0">Highest value in the selected period</p>
+        <p>Highest month in the last 6 months</p>
       </div>
 
-      <div class="mini-card glass metric-card">
-        <h5>Peak Monthly Water</h5>
+      <div class="mini-card glass">
+        <h5>Peak Monthly Water (Last 6)</h5>
         <div id="miniWaterPeak" class="mini-value">Loading...</div>
-        <p class="mb-0">Highest value in the selected period</p>
+        <p>Highest month in the last 6 months</p>
       </div>
 
     </div>
@@ -125,26 +125,22 @@
 
   <div class="carousel-container container mt-4">
     <div id="productCarousel" class="carousel slide">
-
       <div class="carousel-inner">
         <% videos.forEach((video, index) => { %>
           <div class="carousel-item <%= index === 0 ? 'active' : '' %>">
             <video class="d-block w-100 video-video" playsinline>
               <source src="/videos/<%= video.video %>" type="video/mp4">
-              <source src="/videos/<%= video.video %>.webm" type="video/webm">
-              <source src="/videos/<%= video.video %>.ogg" type="video/ogg">
             </video>
           </div>
         <% }) %>
       </div>
-
     </div>
   </div>
 
   <div class="container mt-5 text-center">
     <h2 class="glass glass-heading mb-3">Interactive 3D Campus Map</h2>
 
-    <model-viewer 
+    <model-viewer
       id="campusModel"
       src="/models/campuss.glb"
       camera-controls
@@ -154,162 +150,125 @@
       touch-action="none"
       shadow-intensity="1"
       exposure="0.5"
-      style="width: 100%; height: 600px; background: #ffffff; border-radius: 20px;">
+      style="width:100%;height:600px;background:#fff;border-radius:20px;">
     </model-viewer>
-    <script>
-      document.getElementById("campusModel")
-        .addEventListener("click", (event) => {
-          const hit = event.detail;
-          if (hit && hit.mesh) {
-            console.log("Clicked:", hit.mesh.name);
-
-            switch (hit.mesh.name) {
-              case "E1": window.location.href = "/building/E1"; break;
-              case "E2": window.location.href = "/building/E2"; break;
-              case "W1": window.location.href = "/building/W1"; break;
-              // add more here
-            }
-          }
-        });
-    </script>
-
-  </div>
-
-  <div class="container text-center mt-5" style="margin-bottom: 120px;">
-
-    <img id="rpmapImg" src="/images/rpmap.png" usemap="#rpmap">
-
-    <map name="rpmap">
-
-      <area alt="E1" shape="rect" coords="452,585,512,652" onclick="openMenu('E1')">
-      <area alt="E2" shape="rect" coords="594,612,530,541" onclick="openMenu('E2')">
-      <area alt="E3" shape="rect" coords="451,488,512,559" onclick="openMenu('E3')">
-      <area alt="E4" shape="rect" coords="530,451,593,519" onclick="openMenu('E4')">
-      <area alt="E5" shape="rect" coords="531,342,596,412" onclick="openMenu('E5')">
-      <area alt="E6" shape="rect" coords="448,299,514,370" onclick="openMenu('E6')">
-
-      <area alt="W1" shape="rect" coords="373,642,434,710" onclick="openMenu('W1')">
-      <area alt="W2" shape="rect" coords="291,574,350,640" onclick="openMenu('W2')">
-      <area alt="W3" shape="rect" coords="291,489,350,557" onclick="openMenu('W3')">
-      <area alt="W4" shape="rect" coords="374,465,434,535" onclick="openMenu('W4')">
-      <area alt="W5" shape="rect" coords="291,393,351,459" onclick="openMenu('W5')">
-      <area alt="W6" shape="rect" coords="371,343,431,411" onclick="openMenu('W6')">
-
-    </map>
   </div>
 
   <%- include('partials/bottomnav.ejs') %>
 
   <script>
-    function openMenu(buildingId) {
-      alert("You clicked " + buildingId);
-      console.log("Clicked:", buildingId);
+  const chartBgPlugin = {
+    id: "chartBg",
+    beforeDraw(chart) {
+      const { ctx, chartArea } = chart;
+      if (!chartArea) return;
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,0.12)";
+      ctx.fillRect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
+      ctx.restore();
     }
+  };
 
-    function createMiniChart(id, data, color) {
-      const ctx = document.getElementById(id);
-      if (!ctx) return;
+  function createMiniTrendChart(id, labels, values, color, unit) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    if (canvas._chart) canvas._chart.destroy();
 
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: data.map((_, i) => i + 1),
-          datasets: [{
-            data: data,
-            borderColor: color,
-            backgroundColor: 'transparent',
-            tension: 0.3,
-            pointRadius: 0
-          }]
+    const ctx = canvas.getContext("2d");
+
+    canvas._chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          borderColor: color,
+          backgroundColor: "rgba(255,255,255,0.08)",
+          tension: 0.35,
+          pointRadius: 5,
+          pointHoverRadius: 6,
+          pointBackgroundColor: "rgba(255,255,255,0.95)",
+          borderWidth: 5,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: { label: t => `${Number(t.raw).toLocaleString()} ${unit}` },
+            backgroundColor: "rgba(0,0,0,0.65)",
+            borderColor: "rgba(255,255,255,0.25)",
+            borderWidth: 1
+          }
         },
-        options: {
-          plugins: { legend: { display: false }},
-          scales: { x: { display: false }, y: { display: false } }
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: "rgba(255,255,255,0.96)",
+              font: { size: 12, weight: "600" }
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: "rgba(255,255,255,0.15)" },
+            ticks: {
+              color: "rgba(255,255,255,0.96)",
+              font: { size: 14, weight: "700" },
+              callback: v => {
+                const n = Number(v);
+                if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+                if (n >= 1000) return (n / 1000).toFixed(0) + "K";
+                return n;
+              }
+            }
+          }
         }
-      });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      fetch(window.location.origin + "/api/summary")
-        .then(res => res.json())
-        .then(data => {
-          const energy = data.energy;
-          const solar = data.solar;
-          const water = data.water;
-
-          const energyLatest = energy[energy.length - 1];
-          const solarLatest = solar[solar.length - 1];
-          const waterLatest = water[water.length - 1];
-
-          document.getElementById("miniEnergyValue").textContent =
-            energyLatest.toLocaleString() + " kWh";
-
-          document.getElementById("miniSolarValue").textContent =
-            solarLatest.toLocaleString() + " kWp";
-
-          document.getElementById("miniWaterValue").textContent =
-            waterLatest.toLocaleString() + " m³";
-
-          createMiniChart("miniEnergyChart", energy, "#ffc107");
-          createMiniChart("miniSolarChart", solar, "orangered");
-          createMiniChart("miniWaterChart", water, "#007bff");
-
-          const energyPeakEl = document.getElementById("miniEnergyPeak");
-          const solarPeakEl = document.getElementById("miniSolarPeak");
-          const waterPeakEl = document.getElementById("miniWaterPeak");
-
-          if (energyPeakEl) {
-            const energyMax = Math.max(...energy);
-            energyPeakEl.textContent = energyMax.toLocaleString() + " kWh";
-          }
-
-          if (solarPeakEl) {
-            const solarMax = Math.max(...solar);
-            solarPeakEl.textContent = solarMax.toLocaleString() + " kWp";
-          }
-
-          if (waterPeakEl) {
-            const waterMax = Math.max(...water);
-            waterPeakEl.textContent = waterMax.toLocaleString() + " m³";
-          }
-        });
+      },
+      plugins: [chartBgPlugin]
     });
-  </script>
+  }
 
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("/api/summary")
+      .then(r => r.json())
+      .then(data => {
+        const labels = data.labels || [];
+        const energy = data.energy || [];
+        const solar = data.solar || [];
+        const water = data.water || [];
 
-      const carouselEl = document.getElementById("productCarousel");
+        console.log("SUMMARY labels:", labels);
 
-      if (bootstrap.Carousel.getInstance(carouselEl)) {
-        bootstrap.Carousel.getInstance(carouselEl).dispose();
-      }
+        const energyLatest = energy.length ? energy[energy.length - 1] : 0;
+        const solarLatest = solar.length ? solar[solar.length - 1] : 0;
+        const waterLatest = water.length ? water[water.length - 1] : 0;
 
-      const carousel = new bootstrap.Carousel(carouselEl, {
-        interval: false,
-        pause: false,
-        wrap: true
-      });
+        document.getElementById("miniEnergyValue").textContent =
+          Number(energyLatest).toLocaleString() + " kWh";
+        document.getElementById("miniSolarValue").textContent =
+          Number(solarLatest).toLocaleString() + " kWh";
+        document.getElementById("miniWaterValue").textContent =
+          Number(waterLatest).toLocaleString() + " m³";
 
-      function playActiveVideo() {
-        const activeVideo = document.querySelector(".carousel-item.active video");
-        if (activeVideo) {
-          activeVideo.currentTime = 0;
-          activeVideo.play();
-        }
-      }
+        document.getElementById("miniEnergyPeak").textContent =
+          (energy.length ? Math.max(...energy) : 0).toLocaleString() + " kWh";
+        document.getElementById("miniSolarPeak").textContent =
+          (solar.length ? Math.max(...solar) : 0).toLocaleString() + " kWh";
+        document.getElementById("miniWaterPeak").textContent =
+          (water.length ? Math.max(...water) : 0).toLocaleString() + " m³";
 
-      document.querySelectorAll("#productCarousel video").forEach(video => {
-        video.addEventListener("ended", () => {
-          carousel.next();
-        });
-      });
-
-      carouselEl.addEventListener("slid.bs.carousel", playActiveVideo);
-
-      playActiveVideo();
-    });
-  </script>
+        createMiniTrendChart("miniEnergyChart", labels, energy, "rgba(255,214,10,0.95)", "kWh");
+        createMiniTrendChart("miniSolarChart", labels, solar, "rgba(255,85,0,0.95)", "kWh");
+        createMiniTrendChart("miniWaterChart", labels, water, "rgba(0,190,255,0.95)", "m³");
+      })
+      .catch(err => console.error("Summary fetch failed:", err));
+  });
+</script>
 
 </body>
 </html>
