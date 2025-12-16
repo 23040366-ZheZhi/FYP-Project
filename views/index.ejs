@@ -416,41 +416,54 @@ document.getElementById("miniWasteValue").textContent =
 });
 </script>
 
-
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
+  document.addEventListener("DOMContentLoaded", function () {
 
-      const carouselEl = document.getElementById("productCarousel");
+    const carouselEl = document.getElementById("productCarousel");
 
-      if (bootstrap.Carousel.getInstance(carouselEl)) {
-        bootstrap.Carousel.getInstance(carouselEl).dispose();
-      }
+    // ✅ NEW: count videos once
+    const videos = document.querySelectorAll("#productCarousel video");
+    const isSingleVideo = videos.length === 1;
 
-      const carousel = new bootstrap.Carousel(carouselEl, {
-        interval: false,
-        pause: false,
-        wrap: true
-      });
+    if (bootstrap.Carousel.getInstance(carouselEl)) {
+      bootstrap.Carousel.getInstance(carouselEl).dispose();
+    }
 
-      function playActiveVideo() {
-        const activeVideo = document.querySelector(".carousel-item.active video");
-        if (activeVideo) {
-          activeVideo.currentTime = 0;
-          activeVideo.play();
+    const carousel = new bootstrap.Carousel(carouselEl, {
+      interval: false,
+      pause: false,
+      wrap: true
+    });
+
+    function playActiveVideo() {
+      const activeVideo = document.querySelector(".carousel-item.active video");
+      if (activeVideo) {
+        activeVideo.currentTime = 0;
+
+        // ✅ NEW: loop when only one video
+        if (isSingleVideo) {
+          activeVideo.loop = true;
         }
-      }
 
-      document.querySelectorAll("#productCarousel video").forEach(video => {
+        activeVideo.play();
+      }
+    }
+
+    // ✅ CHANGED: only add "ended → next" if there are 2+ videos
+    if (!isSingleVideo) {
+      videos.forEach(video => {
         video.addEventListener("ended", () => {
           carousel.next();
         });
       });
+    }
 
-      carouselEl.addEventListener("slid.bs.carousel", playActiveVideo);
+    carouselEl.addEventListener("slid.bs.carousel", playActiveVideo);
 
-      playActiveVideo();
-    });
-  </script>
+    playActiveVideo();
+  });
+</script>
+
 
 
 
