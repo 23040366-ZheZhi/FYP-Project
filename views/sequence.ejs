@@ -107,8 +107,21 @@
 
             <label class="form-label mt-2">Description:</label>
             <input type="text" class="form-control" name="descriptions[]" placeholder="Enter description">
+
+            <button type="button" class="btn btn-danger mt-2" onclick="removeBlock(this)">
+                Delete Block
+            </button>
         `;
         container.appendChild(block);
+    }
+
+    function removeBlock(btn) {
+        const container = document.getElementById("video-container");
+        const blocks = container.getElementsByClassName("video-block");
+
+        // prevent deleting the last remaining block
+        if (blocks.length <= 1) return;
+        btn.closest(".video-block").remove();
     }
 </script>
 
