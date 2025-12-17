@@ -41,7 +41,7 @@ app.use('/videos', express.static('videos'));
 app.use(session({
     secret: 'secret123',
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     cookie: { maxAge: 1 * 60 * 60 * 1000 }
 }));
 
@@ -66,6 +66,21 @@ let transporter = nodemailer.createTransport({
         pass: 'cxlr feug mhaq xezz'
     }
 });
+
+function clearOutputFolder() {
+    const outputDir = path.join(__dirname, 'public/output');
+
+    if (!fs.existsSync(outputDir)) return;
+
+    const files = fs.readdirSync(outputDir);
+    for (const file of files) {
+        if (file.endsWith('.json') || file.endsWith('.csv')) {
+            fs.unlinkSync(path.join(outputDir, file));
+        }
+    }
+
+    console.log("Output folder cleared");
+}
 
 
 const path = require('path');
@@ -167,25 +182,61 @@ app.post(
     uploadXlsx.single('xlsx'),
     async (req, res) => {
         try {
+            const excelDir = path.join(__dirname, 'public/excel');
+
             if (!req.file) {
                 return res.status(400).send('No Excel file uploaded');
             }
 
-            console.log('Excel uploaded:', req.file.originalname);
+            console.log('New Excel uploaded:', req.file.originalname);
 
-            // 🔥 Run conversion immediately after upload
+            // 🧹 STEP 1: Delete ALL old Excel files except the new one
+            const files = fs.readdirSync(excelDir);
+
+            for (const file of files) {
+                if (
+                    file.endsWith('.xlsx') &&
+                    file !== req.file.originalname
+                ) {
+                    fs.unlinkSync(path.join(excelDir, file));
+                    console.log(`Deleted old Excel: ${file}`);
+                }
+            }
+            // clear old graph outputs
+            clearOutputFolder();
+
+            // Convert latest Excel
             await runExcelConversion();
 
-            console.log('Excel conversion completed');
+
+            console.log('Excel conversion completed (latest Excel only)');
 
             res.redirect('/manage_graph');
         } catch (err) {
-            console.error('Excel conversion failed:', err);
-            res.status(500).send('Excel conversion failed');
+            console.error('Excel upload/conversion failed:', err);
+            res.status(500).send('Excel upload failed');
         }
     }
 );
+app.post('/set-graph-year', adminOnly, (req, res) => {
+    const { yearMode } = req.body;
 
+    // allow only safe values
+    if (!['current', 'previous', 'both'].includes(yearMode)) {
+        return res.status(400).send('Invalid year mode');
+    }
+
+    req.session.yearMode = yearMode;
+    console.log('Graph year mode set to:', yearMode);
+
+    res.redirect('/manage_graph');
+});
+app.use((req, res, next) => {
+    if (!req.session.yearMode) {
+        req.session.yearMode = "current";
+    }
+    next();
+});
 
 app.delete('/delete-xlsx/:filename', adminOnly, (req, res) => {
     const filePath = path.join(__dirname, 'public/excel', req.params.filename);
@@ -281,64 +332,52 @@ app.get('/deleteGame/:id', (req, res) => {
 
 app.get("/api/summary", (req, res) => {
   try {
+    // ✅ FRONT DASHBOARD → IGNORE admin yearMode
     const electricity = require("./public/output/1_Elec Bill.json");
     const water = require("./public/output/2_Water Bill.json");
     const solar = require("./public/output/3_Solar Data.json");
     const waste = require("./public/output/4_Waste and Recycled (Pivot).json");
-
 
     const cleanNum = v => Number(String(v ?? "").replace(/,/g, "").trim());
 
     const isMonthLike = s => {
       const str = String(s ?? "").trim();
       if (!str) return false;
-
-      // reject plain year like "2024"
       if (/^\d{4}$/.test(str)) return false;
-
-      // common month formats
-      if (/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*[\s\-\/]?\d{2,4}$/i.test(str)) return true;
-      if (/^\d{4}[\-\/]\d{1,2}([\-\/*]\d{1,2})?$/.test(str)) return true; // 2025-08 or 2025/08
-      if (/^\d{1,2}[\-\/]\d{4}$/.test(str)) return true; // 08-2025
-      return false;
+      return true;
     };
 
     const pickMonthFromRow = r => {
-      // try known keys first
-      const preferredKeys = ["Month", "month", "DATE", "Date", "MonthYear", "monthYear", "field1", "field2"];
-      for (const k of preferredKeys) {
-        if (r && Object.prototype.hasOwnProperty.call(r, k) && isMonthLike(r[k])) {
-          return String(r[k]).trim();
-        }
-      }
-      // otherwise scan all fields and pick the first month-like value
       for (const k of Object.keys(r || {})) {
         if (isMonthLike(r[k])) return String(r[k]).trim();
       }
       return "";
     };
 
-    const toMonthlySeries = (rows, valueKey = "field3") => {
-      return rows
+    const toMonthlySeries = (rows, valueKey = "field3") =>
+      rows
         .slice(1)
-        .map(r => ({ month: pickMonthFromRow(r), value: cleanNum(r[valueKey]) }))
-        .filter(x => x.month !== "" && Number.isFinite(x.value));
-    };
+        .map(r => ({
+          month: pickMonthFromRow(r),
+          value: cleanNum(r[valueKey])
+        }))
+        .filter(x => x.month && Number.isFinite(x.value));
 
     const lastN = 6;
 
     const eSeries = toMonthlySeries(electricity).slice(-lastN);
     const sSeries = toMonthlySeries(solar).slice(-lastN);
     const wSeries = toMonthlySeries(water).slice(-lastN);
+
     const wasteSeries = waste
-        .filter(r => /^[A-Za-z]{3}-\d{4}$/.test(String(r["General & Recyclable Waste"] || "").trim()))
-        .map(r => ({
-            month: String(r["General & Recyclable Waste"]).trim(),
-            value: cleanNum(String(r.field2 ?? "0").replace(/%/g, ""))
-        }))
-        .slice(-lastN);
+      .map(r => ({
+        month: String(r["General & Recyclable Waste"] || "").trim(),
+        value: cleanNum(r.field2)
+      }))
+      .filter(x => x.month && Number.isFinite(x.value))
+      .slice(-lastN);
 
-
+    // ✅ SEND DATA (FRONT GRAPHS)
     res.json({
       labels: eSeries.map(x => x.month),
       energy: eSeries.map(x => x.value),
@@ -346,11 +385,151 @@ app.get("/api/summary", (req, res) => {
       water: wSeries.map(x => x.value),
       waste: wasteSeries.map(x => x.value)
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Summary data load failed" });
   }
 });
+app.get("/api/solar-detailed", (req, res) => {
+  try {
+    const yearMode = req.session.yearMode || "current";
+    const currentYear = new Date().getFullYear();
+    const previousYear = currentYear - 1;
+
+    delete require.cache[
+      require.resolve("./public/output/3_Solar Data.json")
+    ];
+
+    const solar = require("./public/output/3_Solar Data.json");
+
+    const getYear = row => {
+      // 1️⃣ Prefer explicit year column
+      if (row.field1 && /^\d{4}$/.test(row.field1)) {
+        return Number(row.field1);
+      }
+
+      // 2️⃣ Fallback: Jan-25 → 2025
+      const m = String(row.Solar || "").match(/-(\d{2})$/);
+      if (m) return 2000 + Number(m[1]);
+
+      return null;
+    };
+
+    const filtered = solar.filter(row => {
+      const year = getYear(row);
+      if (!year) return false;
+
+      if (yearMode === "current") return year === currentYear;
+      if (yearMode === "previous") return year === previousYear;
+      return true; // both
+    });
+
+    res.json(filtered);
+
+  } catch (err) {
+    console.error("Solar detailed API error:", err);
+    res.status(500).json({ error: "Solar detailed data failed" });
+  }
+});
+
+// =======================================
+// WATER – DETAILED GRAPH (ADMIN YEAR MODE)
+// =======================================
+app.get("/api/water-detailed", (req, res) => {
+  try {
+    const yearMode = req.session.yearMode || "current";
+
+    // clear cache so Excel re-upload works
+    delete require.cache[
+      require.resolve("./public/output/2_Water Bill.json")
+    ];
+
+    const water = require("./public/output/2_Water Bill.json");
+
+    let activeYear = null;
+
+    // 🔑 determine latest year FROM DATA
+    const years = water
+      .map(r => Number(r.field1))
+      .filter(y => Number.isInteger(y));
+
+    const latestYear = Math.max(...years);
+    const previousYear = latestYear - 1;
+
+    const filtered = water.filter(row => {
+      if (!row.Water || row.Water === "Month") return false;
+
+      // track current year from field1
+      if (row.field1 && /^\d{4}$/.test(row.field1)) {
+        activeYear = Number(row.field1);
+      }
+      if (!activeYear) return false;
+
+      // admin year mode filter
+      if (yearMode === "current" && activeYear !== latestYear) return false;
+      if (yearMode === "previous" && activeYear !== previousYear) return false;
+      // both → no filter
+
+      // numeric value check (allow negative, reject 0)
+      const value = Number(String(row.field3 || "").replace(/,/g, ""));
+      if (!Number.isFinite(value)) return false;
+      if (value === 0) return false;
+
+      return true;
+    });
+
+    res.json(filtered);
+
+  } catch (err) {
+    console.error("Water detailed API error:", err);
+    res.status(500).json({ error: "Water detailed data failed" });
+  }
+});
+
+app.get("/api/electric-detailed", (req, res) => {
+  try {
+    const yearMode = req.session.yearMode || "current";
+
+    delete require.cache[
+      require.resolve("./public/output/1_Elec Bill.json")
+    ];
+
+    const electricity = require("./public/output/1_Elec Bill.json");
+
+    // Detect years dynamically (future-proof)
+    const years = electricity
+      .map(r => Number(r.field1))
+      .filter(y => Number.isInteger(y));
+
+    const latestYear = Math.max(...years);
+    const previousYear = latestYear - 1;
+
+    let activeYear = null;
+
+    const filtered = electricity.filter(row => {
+      if (!row.Elect || row.Elect === "Month") return false;
+
+      if (row.field1 && /^\d{4}$/.test(row.field1)) {
+        activeYear = Number(row.field1);
+      }
+      if (!activeYear) return false;
+
+      if (yearMode === "current" && activeYear !== latestYear) return false;
+      if (yearMode === "previous" && activeYear !== previousYear) return false;
+
+      const value = Number(String(row.field3 || "").replace(/,/g, ""));
+      return Number.isFinite(value);
+    });
+
+    res.json(filtered);
+
+  } catch (err) {
+    console.error("Electric detailed API error:", err);
+    res.status(500).json({ error: "Electric detailed data failed" });
+  }
+});
+
 
 
 
@@ -449,9 +628,14 @@ app.get('/manage_graph', adminOnly, (req, res) => {
         }
 
         const xlsxFiles = files.filter(f => f.endsWith('.xlsx'));
-        res.render('manage_graph', { files: xlsxFiles });
+       res.render('manage_graph', {
+        files: xlsxFiles,
+        yearMode: req.session.yearMode || 'current'
+    });
+
     });
 });
+
 
 
 
@@ -480,27 +664,43 @@ app.get('/login', (req, res) => {
 app.post('/login', (req, res) => {
     const { username, password, email } = req.body;
 
-    if (username === 'admin' && password === 'password') {
+    const sql = "SELECT * FROM admins WHERE username = ? AND password = ?";
+    connection.query(sql, [username, password], (err, results) => {
+        if (err) {
+            console.error(err);
+            return res.render('login', { error: 'Server error' });
+        }
 
+        if (results.length === 0) {
+            return res.render('login', { error: 'Invalid username or password' });
+        }
+
+        const admin = results[0];
+
+        // If 2FA disabled in DB → login directly
+        if (admin.twofa_enabled === 0) {
+            req.session.isAdmin = true;
+            return res.redirect('/');
+        }
+
+        // Otherwise send 2FA code
         const code = Math.floor(100000 + Math.random() * 900000);
 
         req.session.tempAdmin = {
-            username: username,
-            email: email,
-            code: code
+            id: admin.id,
+            email: admin.email,
+            code
         };
 
         transporter.sendMail({
-            from: "aarvalanmathiyazhagan@gmail.com",
-            to: email,    // <-- Send code to user email
+            from: "usec0750@gmail.com",
+            to: admin.email,
             subject: "Your Admin Login Code",
             text: `Your verification code is: ${code}`
         });
 
-        return res.redirect('/verify');
-    }
-
-    res.render('login', { error: 'Invalid username or password' });
+        res.redirect('/verify');
+    });
 });
 
 
@@ -541,6 +741,78 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
+app.get('/create-admin', adminOnly, (req, res) => {
+    res.render('createAdmin');
+});
+
+app.post('/create-admin', adminOnly, (req, res) => {
+    const { username, password, email, twofa } = req.body;
+
+    const sql = `
+        INSERT INTO admins (username, password, email, twofa_enabled)
+        VALUES (?, ?, ?, ?)
+    `;
+
+    connection.query(
+        sql,
+        [username, password, email, twofa ? 1 : 0],
+        err => {
+            if (err) {
+                console.error(err);
+                return res.send("Error creating admin");
+            }
+            res.redirect('/');
+        }
+    );
+});
+
+app.get('/admins', adminOnly, (req, res) => {
+    const sql = "SELECT id, username, email, twofa_enabled FROM admins";
+    connection.query(sql, (err, results) => {
+        if (err) {
+            console.error(err);
+            return res.send("Error loading admins");
+        }
+        res.render('admins', { admins: results });
+    });
+});
+
+// Edit admin page
+app.get('/admins/edit/:id', adminOnly, (req, res) => {
+    const sql = "SELECT * FROM admins WHERE id = ?";
+    connection.query(sql, [req.params.id], (err, results) => {
+        if (err || results.length === 0) return res.redirect('/admins');
+        res.render('editAdmin', { admin: results[0] });
+    });
+});
+
+// Save admin changes
+app.post('/admins/edit/:id', adminOnly, (req, res) => {
+    const { email, password, twofa } = req.body;
+
+    const sql = `
+        UPDATE admins 
+        SET email = ?, password = ?, twofa_enabled = ?
+        WHERE id = ?
+    `;
+
+    connection.query(
+        sql,
+        [email, password, twofa ? 1 : 0, req.params.id],
+        err => {
+            if (err) console.error(err);
+            res.redirect('/admins');
+        }
+    );
+});
+
+app.post('/admins/delete/:id', adminOnly, (req, res) => {
+    const sql = "DELETE FROM admins WHERE id = ?";
+    connection.query(sql, [req.params.id], err => {
+        if (err) console.error(err);
+        res.redirect('/admins');
+    });
+});
 
 
 const PORT = process.env.PORT || 3000;

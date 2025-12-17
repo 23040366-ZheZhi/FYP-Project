@@ -1,6 +1,13 @@
 export function plotChart(ctx, data, xKey, yKey, chartLabel) {
-    const labels = data.map(item => item[xKey]);
-    const values = data.map(item => Number(item[yKey].replace(/,/g, ""))); // remove commas
+    if (!Array.isArray(data)) {
+        console.error("plotChart(): data is not an array", data);
+        return;
+    }
+
+    const labels = data.map(d => d[xKey]);
+    const values = data.map(d =>
+        Number(String(d[yKey] || "").replace(/,/g, ""))
+    );
 
     if (window.myChart) window.myChart.destroy();
 
@@ -23,7 +30,9 @@ export function plotChart(ctx, data, xKey, yKey, chartLabel) {
                     font: { size: 18 }
                 }
             },
-            scales: { y: { beginAtZero: true } }
+            scales: {
+                y: { beginAtZero: true }
+            }
         }
     });
 }

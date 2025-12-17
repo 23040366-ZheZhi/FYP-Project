@@ -3,16 +3,61 @@
 <head>
   <meta charset="UTF-8">
   <title>Solar Energy</title>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     body { font-family: Arial; padding: 12px; background: #f7f7f7; }
     h2 { text-align:center; margin-bottom:20px; }
-    .controls { text-align:center; margin-bottom: 12px; }
-    select { padding:8px 12px; font-size:16px; border-radius:6px; }
-    .chart-wrap { max-width:1000px; margin:0 auto; background:#fff; padding:18px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
-    canvas { width:100% !important; height:450px !important; }
+
+    .controls {
+      text-align:center;
+      margin-bottom:14px;
+    }
+
+    select {
+      padding:8px 12px;
+      font-size:16px;
+      border-radius:6px;
+    }
+
+    .chart-wrap {
+      max-width:1000px;
+      margin:0 auto;
+      background:#fff;
+      padding:18px;
+      border-radius:8px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    canvas {
+      width:100% !important;
+      height:450px !important;
+    }
+
+    .graph-back-nav {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+    }
+
+    .graph-back-btn {
+      width: 120px;
+      height: 60px;
+      background: #343a40;
+      color: white;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-size: 14px;
+    }
   </style>
 </head>
+
 <body>
 
 <h2>Solar Energy (kWh)</h2>
@@ -21,7 +66,7 @@
   <label for="datasetSelector">Choose data:</label>
   <select id="datasetSelector">
     <option value="field3">Urban Renewables</option>
-    <option value="field4">Green House (KWh)</option>
+    <option value="field4">Green House (kWh)</option>
     <option value="field5">Total Solar Energy</option>
   </select>
 </div>
@@ -30,73 +75,75 @@
   <canvas id="solarChart"></canvas>
 </div>
 
+<div class="graph-back-nav">
+  <a href="/" class="graph-back-btn">Back</a>
+</div>
+
 <script type="module">
-  import { plotChart } from "./scripts/plotgraph.js";
+  import { plotChart } from "/scripts/plotgraph.js";
 
   const ctx = document.getElementById("solarChart").getContext("2d");
   const selector = document.getElementById("datasetSelector");
 
-  let globalData = [];
+  let allRows = [];
+  let filteredData = [];
 
-  async function loadData() {
+  async function loadSolarData() {
     try {
-      const response = await fetch("/output/3_Solar Data.json"); // use endpoint
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const response = await fetch("/api/solar-detailed");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      const data = await response.json();
+      const rows = await response.json();
 
-      // filter header/non-numeric rows
-      globalData = data.filter(item => !isNaN(Number(item.field3?.replace(/,/g,""))));
+      if (!Array.isArray(rows)) {
+        console.error("Solar API did not return array:", rows);
+        return;
+      }
 
-      plotChart(ctx, globalData, "Solar", "field3", "Urban Renewables");
+      allRows = rows;
+
+      applyFilterAndPlot("field3", "Urban Renewables");
+
     } catch (err) {
-      console.error("Error loading JSON:", err);
+      console.error("Error loading solar data:", err);
     }
   }
 
-  // Update chart on dropdown change
+  function applyFilterAndPlot(field, title) {
+    filteredData = allRows.filter(r => {
+      if (!r.Solar) return false;
+
+      const value = Number(String(r[field] || "").replace(/,/g, ""));
+      return Number.isFinite(value) && value > 0;
+    });
+
+    if (!filteredData.length) {
+      console.warn("No valid solar data after filtering");
+      return;
+    }
+
+    plotChart(
+      ctx,
+      filteredData,
+      "Solar",   // Month-Year label e.g. Jan-24
+      field,
+      title
+    );
+  }
+
   selector.addEventListener("change", () => {
-    const selectedField = selector.value;
     const titles = {
       field3: "Urban Renewables",
-      field4: "Green House (KWh)",
+      field4: "Green House (kWh)",
       field5: "Total Solar Energy"
     };
-    plotChart(ctx, globalData, "Solar", selectedField, titles[selectedField]);
+
+    applyFilterAndPlot(selector.value, titles[selector.value]);
   });
 
-  loadData();
+  // Load once on page load
+  loadSolarData();
 </script>
-<style>
-.graph-back-nav {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    justify-content: center;
-    z-index: 2000;
-}
-
-.graph-back-btn {
-    width: 120px;
-    height: 60px;
-    background: #343a40;
-    color: white;
-    border-radius: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-size: 14px;
-    text-decoration: none;
-    transition: 0.2s ease;
-}
-</style>
-
-<div class="graph-back-nav">
-    <a href="/" class="graph-back-btn">Back</a>
-</div>
 
 </body>
 </html>

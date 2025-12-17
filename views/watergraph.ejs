@@ -1,106 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Water Usage</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { font-family: Arial; padding: 12px; background: #f7f7f7; }
-        canvas { max-width: 900px; margin: 20px auto; display: block; }
-        select { display:block; margin:20px auto; padding:8px; font-size:16px; }
-    </style>
-</head>
-<body>
+  <meta charset="UTF-8">
+  <title>Water Usage</title>
 
-<h2 style="text-align:center;">Water Usage (Cu3)</h2>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- Dropdown to select dataset -->
-<select id="datasetSelector">
-    <option value="field3">Cu3 (Portable Water)</option>
-    <option value="field4">Cu3 (NEWater)</option>
-    <option value="field5">Cu3 (Total)</option>
-</select>
+  <style>
+    body { font-family: Arial; padding: 12px; background: #f7f7f7; }
+    h2 { text-align:center; margin-bottom:20px; }
 
-<!-- Chart -->
-<canvas id="usageChart" width="900" height="500"></canvas>
-
-<script type="module">
-    import { plotChart } from "/scripts/plotgraph.js";
-
-    const ctx = document.getElementById("usageChart").getContext("2d");
-    const selector = document.getElementById("datasetSelector");
-
-    let globalData = [];
-
-    async function loadData() {
-        try {
-            const response = await fetch('/output/2_Water Bill.json');
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-            const data = await response.json();
-
-            // Keep only rows where field3 is numeric (skip header)
-            globalData = data.filter(item => !isNaN(Number(item.field3.replace(/,/g, ""))));
-
-            if(globalData.length === 0) {
-                console.error("No numeric data found in JSON!");
-                return;
-            }
-
-            // Initial plot: Cu3 (Portable Water)
-            plotChart(ctx, globalData, "Water", "field3", "Cu3 - Portable Water");
-
-        } catch (err) {
-            console.error("Error loading data:", err);
-        }
+    .controls {
+      text-align: center;
+      margin-bottom: 14px;
     }
 
-    // Update chart when dropdown changes
-    selector.addEventListener("change", () => {
-        const selectedField = selector.value;
+    select {
+      padding: 8px 12px;
+      font-size: 16px;
+      border-radius: 6px;
+    }
 
-        const titles = {
-            field3: "Cu3 - Portable Water",
-            field4: "Cu3 - NEWater",
-            field5: "Cu3 - Total"
-        };
+    .chart-wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 18px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
 
-        plotChart(ctx, globalData, "Water", selectedField, titles[selectedField]);
-    });
+    canvas {
+      width: 100% !important;
+      height: 450px !important;
+    }
 
-    // Load JSON and plot chart on page load
-    loadData();
-</script>
-<style>
-.graph-back-nav {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    justify-content: center;
-    z-index: 2000;
-}
+    .graph-back-nav {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+    }
 
-.graph-back-btn {
-    width: 120px;
-    height: 60px;
-    background: #343a40;
-    color: white;
-    border-radius: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-size: 14px;
-    text-decoration: none;
-    transition: 0.2s ease;
-}
-</style>
+    .graph-back-btn {
+      width: 120px;
+      height: 60px;
+      background: #343a40;
+      color: white;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Water Usage (m³)</h2>
+
+<div class="controls">
+  <label for="datasetSelector">Choose data:</label>
+  <select id="datasetSelector">
+    <option value="field3">Portable Water</option>
+    <option value="field4">NEWater</option>
+    <option value="field5">Total Water</option>
+  </select>
+</div>
+
+<div class="chart-wrap">
+  <canvas id="waterChart"></canvas>
+</div>
 
 <div class="graph-back-nav">
-    <a href="/" class="graph-back-btn">Back</a>
+  <a href="/" class="graph-back-btn">Back</a>
 </div>
+
+<script type="module">
+  import { plotChart } from "/scripts/plotgraph.js";
+
+  const ctx = document.getElementById("waterChart").getContext("2d");
+  const selector = document.getElementById("datasetSelector");
+
+  let globalData = [];
+
+  async function loadWaterData() {
+    try {
+      const response = await fetch("/api/water-detailed");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const rows = await response.json();
+
+      if (!Array.isArray(rows)) {
+        console.error("Water API did not return array:", rows);
+        return;
+      }
+
+      globalData = rows;
+
+      if (!globalData.length) {
+        console.warn("No valid water data after filtering");
+        return;
+      }
+
+      plotChart(
+        ctx,
+        globalData,
+        "Water",        // Jan-24, Jan-25 kept separate
+        "field3",
+        "Portable Water"
+      );
+
+    } catch (err) {
+      console.error("Error loading water data:", err);
+    }
+  }
+
+  selector.addEventListener("change", () => {
+    if (!globalData.length) return;
+
+    const titles = {
+      field3: "Portable Water",
+      field4: "NEWater",
+      field5: "Total Water"
+    };
+
+    plotChart(
+      ctx,
+      globalData,
+      "Water",
+      selector.value,
+      titles[selector.value]
+    );
+  });
+
+  loadWaterData();
+</script>
 
 </body>
 </html>

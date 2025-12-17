@@ -1,5 +1,6 @@
 
 </style>
+
 <nav class="navbar navbar-expand-lg glass shadow-sm mb-3">
   <div class="container-fluid">
     <a class="navbar-brand d-flex align-items-center" href="/">
@@ -26,7 +27,7 @@
           <a class="nav-link" href="/watergraph">Water</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/waste.ejs">Waste</a>
+          <a class="nav-link" href="/waste">Waste</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="/indivwater">IndivWater</a>
@@ -37,27 +38,44 @@
 
 
         <% if (session.isAdmin) { %>
-          <li class="nav-item">
-            <% if (!disableInteractive) { %>
-              <a class="nav-link" href="/toggle-off">Disable Interactive</a>
-            <% } else { %>
-              <a class="nav-link" href="/toggle-on">Enable Interactive</a>
-            <% } %>
-          </li>
+          <li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" role="button"
+       data-bs-toggle="dropdown" aria-expanded="false">
+      Admin
+    </a>
 
-          <li class="nav-item">
-            <a class="nav-link" href="/sequence">Manage Videos</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/manage_graph">Manage Graph</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/logout">Logout</a>
-          </li>
+    <ul class="dropdown-menu dropdown-menu-end">
+
+      <li>
+        <% if (!disableInteractive) { %>
+          <a class="dropdown-item" href="/toggle-off">
+            Disable Interactive
+          </a>
         <% } else { %>
-          <li class="nav-item">
-            <a class="nav-link" href="/login">Admin</a>
-          </li>
+          <a class="dropdown-item" href="/toggle-on">
+            Enable Interactive
+          </a>
+        <% } %>
+      </li>
+
+      <li><a class="dropdown-item" href="/create-admin">Create Admin</a></li>
+      <li><a class="dropdown-item" href="/admins">Manage Admins</a></li>
+      <li><a class="dropdown-item" href="/sequence">Manage Videos</a></li>
+      <li><a class="dropdown-item" href="/manage_graph">Manage Graph</a></li>
+
+      <li><hr class="dropdown-divider"></li>
+
+      <li>
+        <a class="dropdown-item text-danger" href="/logout">
+          Logout
+        </a>
+      </li>
+    </ul>
+  </li>
+<% } else { %>
+  <li class="nav-item">
+    <a class="nav-link" href="/login">Admin</a>
+  </li>
         <% } %>
       </ul>
     </div>

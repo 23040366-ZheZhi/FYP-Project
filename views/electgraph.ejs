@@ -1,81 +1,112 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Electricity Usage</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { font-family: Arial; padding: 12px; background: #f7f7f7; }
-        canvas { max-width: 900px; margin: 20px auto; display: block; }
-    </style>
-</head>
-<body>
-    
-    <h2 style="text-align:center;">Electricity Usage</h2>
+  <meta charset="UTF-8">
+  <title>Electricity Usage</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<canvas id="usageChart" width="900" height="500"></canvas>
+  <style>
+    body { font-family: Arial; padding: 12px; background: #f7f7f7; }
+    h2 { text-align:center; margin-bottom:20px; }
 
-<script type="module">
-    // Import the plotChart function from public/scripts
-    import { plotChart } from "/scripts/plotgraph.js";
-
-    const ctx = document.getElementById("usageChart").getContext("2d");
-
-    async function loadDataAndPlot(filename) {
-        try {
-            // Fetch JSON from public/output
-            const response = await fetch(`/output/${encodeURIComponent(filename)}`);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-            const data = await response.json();
-
-            // Remove rows with missing fields
-            const filteredData = data.filter(item => item.Elect && item.field3);
-
-            console.log("Fetched data:", filteredData);
-
-            // Plot chart
-            plotChart(ctx, filteredData, "Elect", "field3", `Electricity Usage: Whole Campus`);
-        } catch (err) {
-            console.error("Error loading data:", err);
-        }
+    .chart-wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 18px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
 
-    // Automatically load JSON file from /public/output
-    loadDataAndPlot("1_Elec Bill.json");
-</script>
-<style>
-.graph-back-nav {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    justify-content: center;
-    z-index: 2000;
-}
+    canvas {
+      width: 100% !important;
+      height: 450px !important;
+    }
 
-.graph-back-btn {
-    width: 120px;
-    height: 60px;
-    background: #343a40;
-    color: white;
-    border-radius: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-size: 14px;
-    text-decoration: none;
-    transition: 0.2s ease;
-}
-</style>
+    .graph-back-nav {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+    }
+
+    .graph-back-btn {
+      width: 120px;
+      height: 60px;
+      background: #343a40;
+      color: white;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Electricity Usage (kWh)</h2>
+
+<div class="chart-wrap">
+  <canvas id="electricChart"></canvas>
+</div>
 
 <div class="graph-back-nav">
-    <a href="/" class="graph-back-btn">Back</a>
+  <a href="/" class="graph-back-btn">Back</a>
 </div>
+
+<script type="module">
+  import { plotChart } from "/scripts/plotgraph.js";
+
+  const ctx = document.getElementById("electricChart").getContext("2d");
+  let globalData = [];
+
+  async function loadElectricData() {
+    try {
+      const response = await fetch("/api/electric-detailed");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const rows = await response.json();
+
+      if (!Array.isArray(rows)) {
+        console.error("Electric API did not return array:", rows);
+        return;
+      }
+
+      // ✅ Filter rules:
+      // - Must have month label
+      // - Must have numeric value
+      globalData = rows.filter(r => {
+        if (!r.Elect || r.Elect === "Month") return false;
+
+        const value = Number(String(r.field3 || "").replace(/,/g, ""));
+        return Number.isFinite(value);
+      });
+
+      if (!globalData.length) {
+        console.warn("No valid electric data after filtering");
+        return;
+      }
+
+      plotChart(
+        ctx,
+        globalData,
+        "Elect",           // Jan-24, Jan-25
+        "field3",
+        "Electricity Usage"
+      );
+
+    } catch (err) {
+      console.error("Error loading electricity data:", err);
+    }
+  }
+
+  loadElectricData();
+</script>
 
 </body>
 </html>
