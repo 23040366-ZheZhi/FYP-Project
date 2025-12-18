@@ -145,5 +145,28 @@
   loadSolarData();
 </script>
 
+<script>
+(function () {
+  const routes = [
+    "/",
+    "/electgraph",
+    "/solargraph",
+    "/watergraph",
+    "/wastegraph"
+  ];
+
+  const delay = 30000;
+
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const index = routes.indexOf(path);
+
+  if (index === -1) return;
+
+  setTimeout(() => {
+    window.location.href = routes[(index + 1) % routes.length];
+  }, delay);
+})();
+</script>
+
 </body>
 </html>
