@@ -1,22 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>CY2025 Water Consumption</title>
+  <meta charset="UTF-8" />
+  <title>Water Consumption by Building</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: Arial; padding: 12px; background: #f7f7f7; }
-    h2 { text-align:center; margin-bottom:20px; }
+    h2 { text-align:center; margin-bottom: 20px; }
     .controls { text-align:center; margin-bottom: 12px; }
-    select { padding:8px 12px; font-size:16px; border-radius:6px; }
-    .chart-wrap { max-width:1000px; margin:0 auto; background:#fff; padding:18px;
-                  border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
-    canvas { width:100% !important; height:450px !important; }
+    select { padding: 8px 12px; font-size: 16px; border-radius: 6px; }
+    .chart-wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 18px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    canvas { width: 100% !important; height: 450px !important; }
+
+    .msg {
+      max-width: 1000px;
+      margin: 10px auto 0;
+      text-align: center;
+      color: #b00020;
+      font-weight: bold;
+      display: none;
+    }
+
+    .graph-back-nav {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .graph-back-btn {
+      width: 120px;
+      height: 60px;
+      background: #343a40;
+      color: white;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 14px;
+      text-decoration: none;
+      transition: 0.2s ease;
+    }
   </style>
 </head>
+
 <body>
 
-<h2>CY2025 Water Consumption by Building</h2>
+<h2 id="pageTitle">Water Consumption by Building</h2>
 
 <div class="controls">
   <label for="buildingSelect">Select Building:</label>
@@ -27,102 +67,108 @@
   <canvas id="buildingChart"></canvas>
 </div>
 
+<div class="msg" id="msgBox"></div>
+
+<div class="graph-back-nav">
+  <a href="/" class="graph-back-btn">Back</a>
+</div>
+
 <script type="module">
   import { plotChart } from "/scripts/plotindivW.js";
 
-  const ctx = document.getElementById("buildingChart").getContext("2d");
+  const canvas = document.getElementById("buildingChart");
+  const ctx = canvas.getContext("2d");
   const select = document.getElementById("buildingSelect");
+  const msgBox = document.getElementById("msgBox");
+  const pageTitle = document.getElementById("pageTitle");
 
   let globalData = [];
   let buildings = [];
-  let monthKey = null;   // ✅ dynamic
+  let monthKey = "";
+
+  function showMsg(text) {
+    msgBox.textContent = text;
+    msgBox.style.display = "block";
+  }
+  function clearMsg() {
+    msgBox.textContent = "";
+    msgBox.style.display = "none";
+  }
 
   async function init() {
-    const res = await fetch("/api/water-individual");
-    const data = await res.json();
+    try {
+      clearMsg();
 
-    if (!Array.isArray(data) || data.length < 2) {
-      console.warn("No individual water data");
-      return;
+      const res = await fetch("/api/water-individual");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+
+      if (!Array.isArray(data) || data.length === 0) {
+        showMsg("No data returned from API.");
+        return;
+      }
+
+      const header = data[0];
+      const rows = data.slice(1);
+
+      // ✅ Find month column by KEY NAME (not value)
+      monthKey =
+        Object.keys(header).find(k => k.toLowerCase().includes("water")) ||
+        Object.keys(header)[0]; // fallback: first column
+
+      // Update title using the month column name (e.g. "CY2025 Water")
+      pageTitle.textContent = `${monthKey} Consumption by Building`;
+
+      if (!rows.length) {
+        select.innerHTML = "";
+        if (window.myChart instanceof Chart) window.myChart.destroy();
+        showMsg("No individual water data for selected year mode.");
+        return;
+      }
+
+      globalData = rows;
+
+      // Building columns = everything except monthKey
+      buildings = Object.entries(header)
+        .filter(([key]) => key !== monthKey)
+        .map(([key, name]) => ({ key, name }));
+
+      if (!buildings.length) {
+        showMsg("No building columns found in dataset.");
+        return;
+      }
+
+      // Populate dropdown
+      select.innerHTML = "";
+      for (const b of buildings) {
+        const opt = document.createElement("option");
+        opt.value = b.key;
+        opt.textContent = b.name;
+        select.appendChild(opt);
+      }
+
+      // Initial plot
+      plotBuilding(buildings[0]);
+
+      select.onchange = () => {
+        const selected = buildings.find(b => b.key === select.value);
+        if (selected) plotBuilding(selected);
+      };
+
+    } catch (err) {
+      console.error("Individual water init failed:", err);
+      showMsg(`Failed to load data: ${err.message}`);
     }
-
-    const header = data[0];
-    globalData = data.slice(1);
-
-    // 🔑 detect month column dynamically
-    monthKey = Object.keys(header).find(k =>
-      String(header[k]).toLowerCase().includes("water")
-    );
-
-    if (!monthKey) {
-      console.error("Month column not found");
-      return;
-    }
-
-    // building columns (exclude month column)
-    buildings = Object.entries(header)
-      .filter(([key]) => key !== monthKey)
-      .map(([key, name]) => ({ key, name }));
-
-    select.innerHTML = "";
-    buildings.forEach(b => {
-      const opt = document.createElement("option");
-      opt.value = b.key;
-      opt.textContent = b.name;
-      select.appendChild(opt);
-    });
-
-    plotBuilding(buildings[0]);
-
-    select.addEventListener("change", () => {
-      const selected = buildings.find(b => b.key === select.value);
-      plotBuilding(selected);
-    });
   }
 
   function plotBuilding(building) {
-    plotChart(
-      ctx,
-      globalData,
-      monthKey,        // ✅ NOT hard-coded anymore
-      building.key,
-      building.name
-    );
+    clearMsg();
+    plotChart(ctx, globalData, monthKey, building.key, building.name);
   }
 
   init();
 </script>
 
-
-<style>
-.graph-back-nav {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    justify-content: center;
-    z-index: 2000;
-}
-
-.graph-back-btn {
-    width: 120px;
-    height: 60px;
-    background: #343a40;
-    color: white;
-    border-radius: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-size: 14px;
-    text-decoration: none;
-    transition: 0.2s ease;
-}
-</style>
-
-<div class="graph-back-nav">
-    <a href="/" class="graph-back-btn">Back</a>
-</div>
 </body>
 </html>

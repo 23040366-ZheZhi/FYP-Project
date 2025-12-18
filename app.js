@@ -595,7 +595,7 @@ app.get("/api/waste-detailed", (req, res) => {
   }
 });
 
-/// =======================================
+// =======================================
 // INDIVIDUAL WATER – ADMIN YEAR MODE (FIXED)
 // =======================================
 app.get("/api/water-individual", (req, res) => {
@@ -615,21 +615,14 @@ app.get("/api/water-individual", (req, res) => {
     const header = data[0];
     const rows = data.slice(1);
 
-    const getYear = v => {
-      const m = String(v || "").match(/^(\d{2})-/);
+    // Extract year from "25-Jan" → 2025
+    const getYear = val => {
+      const m = String(val || "").match(/^(\d{2})-/);
       return m ? 2000 + Number(m[1]) : null;
     };
 
-    const monthKey = Object.keys(header).find(k =>
-      String(header[k]).toLowerCase().includes("water")
-    );
-
-    if (!monthKey) {
-      return res.json([header]);
-    }
-
     const years = rows
-      .map(r => getYear(r[monthKey]))
+      .map(r => getYear(r[Object.keys(header)[0]]))
       .filter(y => Number.isInteger(y));
 
     if (!years.length) {
@@ -640,7 +633,7 @@ app.get("/api/water-individual", (req, res) => {
     const previousYear = latestYear - 1;
 
     const filteredRows = rows.filter(r => {
-      const year = getYear(r[monthKey]);
+      const year = getYear(r[Object.keys(header)[0]]);
       if (!year) return false;
 
       if (yearMode === "current") return year === latestYear;
@@ -648,6 +641,7 @@ app.get("/api/water-individual", (req, res) => {
       return true; // both
     });
 
+    // ✅ Always return header + rows
     res.json([header, ...filteredRows]);
 
   } catch (err) {
@@ -655,6 +649,7 @@ app.get("/api/water-individual", (req, res) => {
     res.status(500).json({ error: "Individual water load failed" });
   }
 });
+
 
 
 

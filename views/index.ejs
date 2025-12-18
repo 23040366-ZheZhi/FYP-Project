@@ -23,10 +23,10 @@
     .mini-dashboard {
       margin: 40px auto;
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      max-width: 1600px;
+      grid-template-columns: repeat(4, 1fr);
+      max-width: 1400px;
       justify-content: center;
-      gap: 28px;
+      gap: 24px;
     }
 
     .mini-card {
@@ -87,25 +87,25 @@
     <div class="mini-dashboard">
 
       <div class="mini-card glass" onclick="window.location.href='/electgraph'">
-        <h5>Monthly Energy</h5>
+        <h5>Monthly Energy Usage</h5>
         <div id="miniEnergyValue" class="mini-value">Loading...</div>
         <canvas id="miniEnergyChart"></canvas>
       </div>
 
       <div class="mini-card glass" onclick="window.location.href='/solargraph'">
-        <h5>Monthly Solar</h5>
+        <h5>Monthly Solar energy generated</h5>
         <div id="miniSolarValue" class="mini-value">Loading...</div>
         <canvas id="miniSolarChart"></canvas>
       </div>
 
       <div class="mini-card glass" onclick="window.location.href='/watergraph'">
-        <h5>Monthly Water</h5>
+        <h5>Monthly Water Usage</h5>
         <div id="miniWaterValue" class="mini-value">Loading...</div>
         <canvas id="miniWaterChart"></canvas>
       </div>
 
       <div class="mini-card glass" onclick="window.location.href='/waste'">
-        <h5>Monthly Waste</h5>
+        <h5>Monthly Waste Disposed</h5>
         <div id="miniWasteValue" class="mini-value">Loading...</div>
         <canvas id="miniWasteChart"></canvas>
       </div>
