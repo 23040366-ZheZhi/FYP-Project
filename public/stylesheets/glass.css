@@ -128,3 +128,74 @@
   pointer-events: none;
 }
 
+/* GLASS STYLE FOR NAVBAR DROPDOWN */
+.navbar .dropdown-menu {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.35),
+    rgba(255, 255, 255, 0.12)
+  );
+  backdrop-filter: blur(22px) saturate(170%) brightness(0.9);
+  -webkit-backdrop-filter: blur(22px) saturate(170%) brightness(0.9);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 16px;
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.4),
+    inset 0 0 14px rgba(0, 0, 0, 0.18);
+  padding: 8px 0;
+}
+
+/* DROPDOWN ITEMS */
+.navbar .dropdown-menu .dropdown-item {
+  color: #ffffff;
+  padding: 10px 18px;
+  font-weight: 500;
+}
+
+/* HOVER STATE */
+.navbar .dropdown-menu .dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+/* DIVIDER */
+.navbar .dropdown-divider {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* STRONGER GLASS FOR ADMIN DROPDOWN */
+.navbar .dropdown-menu {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.55),
+    rgba(0, 0, 0, 0.35)
+  );
+  backdrop-filter: blur(26px) saturate(180%) brightness(0.85);
+  -webkit-backdrop-filter: blur(26px) saturate(180%) brightness(0.85);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 18px;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.6),
+    inset 0 0 20px rgba(0, 0, 0, 0.25);
+}
+
+/* DROPDOWN TEXT MORE READABLE */
+.navbar .dropdown-menu .dropdown-item {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* HOVER STATE CLEARER */
+.navbar .dropdown-menu .dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+/* LOGOUT STANDOUT */
+.navbar .dropdown-menu .dropdown-item.text-danger {
+  color: #ff5c5c;
+}
+
+.navbar .dropdown-menu .dropdown-item.text-danger:hover {
+  background: rgba(255, 92, 92, 0.2);
+}
