@@ -56,7 +56,7 @@
                         accept="video/*"
                         onchange="previewVideo(this)"
                         required>
-                    <label style="font-weight: bold; margin-top: 10px;">Thumbnail: </label>
+                    <label style="font-weight: bold; margin-top: 10px;">Preview: </label>
                     <video class="w-100 d-none d-block" style="height:250px; object-fit:cover; margin-top:0; display:block;" controls></video>
                 </div>
 
@@ -138,11 +138,11 @@
         const file = input.files[0];
         if (!file) return;
 
-        const thumbnailLabel = input.nextElementSibling;
-        const video = thumbnailLabel.nextElementSibling;
+        const preview = input.nextElementSibling;
+        const video = preview.nextElementSibling;
         const url = URL.createObjectURL(file);
 
-        thumbnailLabel.classList.remove("d-none");
+        preview.classList.remove("d-none");
         video.classList.remove("d-none");
         video.src = url;
         video.load();
