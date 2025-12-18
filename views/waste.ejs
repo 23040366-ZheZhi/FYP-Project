@@ -73,6 +73,10 @@
 
 <div class="totals" id="totalsDisplay"></div>
 
+<div class="graph-back-nav">
+  <a href="/" class="graph-back-btn">Back</a>
+</div>
+
 <script type="module">
   import { plotWasteChart } from "/scripts/plotwaste.js";
 
@@ -81,37 +85,38 @@
   const totalsDiv = document.getElementById("totalsDisplay");
 
   let monthlyData = [];
-  let fyTotals = {};
+  let fyTotals = [];
 
-  async function loadData() {
-    const res = await fetch("/output/4_Waste and Recycled (Pivot).json");
-    const data = await res.json();
+  async function loadWasteData() {
+    try {
+      const res = await fetch("/api/waste-detailed");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    // FY TOTAL ROWS (FY2023, FY2024, FY2025)
-    data.forEach(row => {
-      const key = row["General & Recyclable Waste"];
-      if (/^FY\d{4}$/.test(key)) {
-        fyTotals[key] = row;
-      }
-    });
+      const result = await res.json();
+      monthlyData = result.monthly;
+      fyTotals = result.totals;
 
-    // MONTHLY ROWS ONLY (Jan-2024, Feb-2025, etc.)
-    monthlyData = data.filter(row =>
-      /^[A-Za-z]{3}-\d{4}$/.test(row["General & Recyclable Waste"])
-    );
+      updateTotals(selector.value);
+      drawChart(selector.value);
 
-    updateTotals(selector.value);
+    } catch (err) {
+      console.error("Error loading waste data:", err);
+    }
+  }
+
+  function drawChart(field) {
     plotWasteChart(
       ctx,
       monthlyData,
-      selector.value,
+      field,
       selector.options[selector.selectedIndex].text
     );
   }
 
   function updateTotals(field) {
-    const lines = Object.entries(fyTotals).map(([fy, row]) => {
-      const val = row[field] || "-";
+    const lines = fyTotals.map(row => {
+      const fy = row["General & Recyclable Waste"];
+      const val = row[field] ?? "-";
       return `${fy}: ${val}`;
     });
     totalsDiv.textContent = lines.join(" | ");
@@ -119,20 +124,11 @@
 
   selector.addEventListener("change", () => {
     updateTotals(selector.value);
-    plotWasteChart(
-      ctx,
-      monthlyData,
-      selector.value,
-      selector.options[selector.selectedIndex].text
-    );
+    drawChart(selector.value);
   });
 
-  loadData();
+  loadWasteData();
 </script>
-
-<div class="graph-back-nav">
-  <a href="/" class="graph-back-btn">Back</a>
-</div>
 
 </body>
 </html>

@@ -101,7 +101,19 @@ const videoStorage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, 'videos'),
     filename: (req, file, cb) => cb(null, Date.now() + "_" + file.originalname)
     });
-const uploadVideo = multer({ storage: videoStorage });
+const uploadVideo = multer({
+     storage: videoStorage,
+     limits: {
+        fileSize: 80 * 1024 * 1024 // 80 MB file size limit
+     },
+     fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('/video')) {
+            cb(null, true);
+        } else {
+            cb(new Error("Please upload video files only"))
+        }
+     }
+});
 
 const upload = multer({ storage: storage });
 
@@ -110,7 +122,7 @@ const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: '',
-    database: 'gamelist'
+    database: 'data'
 });
 
 connection.connect((err) => {
@@ -529,17 +541,75 @@ app.get("/api/electric-detailed", (req, res) => {
     res.status(500).json({ error: "Electric detailed data failed" });
   }
 });
+// =======================================
+// WASTE – DETAILED GRAPH (ADMIN YEAR MODE)
+// =======================================
+app.get("/api/waste-detailed", (req, res) => {
+  try {
+    const yearMode = req.session.yearMode || "current";
 
+    delete require.cache[
+      require.resolve("./public/output/4_Waste and Recycled (Pivot).json")
+    ];
 
+    const waste = require("./public/output/4_Waste and Recycled (Pivot).json");
+
+    // 🔑 Extract years dynamically
+    const years = waste
+      .map(r => {
+        const m = String(r["General & Recyclable Waste"] || "")
+          .match(/-(\d{4})$/);
+        return m ? Number(m[1]) : null;
+      })
+      .filter(y => Number.isInteger(y));
+
+    const latestYear = Math.max(...years);
+    const previousYear = latestYear - 1;
+
+    const monthlyRows = waste.filter(row => {
+      const label = row["General & Recyclable Waste"];
+      if (!/^[A-Za-z]{3}-\d{4}$/.test(label)) return false;
+
+      const year = Number(label.slice(-4));
+      if (yearMode === "current" && year !== latestYear) return false;
+      if (yearMode === "previous" && year !== previousYear) return false;
+
+      return true;
+    });
+
+    const fyTotals = waste.filter(row =>
+      /^FY\d{4}$/.test(row["General & Recyclable Waste"])
+    );
+
+    res.json({
+      monthly: monthlyRows,
+      totals: fyTotals,
+      yearMode,
+      latestYear,
+      previousYear
+    });
+
+  } catch (err) {
+    console.error("Waste detailed API error:", err);
+    res.status(500).json({ error: "Waste detailed data failed" });
+  }
+});
 
 
 app.post('/addVideo', uploadVideo.array('videos[]'), (req, res) => {
+
+    uploadVideo.array('videos[]')(req, res, err => {
+        if (err) {
+            return (err.message);
+        }
+    })
+
     const videoFiles = req.files; //upload video files
     const descriptions = req.body.descriptions; // matching descriptions
 
     videoFiles.forEach((file, index) => {
         const sql = "INSERT INTO videos (name, description, video, position) VALUES (?, ?, ?, ?)";
-        connection.query(sql, [file.originalname, descriptions[index], file.filename, 999], (err) => {                          //999 to push to end of sequence
+        connection.query(sql, [file.originalname, descriptions[index], file.filename, 999], (err) => {    //999 to push to end of sequence
             if (err) console.error(err);
         });
     });
