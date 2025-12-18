@@ -595,6 +595,72 @@ app.get("/api/waste-detailed", (req, res) => {
   }
 });
 
+// =======================================
+// INDIVIDUAL WATER – ADMIN YEAR MODE
+// =======================================
+app.get("/api/water-individual", (req, res) => {
+  try {
+    const yearMode = req.session.yearMode || "current";
+
+    delete require.cache[
+      require.resolve("./public/output/2.1_Individual Pod.json")
+    ];
+
+    const data = require("./public/output/2.1_Individual Pod.json");
+
+    if (!Array.isArray(data) || data.length < 2) {
+      return res.json([]);
+    }
+
+    const header = data[0];
+    const rows = data.slice(1);
+
+    // 🔑 detect month column dynamically (e.g. "CY2025 Water")
+    const monthKey = Object.keys(header).find(k =>
+      String(header[k]).toLowerCase().includes("water")
+    );
+
+    if (!monthKey) {
+      console.error("Month column not found in individual water data");
+      return res.json([]);
+    }
+
+    // Jan-25 → 2025
+    const getYear = val => {
+      const m = String(val || "").match(/-(\d{2})$/);
+      return m ? 2000 + Number(m[1]) : null;
+    };
+
+    // determine years dynamically from data
+    const years = rows
+      .map(r => getYear(r[monthKey]))
+      .filter(y => Number.isInteger(y));
+
+    if (years.length === 0) {
+      return res.json([header]);
+    }
+
+    const latestYear = Math.max(...years);
+    const previousYear = latestYear - 1;
+
+    const filteredRows = rows.filter(r => {
+      const year = getYear(r[monthKey]);
+      if (!year) return false;
+
+      if (yearMode === "current") return year === latestYear;
+      if (yearMode === "previous") return year === previousYear;
+      return true; // both
+    });
+
+    res.json([header, ...filteredRows]);
+
+  } catch (err) {
+    console.error("Individual water API error:", err);
+    res.status(500).json({ error: "Individual water load failed" });
+  }
+});
+
+
 
 app.post('/addVideo', uploadVideo.array('videos[]'), (req, res) => {
 

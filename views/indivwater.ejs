@@ -32,23 +32,28 @@
 
   const ctx = document.getElementById("buildingChart").getContext("2d");
   const select = document.getElementById("buildingSelect");
+
   let globalData = [];
+  let buildings = [];
 
   async function init() {
-    // Fetch the JSON
-    const res = await fetch("/output/2.1_Individual Pod.json");
+    const res = await fetch("/api/water-individual");
     const data = await res.json();
 
-    // Skip header row for charting
-    globalData = data.slice(1); 
+    if (!Array.isArray(data) || data.length < 2) {
+      console.warn("No individual water data");
+      return;
+    }
 
-    // First row contains building names
     const headerRow = data[0];
-    const buildings = Object.entries(headerRow)
+    globalData = data.slice(1);
+
+    buildings = Object.entries(headerRow)
       .filter(([key]) => key !== "CY2025 Water")
       .map(([key, name]) => ({ key, name }));
 
-    // Populate dropdown
+    // populate dropdown
+    select.innerHTML = "";
     buildings.forEach(b => {
       const opt = document.createElement("option");
       opt.value = b.key;
@@ -56,10 +61,8 @@
       select.appendChild(opt);
     });
 
-    // Plot default building
     plotBuilding(buildings[0]);
 
-    // Update chart on dropdown change
     select.addEventListener("change", () => {
       const selected = buildings.find(b => b.key === select.value);
       plotBuilding(selected);
@@ -69,10 +72,10 @@
   function plotBuilding(building) {
     plotChart(
       ctx,
-      globalData,         // data rows
-      "CY2025 Water",     // X-axis = month
-      building.key,       // Y-axis = selected building
-      building.name       // chart label
+      globalData,
+      "CY2025 Water",   // month column
+      building.key,
+      building.name
     );
   }
 
