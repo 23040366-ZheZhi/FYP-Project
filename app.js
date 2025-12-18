@@ -595,8 +595,8 @@ app.get("/api/waste-detailed", (req, res) => {
   }
 });
 
-// =======================================
-// INDIVIDUAL WATER – ADMIN YEAR MODE
+/// =======================================
+// INDIVIDUAL WATER – ADMIN YEAR MODE (FIXED)
 // =======================================
 app.get("/api/water-individual", (req, res) => {
   try {
@@ -615,28 +615,24 @@ app.get("/api/water-individual", (req, res) => {
     const header = data[0];
     const rows = data.slice(1);
 
-    // 🔑 detect month column dynamically (e.g. "CY2025 Water")
+    const getYear = v => {
+      const m = String(v || "").match(/^(\d{2})-/);
+      return m ? 2000 + Number(m[1]) : null;
+    };
+
     const monthKey = Object.keys(header).find(k =>
       String(header[k]).toLowerCase().includes("water")
     );
 
     if (!monthKey) {
-      console.error("Month column not found in individual water data");
-      return res.json([]);
+      return res.json([header]);
     }
 
-    // Jan-25 → 2025
-    const getYear = val => {
-      const m = String(val || "").match(/-(\d{2})$/);
-      return m ? 2000 + Number(m[1]) : null;
-    };
-
-    // determine years dynamically from data
     const years = rows
       .map(r => getYear(r[monthKey]))
       .filter(y => Number.isInteger(y));
 
-    if (years.length === 0) {
+    if (!years.length) {
       return res.json([header]);
     }
 

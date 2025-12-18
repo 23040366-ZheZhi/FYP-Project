@@ -35,6 +35,7 @@
 
   let globalData = [];
   let buildings = [];
+  let monthKey = null;   // ✅ dynamic
 
   async function init() {
     const res = await fetch("/api/water-individual");
@@ -45,14 +46,24 @@
       return;
     }
 
-    const headerRow = data[0];
+    const header = data[0];
     globalData = data.slice(1);
 
-    buildings = Object.entries(headerRow)
-      .filter(([key]) => key !== "CY2025 Water")
+    // 🔑 detect month column dynamically
+    monthKey = Object.keys(header).find(k =>
+      String(header[k]).toLowerCase().includes("water")
+    );
+
+    if (!monthKey) {
+      console.error("Month column not found");
+      return;
+    }
+
+    // building columns (exclude month column)
+    buildings = Object.entries(header)
+      .filter(([key]) => key !== monthKey)
       .map(([key, name]) => ({ key, name }));
 
-    // populate dropdown
     select.innerHTML = "";
     buildings.forEach(b => {
       const opt = document.createElement("option");
@@ -73,7 +84,7 @@
     plotChart(
       ctx,
       globalData,
-      "CY2025 Water",   // month column
+      monthKey,        // ✅ NOT hard-coded anymore
       building.key,
       building.name
     );
@@ -81,6 +92,7 @@
 
   init();
 </script>
+
 
 <style>
 .graph-back-nav {

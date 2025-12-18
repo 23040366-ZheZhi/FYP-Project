@@ -21,9 +21,11 @@
     }
 
     .mini-dashboard {
-      margin: 40px 0;
+      margin: 40px auto;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(6, 1fr);
+      max-width: 1600px;
+      justify-content: center;
       gap: 28px;
     }
 
@@ -142,7 +144,7 @@
       <div class="carousel-inner">
         <% videos.forEach((video, index) => { %>
           <div class="carousel-item <%= index === 0 ? 'active' : '' %>">
-            <video class="d-block w-100 video-video" playsinline muted>
+            <video class="d-block w-100 video-video" playsinline controls>
               <source src="/videos/<%= video.video %>" type="video/mp4">
             </video>
           </div>
