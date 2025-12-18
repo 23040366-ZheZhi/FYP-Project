@@ -689,10 +689,6 @@ app.delete('/deleteVideo/:id', adminOnly, (req, res) => {
 
 
 
-
-
-
-
 app.get('/purchase', (req, res) => {
 
     res.render('purchase');

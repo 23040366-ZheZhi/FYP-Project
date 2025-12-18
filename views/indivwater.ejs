@@ -117,8 +117,7 @@
         Object.keys(header).find(k => k.toLowerCase().includes("water")) ||
         Object.keys(header)[0]; // fallback: first column
 
-      // Update title using the month column name (e.g. "CY2025 Water")
-      pageTitle.textContent = `${monthKey} Consumption by Building`;
+      
 
       if (!rows.length) {
         select.innerHTML = "";
