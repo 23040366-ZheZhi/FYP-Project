@@ -39,10 +39,16 @@ app.use('/videos', express.static('videos'));
 
 
 app.use(session({
+    name: 'esg-admin-session',
     secret: 'secret123',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 1 * 60 * 60 * 1000 }
+    cookie: {
+        maxAge: 60 * 60 * 1000,   // 1 hour
+        secure: true,             //  REQUIRED for HTTPS
+        httpOnly: true,           //  security best practice
+        sameSite: 'none'          //  REQUIRED for HTTPS + tabs
+    }
 }));
 
 app.use((req, res, next) => {
@@ -883,7 +889,11 @@ app.get('/toggle-on', adminOnly, (req, res) => {
 
 
 app.get('/logout', (req, res) => {
-    req.session.isAdmin = false;     // logout admin
+    app.get('/logout', (req, res) => {
+    req.session.destroy(() => {
+        res.redirect('/');
+    });
+});     // logout admin
     // DO NOT reset disableInteractive
     res.redirect('/');
 });
