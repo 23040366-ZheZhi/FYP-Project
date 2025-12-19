@@ -53,7 +53,7 @@
                         <input type="file"
                         class="form-control"
                         name="videos[]"
-                        accept="video/*"
+                        accept="video/*,image/*"
                         onchange="previewVideo(this)"
                         required>
                     <label style="font-weight: bold; margin-top: 10px;">Preview: </label>
@@ -110,13 +110,27 @@
         const block = document.createElement("div");
         block.classList.add("video-block", "mb-3");
         block.innerHTML = `
-            <label class="form-label">Video:</label>
-            <input type="file" class="form-control" name="videos[]" accept="video/*" required>
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <label class="d-block">Video:</label>
+                    <input type="file"
+                        class="form-control"
+                        name="videos[]"
+                        accept="video/*"
+                        onchange="previewVideo(this)"
+                        required>
+
+                    <label style="font-weight: bold; margin-top: 10px;">Preview:</label>
+                    <video class="w-100 d-none d-block"
+                        style="height:250px; object-fit:cover; margin-top:0; display:block;"
+                        controls></video>
+                </div>
+            </div>
 
             <label class="form-label mt-2">Description:</label>
             <input type="text" class="form-control" name="descriptions[]" placeholder="Enter description">
-
-            <button type="button" class="btn btn-danger mt-2" onclick="removeBlock(this)">
+            <br>
+            <button type="button" class="btn btn-danger" onclick="removeBlock(this)">
                 Delete Block
             </button>
         `;

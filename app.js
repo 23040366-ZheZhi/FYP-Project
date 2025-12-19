@@ -101,19 +101,19 @@ const videoStorage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, 'videos'),
     filename: (req, file, cb) => cb(null, Date.now() + "_" + file.originalname)
     });
+
 const uploadVideo = multer({
-     storage: videoStorage,
-     limits: {
-        fileSize: 80 * 1024 * 1024 // 80 MB file size limit
-     },
-     fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('/video')) {
-            cb(null, true);
-        } else {
-            cb(new Error("Please upload video files only"))
-        }
-     }
+  storage: videoStorage,
+  limits: { fileSize: 80 * 1024 * 1024 }, // 80MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('video/') || file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only video and image files are allowed'));
+    }
+  }
 });
+
 
 const upload = multer({ storage: storage });
 
@@ -282,7 +282,7 @@ app.get('/game/:id', (req, res) => {
         if (results.length > 0) {
             res.render('video', { video: results[0] });
         } else {
-            res.status(404).send('Game not found');
+            res.status(404).send('Video not found');
         }
     });
 });
@@ -655,24 +655,36 @@ app.get("/api/water-individual", (req, res) => {
 
 app.post('/addVideo', uploadVideo.array('videos[]'), (req, res) => {
 
-    uploadVideo.array('videos[]')(req, res, err => {
-        if (err) {
-            return (err.message);
-        }
-    })
+    const videoFiles = req.files || []; //upload video files
+    const descriptionsRaw = req.body.descriptions || []; // matching descriptions
+    const descriptions = Array.isArray(descriptionsRaw) ? descriptionsRaw : [descriptionsRaw];
 
-    const videoFiles = req.files; //upload video files
-    const descriptions = req.body.descriptions; // matching descriptions
+    if (videoFiles.length === 0) {
+        return res.status(400).send("No files uploaded. Please select a video/image file.");
+    }
+
 
     videoFiles.forEach((file, index) => {
         const sql = "INSERT INTO videos (name, description, video, position) VALUES (?, ?, ?, ?)";
-        connection.query(sql, [file.originalname, descriptions[index], file.filename, 999], (err) => {    //999 to push to end of sequence
+        connection.query(sql, [file.originalname, descriptions[index] || "", file.filename, 999], (err) => {   //999 to push to end of sequence
             if (err) console.error(err);
         });
     });
 
     res.redirect('/sequence');
 });
+
+// Middleware that shows error message
+app.use((err, req, res, next) => {
+    if (err && err.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).send("Upload failed: Video file size exceeds 80MB.");
+    }
+    if (err) {
+        return res.status(400).send(`Upload failed: ${err.message}`);
+    }
+    next();
+});
+
 
 app.delete('/deleteVideo/:id', adminOnly, (req, res) => {
     const id = req.params.id;
@@ -787,6 +799,7 @@ app.get('/login', (req, res) => {
 app.post('/login', (req, res) => {
     const { username, password, email } = req.body;
 
+    // Step 1: check username + password
     const sql = "SELECT * FROM admins WHERE username = ? AND password = ?";
     connection.query(sql, [username, password], (err, results) => {
         if (err) {
@@ -794,13 +807,23 @@ app.post('/login', (req, res) => {
             return res.render('login', { error: 'Server error' });
         }
 
+        // username or password wrong
         if (results.length === 0) {
             return res.render('login', { error: 'Invalid username or password' });
         }
 
         const admin = results[0];
 
-        // If 2FA disabled in DB → login directly
+        // email does not match this account
+        if (admin.email !== email) {
+            return res.render('login', {
+                error: 'Sorry, this email is not linked to this account'
+            });
+        }
+
+        // email matches, continue login flow
+
+        // If 2FA disabled, login directly
         if (admin.twofa_enabled === 0) {
             req.session.isAdmin = true;
             return res.redirect('/');
@@ -825,6 +848,7 @@ app.post('/login', (req, res) => {
         res.redirect('/verify');
     });
 });
+
 
 
 app.get('/verify', (req, res) => {
