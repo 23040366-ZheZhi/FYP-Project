@@ -130,8 +130,13 @@
 
       // Building columns = everything except monthKey
       buildings = Object.entries(header)
-        .filter(([key]) => key !== monthKey)
-        .map(([key, name]) => ({ key, name }));
+      .filter(([key]) => key !== monthKey)
+      .map(([key, name]) => ({
+        key: key.trim(),     // 🔑 FIX
+        rawKey: key,         // keep original
+        name: String(name).trim()
+      }));
+
 
       if (!buildings.length) {
         showMsg("No building columns found in dataset.");

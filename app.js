@@ -656,6 +656,33 @@ app.get("/api/water-individual", (req, res) => {
   }
 });
 
+app.get("/api/electric-building", (req, res) => {
+  const yearMode = req.session.yearMode || "current";
+
+  const data = require("./public/output/1.1_Individual Pod.json");
+  // ⬆️ save your big JSON under this filename
+
+  const years = [...new Set(data.map(r => r.year))].sort();
+  const latestYear = Math.max(...years);
+  const previousYear = latestYear - 1;
+
+  let filtered;
+  if (yearMode === "current") {
+    filtered = data.filter(r => r.year === latestYear);
+  } else if (yearMode === "previous") {
+    filtered = data.filter(r => r.year === previousYear);
+  } else {
+    filtered = data.filter(r => r.year === latestYear || r.year === previousYear);
+  }
+
+  res.json({
+    yearMode,
+    latestYear,
+    previousYear,
+    data: filtered
+  });
+});
+
 
 
 

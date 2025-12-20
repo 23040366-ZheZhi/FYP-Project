@@ -1,21 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Building Charts</title>
+  <meta charset="UTF-8" />
+  <title>Electricity Consumption by Building</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    body { font-family: Arial; padding: 12px; background: #f7f7f7; }
-    h2 { text-align:center; margin-bottom:20px; }
-    .controls { text-align:center; margin-bottom: 12px; }
-    select { padding:8px 12px; font-size:16px; border-radius:6px; }
-    .chart-wrap { max-width:1000px; margin:0 auto; background:#fff; padding:18px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
-    canvas { width:100% !important; height:450px !important; }
+    body {
+      font-family: Arial;
+      padding: 12px;
+      background: #f7f7f7;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .controls {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    select {
+      padding: 8px 12px;
+      font-size: 16px;
+      border-radius: 6px;
+    }
+
+    .chart-wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 18px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 450px !important;
+    }
+
+    /* 🔴 Error / info message (same as water graph) */
+    .msg {
+      max-width: 1000px;
+      margin: 10px auto 0;
+      text-align: center;
+      color: #b00020;
+      font-weight: bold;
+      display: none;
+    }
+
+    /* ⬅ Back button – EXACT SAME AS WATER GRAPH */
+    .graph-back-nav {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .graph-back-btn {
+      width: 120px;
+      height: 60px;
+      background: #343a40;
+      color: white;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 14px;
+      text-decoration: none;
+      transition: 0.2s ease;
+    }
+
+    .graph-back-btn:hover {
+      background: #23272b;
+    }
   </style>
 </head>
+
 <body>
 
-<h2>Building Energy Consumption (kWh)</h2>
+<h2>Electricity Consumption by Building</h2>
 
 <div class="controls">
   <label for="buildingSelect">Select Building:</label>
@@ -23,88 +94,17 @@
 </div>
 
 <div class="chart-wrap">
-  <canvas id="buildingChart"></canvas>
+  <canvas id="chart"></canvas>
 </div>
 
-<script type="module">
-  import { plotChart } from './scripts/plotindividual.js';
+<div class="msg" id="msgBox"></div>
 
-  const ctx = document.getElementById("buildingChart").getContext("2d");
-  const select = document.getElementById("buildingSelect");
-  let globalData = [];
-
-  async function init() {
-    const res = await fetch("/output/1.1_Individual Pod.json");
-    const data = await res.json();
-
-    globalData = data;
-
-    // Get building names (skip headers)
-    const buildings = Object.entries(data[0])
-      .filter(([key]) => key !== "CY2024 Elect" && key !== "CY2025 Elect")
-      .map(([key, name]) => ({ key, name }));
-
-    buildings.forEach(b => {
-      const opt = document.createElement("option");
-      opt.value = b.key;
-      opt.textContent = b.name;
-      select.appendChild(opt);
-    });
-
-    plotSelected(buildings[0]);
-
-    select.addEventListener("change", () => {
-      const building = buildings.find(b => b.key === select.value);
-      plotSelected(building);
-    });
-  }
-
-  function plotSelected(building) {
-    const { key, name } = building;
-
-    const data2024Rows = globalData.slice(1, 13);
-    const data2025Rows = globalData.slice(15, 27);
-
-    const labels = data2024Rows.map(r => r["CY2024 Elect"]);
-
-    const values2024 = data2024Rows.map(r => Number(r[key]?.replace(/,/g,"")) || 0);
-    const raw2025 = data2025Rows.map(r => Number(r[key]?.replace(/,/g,"")) || 0);
-    const values2025 = labels.map((_, i) => raw2025[i + 1] || 0); // shift 2025
-
-    plotChart(ctx, labels, values2024, values2025, name);
-  }
-
-  init();
-</script>
-<style>
-.graph-back-nav {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    justify-content: center;
-    z-index: 2000;
-}
-
-.graph-back-btn {
-    width: 120px;
-    height: 60px;
-    background: #343a40;
-    color: white;
-    border-radius: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-size: 14px;
-    text-decoration: none;
-    transition: 0.2s ease;
-}
-</style>
-
+<!-- ⬅ SAME BACK BUTTON -->
 <div class="graph-back-nav">
-    <a href="/" class="graph-back-btn">Back</a>
+  <a href="/" class="graph-back-btn">Back</a>
 </div>
+
+<script type="module" src="/scripts/plotindividual.js"></script>
+
 </body>
 </html>
