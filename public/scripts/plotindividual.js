@@ -78,7 +78,7 @@ function plot(data, building, meta) {
     datasets.push({
       label: `${meta.latestYear}`,
       data: currFiltered,
-      backgroundColor: "#1e88e5"
+       backgroundColor: "skyblue"
     });
   }
 

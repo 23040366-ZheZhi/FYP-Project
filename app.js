@@ -408,48 +408,48 @@ app.get("/api/summary", (req, res) => {
     console.error(err);
     res.status(500).json({ error: "Summary data load failed" });
   }
+
 });
 app.get("/api/solar-detailed", (req, res) => {
   try {
     const yearMode = req.session.yearMode || "current";
-    const currentYear = new Date().getFullYear();
-    const previousYear = currentYear - 1;
 
-    delete require.cache[
-      require.resolve("./public/output/3_Solar Data.json")
-    ];
-
+    delete require.cache[require.resolve("./public/output/3_Solar Data.json")];
     const solar = require("./public/output/3_Solar Data.json");
 
     const getYear = row => {
-      // 1️⃣ Prefer explicit year column
-      if (row.field1 && /^\d{4}$/.test(row.field1)) {
+      if (row.field1 && /^\d{4}$/.test(String(row.field1).trim())) {
         return Number(row.field1);
       }
-
-      // 2️⃣ Fallback: Jan-25 → 2025
       const m = String(row.Solar || "").match(/-(\d{2})$/);
       if (m) return 2000 + Number(m[1]);
-
       return null;
     };
+
+    // ✅ collect years from data
+    const years = solar
+      .map(getYear)
+      .filter(y => Number.isFinite(y));
+
+    const latestYear = years.length ? Math.max(...years) : null;
+    const previousYear = latestYear ? latestYear - 1 : null;
 
     const filtered = solar.filter(row => {
       const year = getYear(row);
       if (!year) return false;
 
-      if (yearMode === "current") return year === currentYear;
-      if (yearMode === "previous") return year === previousYear;
+      if (yearMode === "current") return year === latestYear;      // ✅ latest in file
+      if (yearMode === "previous") return year === previousYear;   // ✅ year before latest
       return true; // both
     });
 
     res.json(filtered);
-
   } catch (err) {
     console.error("Solar detailed API error:", err);
     res.status(500).json({ error: "Solar detailed data failed" });
   }
 });
+
 
 // =======================================
 // WATER – DETAILED GRAPH (ADMIN YEAR MODE)

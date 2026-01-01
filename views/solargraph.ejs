@@ -10,10 +10,7 @@
     body { font-family: Arial; padding: 12px; background: #f7f7f7; }
     h2 { text-align:center; margin-bottom:20px; }
 
-    .controls {
-      text-align:center;
-      margin-bottom:14px;
-    }
+    .controls { text-align:center; margin-bottom:14px; }
 
     select {
       padding:8px 12px;
@@ -85,8 +82,49 @@
   const ctx = document.getElementById("solarChart").getContext("2d");
   const selector = document.getElementById("datasetSelector");
 
-  let allRows = [];
-  let filteredData = [];
+  let globalData = [];
+
+ function toNum(v) {
+  const s = String(v ?? "").trim();
+  if (!s) return NaN;
+  const cleaned = s.replace(/,/g, "");
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+function isHeaderRow(r) {
+  return String(r?.Solar ?? "").toLowerCase() === "month";
+}
+
+function isCompleteRow(r) {
+  // ✅ must have ALL 3 fields valid numbers
+  const a = toNum(r.field3);
+  const b = toNum(r.field4);
+  const c = toNum(r.field5);
+  return !isNaN(a) && !isNaN(b) && !isNaN(c);
+}
+
+function plotSelected() {
+  const field = selector.value;
+
+  const filtered = globalData
+    .filter(r => !isHeaderRow(r))
+    .filter(isCompleteRow); // ✅ remove Aug-25 because field3/field4 are empty
+
+  if (filtered.length === 0) {
+    console.warn("No valid solar data after filtering (need all 3 fields present).");
+    return;
+  }
+
+  const titles = {
+    field3: "Urban Renewables",
+    field4: "Green House (kWh)",
+    field5: "Total Solar Energy"
+  };
+
+  plotChart(ctx, filtered, "Solar", field, titles[field]);
+}
+
 
   async function loadSolarData() {
     try {
@@ -95,53 +133,27 @@
 
       const rows = await response.json();
 
+      // ✅ HARD SAFETY CHECK
       if (!Array.isArray(rows)) {
-        console.error("Solar API did not return array:", rows);
+        console.error("Solar API did not return an array:", rows);
         return;
       }
 
-      allRows = rows;
+      globalData = rows;   // ✅ keep raw rows (don't pre-filter by field3)
+      if (globalData.length === 0) {
+        console.warn("Solar API returned empty array");
+        return;
+      }
 
-      applyFilterAndPlot("field3", "Urban Renewables");
+      plotSelected();      // ✅ plot default selected dataset
 
     } catch (err) {
       console.error("Error loading solar data:", err);
     }
   }
 
-  function applyFilterAndPlot(field, title) {
-    filteredData = allRows.filter(r => {
-      if (!r.Solar) return false;
+  selector.addEventListener("change", plotSelected);
 
-      const value = Number(String(r[field] || "").replace(/,/g, ""));
-      return Number.isFinite(value) && value > 0;
-    });
-
-    if (!filteredData.length) {
-      console.warn("No valid solar data after filtering");
-      return;
-    }
-
-    plotChart(
-      ctx,
-      filteredData,
-      "Solar",   // Month-Year label e.g. Jan-24
-      field,
-      title
-    );
-  }
-
-  selector.addEventListener("change", () => {
-    const titles = {
-      field3: "Urban Renewables",
-      field4: "Green House (kWh)",
-      field5: "Total Solar Energy"
-    };
-
-    applyFilterAndPlot(selector.value, titles[selector.value]);
-  });
-
-  // Load once on page load
   loadSolarData();
 </script>
 
