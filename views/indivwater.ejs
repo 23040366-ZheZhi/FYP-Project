@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Water Consumption by Building</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     body { font-family: Arial; padding: 12px; background: #f7f7f7; }
     h2 { text-align:center; margin-bottom: 20px; }
@@ -51,128 +52,29 @@
       text-decoration: none;
       transition: 0.2s ease;
     }
+    .graph-back-btn:hover { background: #23272b; }
   </style>
 </head>
 
 <body>
+  <h2 id="pageTitle">Water Consumption by Building</h2>
 
-<h2 id="pageTitle">Water Consumption by Building</h2>
+  <div class="controls">
+    <label for="buildingSelect">Select Building:</label>
+    <select id="buildingSelect"></select>
+  </div>
 
-<div class="controls">
-  <label for="buildingSelect">Select Building:</label>
-  <select id="buildingSelect"></select>
-</div>
+  <div class="chart-wrap">
+    <canvas id="buildingChart"></canvas>
+  </div>
 
-<div class="chart-wrap">
-  <canvas id="buildingChart"></canvas>
-</div>
+  <div class="msg" id="msgBox"></div>
 
-<div class="msg" id="msgBox"></div>
+  <div class="graph-back-nav">
+    <a href="/" class="graph-back-btn">Back</a>
+  </div>
 
-<div class="graph-back-nav">
-  <a href="/" class="graph-back-btn">Back</a>
-</div>
-
-<script type="module">
-  import { plotChart } from "/scripts/plotindivW.js";
-
-  const canvas = document.getElementById("buildingChart");
-  const ctx = canvas.getContext("2d");
-  const select = document.getElementById("buildingSelect");
-  const msgBox = document.getElementById("msgBox");
-  const pageTitle = document.getElementById("pageTitle");
-
-  let globalData = [];
-  let buildings = [];
-  let monthKey = "";
-
-  function showMsg(text) {
-    msgBox.textContent = text;
-    msgBox.style.display = "block";
-  }
-  function clearMsg() {
-    msgBox.textContent = "";
-    msgBox.style.display = "none";
-  }
-
-  async function init() {
-    try {
-      clearMsg();
-
-      const res = await fetch("/api/water-individual");
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const data = await res.json();
-
-      if (!Array.isArray(data) || data.length === 0) {
-        showMsg("No data returned from API.");
-        return;
-      }
-
-      const header = data[0];
-      const rows = data.slice(1);
-
-      // ✅ Find month column by KEY NAME (not value)
-      monthKey =
-        Object.keys(header).find(k => k.toLowerCase().includes("water")) ||
-        Object.keys(header)[0]; // fallback: first column
-
-      
-
-      if (!rows.length) {
-        select.innerHTML = "";
-        if (window.myChart instanceof Chart) window.myChart.destroy();
-        showMsg("No individual water data for selected year mode.");
-        return;
-      }
-
-      globalData = rows;
-
-      // Building columns = everything except monthKey
-      buildings = Object.entries(header)
-      .filter(([key]) => key !== monthKey)
-      .map(([key, name]) => ({
-        key: key.trim(),     // 🔑 FIX
-        rawKey: key,         // keep original
-        name: String(name).trim()
-      }));
-
-
-      if (!buildings.length) {
-        showMsg("No building columns found in dataset.");
-        return;
-      }
-
-      // Populate dropdown
-      select.innerHTML = "";
-      for (const b of buildings) {
-        const opt = document.createElement("option");
-        opt.value = b.key;
-        opt.textContent = b.name;
-        select.appendChild(opt);
-      }
-
-      // Initial plot
-      plotBuilding(buildings[0]);
-
-      select.onchange = () => {
-        const selected = buildings.find(b => b.key === select.value);
-        if (selected) plotBuilding(selected);
-      };
-
-    } catch (err) {
-      console.error("Individual water init failed:", err);
-      showMsg(`Failed to load data: ${err.message}`);
-    }
-  }
-
-  function plotBuilding(building) {
-    clearMsg();
-    plotChart(ctx, globalData, monthKey, building.key, building.name);
-  }
-
-  init();
-</script>
-
+  <!-- ✅ all logic here -->
+  <script type="module" src="/scripts/plotindivW.js"></script>
 </body>
 </html>

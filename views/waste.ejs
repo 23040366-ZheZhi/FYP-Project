@@ -1,7 +1,8 @@
+<!-- ======================= wastegraph (CLEAN) ======================= -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Waste Data</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -30,12 +31,23 @@
       font-size:15px;
     }
 
+    .msg {
+      max-width: 1000px;
+      margin: 10px auto 0;
+      text-align: center;
+      color: #b00020;
+      font-weight: bold;
+      display: none;
+    }
+
     .graph-back-nav {
       position: fixed;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 2000;
+      display: flex;
+      justify-content: center;
     }
 
     .graph-back-btn {
@@ -49,132 +61,38 @@
       justify-content: center;
       text-decoration: none;
       font-size: 14px;
+      transition: 0.2s ease;
     }
+
+    .graph-back-btn:hover { background: #23272b; }
   </style>
 </head>
 
 <body>
+  <h2>Waste Data</h2>
 
-<h2>Waste Data</h2>
+  <div class="controls">
+    <label for="datasetSelector">Choose data:</label>
+    <select id="datasetSelector">
+      <option value="field2">General Waste (kg)</option>
+      <option value="field3">Recycled Waste (kg)</option>
+      <option value="field4">% (General Waste)</option>
+      <option value="field5">% (Recycled Waste)</option>
+    </select>
+  </div>
 
-<div class="controls">
-  <label for="datasetSelector">Choose data:</label>
-  <select id="datasetSelector">
-    <option value="field2">General Waste (kg)</option>
-    <option value="field3">Recycled Waste (kg)</option>
-    <option value="field4">% (General Waste)</option>
-    <option value="field5">% (Recycled Waste)</option>
-  </select>
-</div>
+  <div class="chart-wrap">
+    <canvas id="wasteChart"></canvas>
+  </div>
 
-<div class="chart-wrap">
-  <canvas id="wasteChart"></canvas>
-</div>
+  <div class="totals" id="totalsDisplay"></div>
+  <div class="msg" id="msgBox"></div>
 
-<div class="totals" id="totalsDisplay"></div>
+  <div class="graph-back-nav">
+    <a href="/" class="graph-back-btn">Back</a>
+  </div>
 
-<div class="graph-back-nav">
-  <a href="/" class="graph-back-btn">Back</a>
-</div>
-
-<script type="module">
-  import { plotWasteChart } from "/scripts/plotwaste.js";
-
-  const ctx = document.getElementById("wasteChart").getContext("2d");
-  const selector = document.getElementById("datasetSelector");
-  const totalsDiv = document.getElementById("totalsDisplay");
-
-  let monthlyData = [];
-  let fyTotals = [];
-
-  async function loadWasteData() {
-    try {
-      const res = await fetch("/api/waste-detailed");
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const result = await res.json();
-      monthlyData = result.monthly;
-      fyTotals = result.totals;
-
-      updateTotals(selector.value);
-      drawChart(selector.value);
-
-    } catch (err) {
-      console.error("Error loading waste data:", err);
-    }
-  }
-
-  function drawChart(field) {
-    plotWasteChart(
-      ctx,
-      monthlyData,
-      field,
-      selector.options[selector.selectedIndex].text
-    );
-  }
-
-  function updateTotals(field) {
-    const lines = fyTotals.map(row => {
-      const fy = row["General & Recyclable Waste"];
-      const val = row[field] ?? "-";
-      return `${fy}: ${val}`;
-    });
-    totalsDiv.textContent = lines.join(" | ");
-  }
-
-  selector.addEventListener("change", () => {
-    updateTotals(selector.value);
-    drawChart(selector.value);
-  });
-
-  loadWasteData();
-</script>
-
-<script>
-(function () {
-  const routes = [
-    "/",
-    "/electgraph",
-    "/solargraph",
-    "/watergraph",
-    "/wastegraph"
-  ];
-
-  const delay = 30000;
-
-  const path = window.location.pathname.replace(/\/+$/, "") || "/";
-  const index = routes.indexOf(path);
-
-  if (index === -1) return;
-
-  setTimeout(() => {
-    window.location.href = routes[(index + 1) % routes.length];
-  }, delay);
-})();
-</script>
-
-<script>
-(function () {
-  const routes = [
-    "/",
-    "/electgraph",
-    "/solargraph",
-    "/watergraph",
-    "/wastegraph"
-  ];
-
-  const delay = 30000;
-
-  const path = window.location.pathname.replace(/\/+$/, "") || "/";
-  const index = routes.indexOf(path);
-
-  if (index === -1) return;
-
-  setTimeout(() => {
-    window.location.href = routes[(index + 1) % routes.length];
-  }, delay);
-})();
-</script>
-
+  <!-- ✅ all logic in plotwaste.js -->
+  <script type="module" src="/scripts/plotwaste.js"></script>
 </body>
 </html>

@@ -1,25 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Water Usage</title>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body { font-family: Arial; padding: 12px; background: #f7f7f7; }
     h2 { text-align:center; margin-bottom:20px; }
 
-    .controls {
-      text-align: center;
-      margin-bottom: 14px;
-    }
-
-    select {
-      padding: 8px 12px;
-      font-size: 16px;
-      border-radius: 6px;
-    }
+    .controls { text-align: center; margin-bottom: 12px; }
+    select { padding: 8px 12px; font-size: 16px; border-radius: 6px; }
 
     .chart-wrap {
       max-width: 1000px;
@@ -30,9 +21,15 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
 
-    canvas {
-      width: 100% !important;
-      height: 450px !important;
+    canvas { width: 100% !important; height: 450px !important; }
+
+    .msg {
+      max-width: 1000px;
+      margin: 10px auto 0;
+      text-align: center;
+      color: #b00020;
+      font-weight: bold;
+      display: none;
     }
 
     .graph-back-nav {
@@ -41,6 +38,8 @@
       left: 50%;
       transform: translateX(-50%);
       z-index: 2000;
+      display: flex;
+      justify-content: center;
     }
 
     .graph-back-btn {
@@ -54,91 +53,36 @@
       justify-content: center;
       text-decoration: none;
       font-size: 14px;
+      transition: 0.2s ease;
     }
+
+    .graph-back-btn:hover { background: #23272b; }
   </style>
 </head>
 
 <body>
+  <h2>Whole Campus Water Usage (m³)</h2>
 
-<h2>Water Usage (m³)</h2>
+  <div class="controls">
+    <label for="datasetSelector">Choose data:</label>
+    <select id="datasetSelector">
+      <option value="field3">Portable Water</option>
+      <option value="field4">NEWater</option>
+      <option value="field5">Total Water</option>
+    </select>
+  </div>
 
-<div class="controls">
-  <label for="datasetSelector">Choose data:</label>
-  <select id="datasetSelector">
-    <option value="field3">Portable Water</option>
-    <option value="field4">NEWater</option>
-    <option value="field5">Total Water</option>
-  </select>
-</div>
+  <div class="chart-wrap">
+    <canvas id="waterChart"></canvas>
+  </div>
 
-<div class="chart-wrap">
-  <canvas id="waterChart"></canvas>
-</div>
+  <div class="msg" id="msgBox"></div>
 
-<div class="graph-back-nav">
-  <a href="/" class="graph-back-btn">Back</a>
-</div>
+  <div class="graph-back-nav">
+    <a href="/" class="graph-back-btn">Back</a>
+  </div>
 
-<script type="module">
-  import { plotChart } from "/scripts/plotgraph.js";
-
-  const ctx = document.getElementById("waterChart").getContext("2d");
-  const selector = document.getElementById("datasetSelector");
-
-  let globalData = [];
-
-  async function loadWaterData() {
-    try {
-      const response = await fetch("/api/water-detailed");
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const rows = await response.json();
-
-      if (!Array.isArray(rows)) {
-        console.error("Water API did not return array:", rows);
-        return;
-      }
-
-      globalData = rows;
-
-      if (!globalData.length) {
-        console.warn("No valid water data after filtering");
-        return;
-      }
-
-      plotChart(
-        ctx,
-        globalData,
-        "Water",        // Jan-24, Jan-25 kept separate
-        "field3",
-        "Portable Water"
-      );
-
-    } catch (err) {
-      console.error("Error loading water data:", err);
-    }
-  }
-
-  selector.addEventListener("change", () => {
-    if (!globalData.length) return;
-
-    const titles = {
-      field3: "Portable Water",
-      field4: "NEWater",
-      field5: "Total Water"
-    };
-
-    plotChart(
-      ctx,
-      globalData,
-      "Water",
-      selector.value,
-      titles[selector.value]
-    );
-  });
-
-  loadWaterData();
-</script>
-
+  <!-- ✅ all logic in plotwater.js -->
+  <script type="module" src="/scripts/plotwater.js"></script>
 </body>
 </html>

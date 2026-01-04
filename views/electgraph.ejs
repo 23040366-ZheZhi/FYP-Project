@@ -1,9 +1,9 @@
+<!-- ======================= electgraph (clean page like your solar clean one) ======================= -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Electricity Usage</title>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -19,9 +19,15 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
 
-    canvas {
-      width: 100% !important;
-      height: 450px !important;
+    canvas { width: 100% !important; height: 450px !important; }
+
+    .msg {
+      max-width: 1000px;
+      margin: 10px auto 0;
+      text-align: center;
+      color: #b00020;
+      font-weight: bold;
+      display: none;
     }
 
     .graph-back-nav {
@@ -30,6 +36,8 @@
       left: 50%;
       transform: translateX(-50%);
       z-index: 2000;
+      display: flex;
+      justify-content: center;
     }
 
     .graph-back-btn {
@@ -43,93 +51,27 @@
       justify-content: center;
       text-decoration: none;
       font-size: 14px;
+      transition: 0.2s ease;
     }
+
+    .graph-back-btn:hover { background: #23272b; }
   </style>
 </head>
 
 <body>
+  <h2>Whole Campus Electricity Usage (kWh)</h2>
 
-<h2>Electricity Usage (kWh)</h2>
+  <div class="chart-wrap">
+    <canvas id="electricChart"></canvas>
+  </div>
 
-<div class="chart-wrap">
-  <canvas id="electricChart"></canvas>
-</div>
+  <div class="msg" id="msgBox"></div>
 
-<div class="graph-back-nav">
-  <a href="/" class="graph-back-btn">Back</a>
-</div>
+  <div class="graph-back-nav">
+    <a href="/" class="graph-back-btn">Back</a>
+  </div>
 
-<script type="module">
-  import { plotChart } from "/scripts/plotgraph.js";
-
-  const ctx = document.getElementById("electricChart").getContext("2d");
-  let globalData = [];
-
-  async function loadElectricData() {
-    try {
-      const response = await fetch("/api/electric-detailed");
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const rows = await response.json();
-
-      if (!Array.isArray(rows)) {
-        console.error("Electric API did not return array:", rows);
-        return;
-      }
-
-      // ✅ Filter rules:
-      // - Must have month label
-      // - Must have numeric value
-      globalData = rows.filter(r => {
-        if (!r.Elect || r.Elect === "Month") return false;
-
-        const value = Number(String(r.field3 || "").replace(/,/g, ""));
-        return Number.isFinite(value);
-      });
-
-      if (!globalData.length) {
-        console.warn("No valid electric data after filtering");
-        return;
-      }
-
-      plotChart(
-        ctx,
-        globalData,
-        "Elect",           // Jan-24, Jan-25
-        "field3",
-        "Electricity Usage"
-      );
-
-    } catch (err) {
-      console.error("Error loading electricity data:", err);
-    }
-  }
-
-  loadElectricData();
-</script>
-
-<script>
-(function () {
-  const routes = [
-    "/",
-    "/electgraph",
-    "/solargraph",
-    "/watergraph",
-    "/wastegraph"
-  ];
-
-  const delay = 30000;
-
-  const path = window.location.pathname.replace(/\/+$/, "") || "/";
-  const index = routes.indexOf(path);
-
-  if (index === -1) return;
-
-  setTimeout(() => {
-    window.location.href = routes[(index + 1) % routes.length];
-  }, delay);
-})();
-</script>
-
+  <!-- ✅ all logic in plotelect.js -->
+  <script type="module" src="/scripts/plotelect.js"></script>
 </body>
 </html>

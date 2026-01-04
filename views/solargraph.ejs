@@ -1,35 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Solar Energy</title>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body { font-family: Arial; padding: 12px; background: #f7f7f7; }
-    h2 { text-align:center; margin-bottom:20px; }
+    h2 { text-align: center; margin-bottom: 20px; }
 
-    .controls { text-align:center; margin-bottom:14px; }
+    .controls { text-align: center; margin-bottom: 12px; }
 
-    select {
-      padding:8px 12px;
-      font-size:16px;
-      border-radius:6px;
-    }
+    select { padding: 8px 12px; font-size: 16px; border-radius: 6px; }
 
     .chart-wrap {
-      max-width:1000px;
-      margin:0 auto;
-      background:#fff;
-      padding:18px;
-      border-radius:8px;
-      box-shadow:0 4px 12px rgba(0,0,0,0.05);
+      max-width: 1000px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 18px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
 
-    canvas {
-      width:100% !important;
-      height:450px !important;
+    canvas { width: 100% !important; height: 450px !important; }
+
+    .msg {
+      max-width: 1000px;
+      margin: 10px auto 0;
+      text-align: center;
+      color: #b00020;
+      font-weight: bold;
+      display: none;
     }
 
     .graph-back-nav {
@@ -37,6 +38,8 @@
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
       z-index: 2000;
     }
 
@@ -49,136 +52,39 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      text-decoration: none;
+      text-align: center;
       font-size: 14px;
+      text-decoration: none;
+      transition: 0.2s ease;
     }
+
+    .graph-back-btn:hover { background: #23272b; }
   </style>
 </head>
 
 <body>
+  <h2>Whole Campus Solar Energy (kWh)</h2>
 
-<h2>Solar Energy (kWh)</h2>
+  <div class="controls">
+    <label for="datasetSelector">Choose data:</label>
+    <select id="datasetSelector">
+      <option value="field3">Urban Renewables</option>
+      <option value="field4">Green House (kWh)</option>
+      <option value="field5">Total Solar Energy</option>
+    </select>
+  </div>
 
-<div class="controls">
-  <label for="datasetSelector">Choose data:</label>
-  <select id="datasetSelector">
-    <option value="field3">Urban Renewables</option>
-    <option value="field4">Green House (kWh)</option>
-    <option value="field5">Total Solar Energy</option>
-  </select>
-</div>
+  <div class="chart-wrap">
+    <canvas id="solarChart"></canvas>
+  </div>
 
-<div class="chart-wrap">
-  <canvas id="solarChart"></canvas>
-</div>
+  <div class="msg" id="msgBox"></div>
 
-<div class="graph-back-nav">
-  <a href="/" class="graph-back-btn">Back</a>
-</div>
+  <div class="graph-back-nav">
+    <a href="/" class="graph-back-btn">Back</a>
+  </div>
 
-<script type="module">
-  import { plotChart } from "/scripts/plotgraph.js";
-
-  const ctx = document.getElementById("solarChart").getContext("2d");
-  const selector = document.getElementById("datasetSelector");
-
-  let globalData = [];
-
- function toNum(v) {
-  const s = String(v ?? "").trim();
-  if (!s) return NaN;
-  const cleaned = s.replace(/,/g, "");
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : NaN;
-}
-
-function isHeaderRow(r) {
-  return String(r?.Solar ?? "").toLowerCase() === "month";
-}
-
-function isCompleteRow(r) {
-  // ✅ must have ALL 3 fields valid numbers
-  const a = toNum(r.field3);
-  const b = toNum(r.field4);
-  const c = toNum(r.field5);
-  return !isNaN(a) && !isNaN(b) && !isNaN(c);
-}
-
-function plotSelected() {
-  const field = selector.value;
-
-  const filtered = globalData
-    .filter(r => !isHeaderRow(r))
-    .filter(isCompleteRow); // ✅ remove Aug-25 because field3/field4 are empty
-
-  if (filtered.length === 0) {
-    console.warn("No valid solar data after filtering (need all 3 fields present).");
-    return;
-  }
-
-  const titles = {
-    field3: "Urban Renewables",
-    field4: "Green House (kWh)",
-    field5: "Total Solar Energy"
-  };
-
-  plotChart(ctx, filtered, "Solar", field, titles[field]);
-}
-
-
-  async function loadSolarData() {
-    try {
-      const response = await fetch("/api/solar-detailed");
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const rows = await response.json();
-
-      // ✅ HARD SAFETY CHECK
-      if (!Array.isArray(rows)) {
-        console.error("Solar API did not return an array:", rows);
-        return;
-      }
-
-      globalData = rows;   // ✅ keep raw rows (don't pre-filter by field3)
-      if (globalData.length === 0) {
-        console.warn("Solar API returned empty array");
-        return;
-      }
-
-      plotSelected();      // ✅ plot default selected dataset
-
-    } catch (err) {
-      console.error("Error loading solar data:", err);
-    }
-  }
-
-  selector.addEventListener("change", plotSelected);
-
-  loadSolarData();
-</script>
-
-<script>
-(function () {
-  const routes = [
-    "/",
-    "/electgraph",
-    "/solargraph",
-    "/watergraph",
-    "/wastegraph"
-  ];
-
-  const delay = 30000;
-
-  const path = window.location.pathname.replace(/\/+$/, "") || "/";
-  const index = routes.indexOf(path);
-
-  if (index === -1) return;
-
-  setTimeout(() => {
-    window.location.href = routes[(index + 1) % routes.length];
-  }, delay);
-})();
-</script>
-
+  <!-- ✅ ONLY ONE SCRIPT: everything else lives in plotgraph.js -->
+  <script type="module" src="/scripts/plotgraph.js"></script>
 </body>
 </html>
