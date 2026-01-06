@@ -256,7 +256,9 @@ if (!canvas || !selector) {
     }
   }
 
+  window.addEventListener("water:render", () => {
   init();
+  }, { once: true });
 
   // ✅ auto-rotate
   (function () {
