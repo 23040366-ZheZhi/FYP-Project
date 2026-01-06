@@ -260,6 +260,7 @@ if (!canvas || !selector) {
   init();
   }, { once: true });
 
+
   // ✅ auto-rotate
   (function () {
     const routes = ["/", "/electgraph", "/solargraph", "/watergraph", "/waste"];

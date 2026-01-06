@@ -25,9 +25,6 @@
       overflow-x: hidden;
     }
 
-    /* =========================
-       Tap + Sea Scene
-       ========================= */
     .page{
       min-height: 100vh;
       position: relative;
@@ -35,49 +32,78 @@
       padding: 12px;
     }
 
-    /* Tap button */
+    /* ===== Tap button (image) ===== */
     .tap{
       position: fixed;
       top: 14px;
       left: 50%;
       transform: translateX(-50%);
-      border: 1px solid rgba(0,0,0,.08);
-      background: rgba(255,255,255,.92);
-      backdrop-filter: blur(10px);
-      border-radius: 999px;
-      padding: 10px 14px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
+      border: 0;
+      background: transparent;
+      padding: 0;
       cursor: pointer;
       z-index: 3000;
-      box-shadow: 0 10px 30px rgba(0,0,0,.08);
-      transition: transform 140ms ease, opacity 250ms ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
       user-select: none;
     }
-    .tap:active{ transform: translateX(-50%) scale(.98); }
-    .tapText{ font-size: 14px; opacity: .75; }
 
-    /* SEA container rises using transform (smooth, reliable) */
+    .tapImg{
+      width: 120px;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 12px 18px rgba(0,0,0,.18));
+      transition: transform 140ms ease;
+    }
+    .tap:active .tapImg{
+      transform: scale(.97);
+    }
+
+    /* ===== Water pour stream ===== */
+    .pour{
+      width: 10px;
+      height: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(180,220,255,.9),
+        rgba(80,160,255,.95)
+      );
+      border-radius: 0 0 6px 6px;
+      margin-top: -6px;
+      opacity: 0;
+      transition:
+        height 600ms cubic-bezier(.2,.9,.2,1),
+        opacity 200ms ease;
+      box-shadow: 0 0 12px rgba(120,180,255,.6);
+    }
+
+    .pouring .pour{
+      height: 170px;   /* stream length */
+      opacity: 1;
+    }
+
+    /* SEA container rises using transform */
     .sea{
       position: fixed;
       left: 0; right: 0;
       bottom: 0;
-      height: 120vh;                 /* taller than screen */
-      transform: translateY(100%);   /* start below screen */
+      height: 120vh;
+      transform: translateY(100%);
       transition: transform 2200ms cubic-bezier(.2,.9,.2,1);
       z-index: 5;
       background: linear-gradient(180deg, var(--sea-top), var(--sea-deep));
     }
 
-    /* Sea level target: stop before fully covering top (feels nicer) */
-    .page.filled .sea{ transform: translateY(55%); }
+    /* FULL fill: 0% = fill up */
+    .page.filled .sea{ transform: translateY(0%); }
 
     /* moving wave surface (2 layers) */
     .sea .wave{
       position: absolute;
       left: 0;
-      top: -80px;          /* sits at the “surface” */
+      top: -80px;
       width: 200%;
       height: 160px;
       opacity: .9;
@@ -102,7 +128,7 @@
     @keyframes waveMove1 { from { transform: translateX(0); } to { transform: translateX(-50%); } }
     @keyframes waveMove2 { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-    /* subtle light shimmer on water (optional but nice) */
+    /* shimmer */
     .sea::after{
       content:"";
       position:absolute;
@@ -118,15 +144,13 @@
       50%     { transform: translateY(-10px); }
     }
 
-    /* =========================
-       Content + Chart
-       ========================= */
+    /* Content + Chart */
     .content{
       position: relative;
-      z-index: 30;                 /* above sea */
+      z-index: 30;
       max-width: 1100px;
       margin: 0 auto;
-      padding-bottom: 120px;       /* space for Back button */
+      padding-bottom: 120px;
       opacity: 0;
       transform: translateY(90px) scale(.985);
       transition: opacity 650ms ease, transform 1150ms cubic-bezier(.2,.9,.2,1);
@@ -169,7 +193,6 @@
       overflow: hidden;
     }
 
-    /* Make it feel like it sits on water */
     .chart-wrap::before{
       content:"";
       position:absolute;
@@ -178,7 +201,6 @@
       pointer-events:none;
     }
 
-    /* Gentle bobbing */
     .floaty{
       animation: bob 2.8s ease-in-out infinite;
       transform-origin: center;
@@ -232,13 +254,10 @@
     .graph-back-btn:hover{ background: #23272b; }
 
     /* Hide tap after animation starts */
-    .page.filled .tap{
+    .tap.hide{
       opacity: 0;
       pointer-events: none;
-    }
-
-    @media (prefers-reduced-motion: reduce){
-      .sea, .content, .wave, .floaty { transition: none !important; animation: none !important; }
+      transition: opacity 250ms ease;
     }
   </style>
 </head>
@@ -246,16 +265,15 @@
 <body>
   <div class="page" id="page">
     <button class="tap" id="tapBtn" aria-label="Turn on tap">
-      🚰 <span class="tapText">Tap to fill</span>
+      <img class="tapImg" src="/images/tap.jpg" alt="Tap">
+      <div class="pour" id="pour"></div>
     </button>
 
-    <!-- Sea rising background -->
     <div class="sea" id="sea">
       <div class="wave wave1"></div>
       <div class="wave wave2"></div>
     </div>
 
-    <!-- Your existing UI, wrapped -->
     <div class="content" id="content">
       <h2>Whole Campus Water Usage (m³)</h2>
 
@@ -280,23 +298,36 @@
     </div>
 
     <script>
-      const page = document.getElementById("page");
-      const tapBtn = document.getElementById("tapBtn");
+    const page = document.getElementById("page");
+    const tapBtn = document.getElementById("tapBtn");
 
-      tapBtn.addEventListener("click", () => {
-        requestAnimationFrame(() => {
-          page.classList.add("filled");
+    tapBtn.addEventListener("click", () => {
+      // pour ON
+      tapBtn.classList.add("pouring");
 
-          // Tell plotwater.js: "render chart now"
-          setTimeout(() => {
-            window.dispatchEvent(new Event("water:render"));
-          }, 700); // sync with sea rising
-        });
+      // start sea
+      requestAnimationFrame(() => {
+        page.classList.add("filled");
       });
-    </script>
+
+      // pour OFF after 1.2s
+      setTimeout(() => {
+        tapBtn.classList.remove("pouring");
+      }, 1200);
+
+      // HIDE TAP after pour ends (so you can actually see the stream)
+      setTimeout(() => {
+        tapBtn.classList.add("hide");
+      }, 1300);
+
+      // chart render after sea starts rising
+      setTimeout(() => {
+        window.dispatchEvent(new Event("water:render"));
+      }, 700);
+    });
+</script>
 
 
-    <!-- Keep your module exactly the same -->
     <script type="module" src="/scripts/plotwater.js"></script>
   </div>
 </body>
