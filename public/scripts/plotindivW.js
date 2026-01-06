@@ -1,4 +1,3 @@
-// /public/scripts/plotindivW.js
 let chart;
 
 const COLOR_PREVIOUS = "#43a047";
@@ -16,7 +15,7 @@ if (!canvas || !select) {
   let globalRows = [];
   let buildings = [];
   let monthKey = "";
-  let meta = { yearMode: "current", latestYear: null, previousYear: null };
+  let meta = { yearMode: "current", latestYear: null, previousYear: null, graphType: "bar" };
 
   function showMsg(t) {
     if (!msgBox) return;
@@ -32,7 +31,6 @@ if (!canvas || !select) {
   }
 
   function parseLabel(val) {
-    // "25-Jan" → { year: 2025, monthIndex: 0 }
     const s = String(val ?? "");
     const m = s.match(/^(\d{2})-([A-Za-z]{3})$/);
     if (!m) return null;
@@ -48,16 +46,26 @@ if (!canvas || !select) {
 
   const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+  async function loadGraphSettings() {
+    const res = await fetch("/api/graph-settings");
+    if (!res.ok) throw new Error(`Settings HTTP ${res.status}`);
+    return await res.json();
+  }
+
   async function load() {
     showMsg("");
-    const res = await fetch("/api/water-individual");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const data = await res.json();
+    const [data, settings] = await Promise.all([
+      fetch("/api/water-individual").then(r => r.json()),
+      loadGraphSettings()
+    ]);
+
     if (!Array.isArray(data) || data.length < 2) {
       showMsg("No data returned.");
       return;
     }
+
+    meta.graphType = settings?.graphType || "bar";
 
     const header = data[0];
     const rows = data.slice(1);
@@ -65,11 +73,10 @@ if (!canvas || !select) {
     monthKey = Object.keys(header)[0];
     globalRows = rows;
 
-    // compute years
     const years = rows.map(r => parseLabel(r[monthKey])?.year).filter(Boolean);
     meta.latestYear = Math.max(...years);
     meta.previousYear = meta.latestYear - 1;
-    meta.yearMode = rows.length && years.length && years.some(y => y === meta.previousYear) ? "both" : "current";
+    meta.yearMode = years.some(y => y === meta.previousYear) ? "both" : "current";
 
     buildings = Object.entries(header)
       .filter(([k]) => k !== monthKey)
@@ -89,6 +96,19 @@ if (!canvas || !select) {
       const b = buildings.find(x => x.key === select.value);
       if (b) render(b);
     };
+  }
+
+  function styleFor(color) {
+    if (meta.graphType === "line") {
+      return {
+        borderColor: color,
+        backgroundColor: color,
+        tension: 0.3,
+        fill: false,
+        pointRadius: 3
+      };
+    }
+    return { backgroundColor: color };
   }
 
   function render(building) {
@@ -126,7 +146,7 @@ if (!canvas || !select) {
       datasets.push({
         label: String(meta.previousYear),
         data: prevData,
-        backgroundColor: COLOR_PREVIOUS
+        ...styleFor(COLOR_PREVIOUS)
       });
     }
 
@@ -134,12 +154,12 @@ if (!canvas || !select) {
       datasets.push({
         label: String(meta.latestYear),
         data: currData,
-        backgroundColor: COLOR_CURRENT
+        ...styleFor(COLOR_CURRENT)
       });
     }
 
     chart = new Chart(ctx, {
-      type: "bar",
+      type: meta.graphType,
       data: { labels, datasets },
       options: {
         responsive: true,

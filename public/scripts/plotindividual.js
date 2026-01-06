@@ -1,13 +1,27 @@
 let chart;
 
-const ctx = document.getElementById("chart").getContext("2d");
+const ctx = document.getElementById("chart")?.getContext("2d");
 const buildingSelect = document.getElementById("buildingSelect");
+const msgBox = document.getElementById("msgBox");
 
-const COLOR_CURRENT = "#1e88e5";   // blue
-const COLOR_PREVIOUS = "#43a047";  // green
+const COLOR_CURRENT = "skyblue";
+const COLOR_PREVIOUS = "#43a047";
+
+function showMsg(text) {
+  if (!msgBox) return;
+  msgBox.textContent = text;
+  msgBox.style.display = text ? "block" : "none";
+}
 
 async function loadData() {
   const res = await fetch("/api/electric-building");
+  if (!res.ok) throw new Error(`Electric-building HTTP ${res.status}`);
+  return await res.json();
+}
+
+async function loadGraphSettings() {
+  const res = await fetch("/api/graph-settings");
+  if (!res.ok) throw new Error(`Graph-settings HTTP ${res.status}`);
   return await res.json();
 }
 
@@ -15,46 +29,66 @@ function getBuildings(sampleRow) {
   return Object.keys(sampleRow)
     .filter(k => !["year", "month"].includes(k))
     .map(k => ({
-      label: k.trim(),   // shown in dropdown
-      key: k             // REAL key in JSON (with space)
+      label: k.trim(),
+      key: k
     }));
 }
-
 
 function populateDropdown(buildings) {
   buildingSelect.innerHTML = "";
   buildings.forEach(b => {
     const opt = document.createElement("option");
-    opt.value = b.key;       // use REAL key
+    opt.value = b.key;
     opt.textContent = b.label;
     buildingSelect.appendChild(opt);
   });
 }
 
+function toNum(v) {
+  const s = String(v ?? "").trim();
+  if (!s) return NaN;
+  const n = Number(s.replace(/,/g, ""));
+  return Number.isFinite(n) ? n : NaN;
+}
 
-function plot(data, building, meta) {
+function styleFor(color, graphType) {
+  if (graphType === "line") {
+    return {
+      borderColor: color,
+      backgroundColor: color,
+      fill: false,
+      tension: 0.3,
+      pointRadius: 3
+    };
+  }
+  return { backgroundColor: color };
+}
+
+function plot(rows, buildingKey, meta) {
+  if (!ctx) return;
   if (chart) chart.destroy();
 
-  // Step 1: build raw month list
-  const allMonths = [...new Set(data.map(r => r.month))];
+  const allMonths = [...new Set(rows.map(r => r.month))];
 
-  // Step 2: build raw datasets
-  const prevData = allMonths.map(
-    m => data.find(r => r.month === m && r.year === meta.previousYear)?.[building] ?? null
-  );
+  const prevData = allMonths.map(m => {
+    const raw = rows.find(r => r.month === m && r.year === meta.previousYear)?.[buildingKey];
+    const n = toNum(raw);
+    return (Number.isFinite(n) && n !== 0) ? n : null;
+  });
 
-  const currData = allMonths.map(
-    m => data.find(r => r.month === m && r.year === meta.latestYear)?.[building] ?? null
-  );
+  const currData = allMonths.map(m => {
+    const raw = rows.find(r => r.month === m && r.year === meta.latestYear)?.[buildingKey];
+    const n = toNum(raw);
+    return (Number.isFinite(n) && n !== 0) ? n : null;
+  });
 
-  // Step 3: remove empty months
   const labels = [];
   const prevFiltered = [];
   const currFiltered = [];
 
   allMonths.forEach((month, i) => {
-    const hasPrev = prevData[i] && prevData[i] !== 0;
-    const hasCurr = currData[i] && currData[i] !== 0;
+    const hasPrev = prevData[i] !== null;
+    const hasCurr = currData[i] !== null;
 
     if (hasPrev || hasCurr) {
       labels.push(month);
@@ -63,14 +97,18 @@ function plot(data, building, meta) {
     }
   });
 
-  // Step 4: build datasets
+  if (!labels.length) {
+    showMsg("No valid data found for this building.");
+    return;
+  }
+
   const datasets = [];
 
   if (meta.yearMode !== "current") {
     datasets.push({
       label: `${meta.previousYear}`,
       data: prevFiltered,
-      backgroundColor: "#43a047"
+      ...styleFor(COLOR_PREVIOUS, meta.graphType)
     });
   }
 
@@ -78,16 +116,16 @@ function plot(data, building, meta) {
     datasets.push({
       label: `${meta.latestYear}`,
       data: currFiltered,
-       backgroundColor: "skyblue"
+      ...styleFor(COLOR_CURRENT, meta.graphType)
     });
   }
 
-  // Step 5: render chart
   chart = new Chart(ctx, {
-    type: "bar", // 👈 BAR GRAPH
+    type: meta.graphType,
     data: { labels, datasets },
     options: {
       responsive: true,
+      spanGaps: false,
       plugins: {
         legend: { display: true },
         tooltip: {
@@ -109,24 +147,34 @@ function plot(data, building, meta) {
 
 
 async function init() {
-  const result = await loadData();
-  const { data, yearMode, latestYear, previousYear } = result;
+  try {
+    showMsg("");
 
-  // Build buildings list from FIRST ROW
-  const buildings = getBuildings(data[0]);
-  populateDropdown(buildings);
+    const [result, settings] = await Promise.all([
+      loadData(),
+      loadGraphSettings()
+    ]);
 
-  // ✅ FORCE SELECT FIRST BUILDING (ECMC)
-  buildingSelect.value = buildings[0].key;
+    const { data, yearMode, latestYear, previousYear } = result;
+    const graphType = settings?.graphType || "bar";
 
-  // ✅ DRAW CHART IMMEDIATELY
-  plot(data, buildings[0].key, { yearMode, latestYear, previousYear });
+    const buildings = getBuildings(data[0]);
+    populateDropdown(buildings);
 
-  // Change handler
-  buildingSelect.addEventListener("change", () =>
-    plot(data, buildingSelect.value, { yearMode, latestYear, previousYear })
-  );
+    buildingSelect.value = buildings[0].key;
+
+    const meta = { yearMode, latestYear, previousYear, graphType };
+
+    plot(data, buildings[0].key, meta);
+
+    buildingSelect.addEventListener("change", () => {
+      plot(data, buildingSelect.value, meta);
+    });
+
+  } catch (e) {
+    console.error(e);
+    showMsg("Failed to load electricity building data.");
+  }
 }
-
 
 init();

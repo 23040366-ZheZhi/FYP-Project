@@ -1,28 +1,26 @@
-// ======================= /public/scripts/plotwater.js =======================
-// ✅ all logic moved here: fetch, filtering, selector, both-mode grouping, colors, auto-rotate
-// ✅ KEEP your existing filtering rules:
-//    - Must have Water label and not "Month"
-//    - field3 numeric must be finite AND != 0 (allow negative)
-// ✅ Only 2 colors: previous green, current skyblue
-// ✅ ONLY when yearMode === "both" => grouped bars by month (easy compare)
-
 let chart;
 
-const COLOR_PREVIOUS = "#43a047";
-const COLOR_CURRENT = "skyblue";
+const COLOR_PREVIOUS = "#43a047"; // green
+const COLOR_CURRENT  = "skyblue"; // skyblue
 
-const canvas = document.getElementById("waterChart");
+const canvas  = document.getElementById("waterChart");
 const selector = document.getElementById("datasetSelector");
-const msgBox = document.getElementById("msgBox");
+const msgBox  = document.getElementById("msgBox");
 
 if (!canvas || !selector) {
-  console.warn("plotwater.js: required DOM not found, skipping");
+  console.warn("plotwater.js: water DOM not found, skipping");
 } else {
   const ctx = canvas.getContext("2d");
 
+  const MONTHS_FULL = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+
+  // ---------- helpers ----------
   function showMsg(text) {
     if (!msgBox) return;
-    msgBox.textContent = text;
+    msgBox.textContent = text || "";
     msgBox.style.display = text ? "block" : "none";
   }
 
@@ -34,7 +32,7 @@ if (!canvas || !selector) {
   }
 
   function parseMonthIndex(label) {
-    // Water label could be "Jan-24" or "Jan"
+    // supports "Jan-24" or "Jan"
     const s = String(label ?? "").trim().toLowerCase();
     const mon = s.slice(0, 3);
     const map = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
@@ -48,30 +46,42 @@ if (!canvas || !selector) {
     return 2000 + Number(m[1]);
   }
 
-  const MONTHS_FULL = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-  ];
+  // ✅ KEEP YOUR FILTERING RULES (based on field3)
+  function applyYourFilters(rows) {
+    return rows.filter(r => {
+      if (!r.Water || r.Water === "Month") return false;
 
-  async function loadWater() {
-    showMsg("");
+      const value = toNum(r.field3); // your rule: validate using field3
+      if (!Number.isFinite(value)) return false;
+      if (value === 0) return false;
+
+      return true;
+    });
+  }
+
+  async function loadWaterDetailed() {
     const res = await fetch("/api/water-detailed");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`Water HTTP ${res.status}`);
     return await res.json(); // {yearMode, latestYear, previousYear, data}
   }
 
-  function applyYourFilters(rows) {
-    // ✅ KEEP YOUR FILTERING RULES (based on field3):
-    // - Must have month label
-    // - Must be numeric (allow negative)
-    // - Reject 0
-    return rows.filter(r => {
-      if (!r.Water || r.Water === "Month") return false;
-      const value = toNum(r.field3);
-      if (!Number.isFinite(value)) return false;
-      if (value === 0) return false;
-      return true;
-    });
+  async function loadGraphSettings() {
+    const res = await fetch("/api/graph-settings");
+    if (!res.ok) throw new Error(`Settings HTTP ${res.status}`);
+    return await res.json(); // {yearMode, graphType}
+  }
+
+  function styleFor(meta, color) {
+    if (meta.graphType === "line") {
+      return {
+        borderColor: color,
+        backgroundColor: color,
+        tension: 0.3,
+        fill: false,
+        pointRadius: 3
+      };
+    }
+    return { backgroundColor: color };
   }
 
   function render(meta, rows, field, titleText) {
@@ -93,19 +103,20 @@ if (!canvas || !selector) {
       const val = toNum(r[field]);
       if (!Number.isFinite(val)) continue;
 
+      // If label has year -> split into previous/current
       const y = yearFromLabel(r.Water);
 
       if (y != null) {
         if (y === meta.previousYear) prevArr[idx] = val;
-        if (y === meta.latestYear) currArr[idx] = val;
+        if (y === meta.latestYear)   currArr[idx] = val;
       } else {
-        // If label doesn't include year, API already filtered by yearMode.
+        // If no year in label, API already filtered by yearMode
         if (meta.yearMode === "previous") prevArr[idx] = val;
         else currArr[idx] = val;
       }
     }
 
-    // ---- single year mode ----
+    // ========== single year ==========
     if (meta.yearMode !== "both") {
       const yearToShow = meta.yearMode === "previous" ? meta.previousYear : meta.latestYear;
       const arr = meta.yearMode === "previous" ? prevArr : currArr;
@@ -125,13 +136,13 @@ if (!canvas || !selector) {
       }
 
       chart = new Chart(ctx, {
-        type: "bar",
+        type: meta.graphType,
         data: {
           labels,
           datasets: [{
             label: String(yearToShow),
             data,
-            backgroundColor: meta.yearMode === "previous" ? COLOR_PREVIOUS : COLOR_CURRENT
+            ...styleFor(meta, meta.yearMode === "previous" ? COLOR_PREVIOUS : COLOR_CURRENT)
           }]
         },
         options: {
@@ -154,7 +165,7 @@ if (!canvas || !selector) {
       return;
     }
 
-    // ---- BOTH mode grouped bars ----
+    // ========== BOTH mode ==========
     const labels = [];
     const prevData = [];
     const currData = [];
@@ -176,12 +187,12 @@ if (!canvas || !selector) {
     }
 
     chart = new Chart(ctx, {
-      type: "bar",
+      type: meta.graphType,
       data: {
         labels,
         datasets: [
-          { label: String(meta.previousYear), data: prevData, backgroundColor: COLOR_PREVIOUS },
-          { label: String(meta.latestYear), data: currData, backgroundColor: COLOR_CURRENT }
+          { label: String(meta.previousYear), data: prevData, ...styleFor(meta, COLOR_PREVIOUS) },
+          { label: String(meta.latestYear),   data: currData, ...styleFor(meta, COLOR_CURRENT) }
         ]
       },
       options: {
@@ -204,7 +215,12 @@ if (!canvas || !selector) {
 
   async function init() {
     try {
-      const result = await loadWater();
+      showMsg("");
+
+      const [result, settings] = await Promise.all([
+        loadWaterDetailed(),
+        loadGraphSettings()
+      ]);
 
       if (!result || !Array.isArray(result.data)) {
         showMsg("Water API error: invalid data format.");
@@ -213,7 +229,8 @@ if (!canvas || !selector) {
       }
 
       const meta = {
-        yearMode: result.yearMode || "current",
+        yearMode: settings?.yearMode || result.yearMode || "current",
+        graphType: settings?.graphType || "bar",
         latestYear: result.latestYear,
         previousYear: result.previousYear
       };
@@ -232,6 +249,7 @@ if (!canvas || !selector) {
 
       selector.addEventListener("change", draw);
       draw();
+
     } catch (err) {
       console.error(err);
       showMsg("Failed to load water data.");
@@ -240,9 +258,9 @@ if (!canvas || !selector) {
 
   init();
 
-  // ✅ auto-rotate (same as your other pages)
+  // ✅ auto-rotate
   (function () {
-    const routes = ["/", "/electgraph", "/solargraph", "/watergraph", "/wastegraph"];
+    const routes = ["/", "/electgraph", "/solargraph", "/watergraph", "/waste"];
     const delay = 30000;
 
     const path = window.location.pathname.replace(/\/+$/, "") || "/";

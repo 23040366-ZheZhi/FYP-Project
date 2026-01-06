@@ -1,27 +1,33 @@
-// /public/scripts/plotgraph.js
 let chart;
 
-// only 2 colors as you want
 const COLOR_PREVIOUS = "#43a047"; // green
 const COLOR_CURRENT  = "skyblue"; // skyblue
 
-// ---- DOM (solar page) ----
 const canvas = document.getElementById("solarChart");
 const selector = document.getElementById("datasetSelector");
 const msgBox = document.getElementById("msgBox");
 
 if (!canvas || !selector) {
-  // this file might be loaded on other pages; silently skip if solar DOM not found
   console.warn("plotgraph.js: solar DOM not found, skipping");
 } else {
   const ctx = canvas.getContext("2d");
 
-  // ========== your old helper functions (kept) ==========
+  const MONTHS_FULL = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+
+  // ---------- helpers ----------
+  function showMsg(text) {
+    if (!msgBox) return;
+    msgBox.textContent = text || "";
+    msgBox.style.display = text ? "block" : "none";
+  }
+
   function toNum(v) {
     const s = String(v ?? "").trim();
     if (!s) return NaN;
-    const cleaned = s.replace(/,/g, "");
-    const n = Number(cleaned);
+    const n = Number(s.replace(/,/g, ""));
     return Number.isFinite(n) ? n : NaN;
   }
 
@@ -29,18 +35,12 @@ if (!canvas || !selector) {
     return String(r?.Solar ?? "").toLowerCase() === "month";
   }
 
-  // ✅ KEEP YOUR PREVIOUS FILTER: must have ALL 3 fields valid numbers
+  // ✅ keep your rule: must have all 3 fields valid
   function isCompleteRow(r) {
     const a = toNum(r.field3);
     const b = toNum(r.field4);
     const c = toNum(r.field5);
     return !isNaN(a) && !isNaN(b) && !isNaN(c);
-  }
-
-  function showMsg(text) {
-    if (!msgBox) return;
-    msgBox.textContent = text;
-    msgBox.style.display = text ? "block" : "none";
   }
 
   function parseSolarLabel(label) {
@@ -58,22 +58,35 @@ if (!canvas || !selector) {
     return { year, monthIndex };
   }
 
-  const MONTHS_FULL = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-  ];
-
   async function loadSolarFromApi() {
-    showMsg(""); // clear
     const res = await fetch("/api/solar-detailed");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`Solar HTTP ${res.status}`);
     return await res.json(); // {yearMode, latestYear, previousYear, data}
+  }
+
+  async function loadGraphSettings() {
+    const res = await fetch("/api/graph-settings");
+    if (!res.ok) throw new Error(`Settings HTTP ${res.status}`);
+    return await res.json(); // {yearMode, graphType}
+  }
+
+  function styleFor(meta, color) {
+    if (meta.graphType === "line") {
+      return {
+        borderColor: color,
+        backgroundColor: color,
+        tension: 0.3,
+        fill: false,
+        pointRadius: 3
+      };
+    }
+    return { backgroundColor: color };
   }
 
   function renderChart(filteredRows, field, titleText, meta) {
     if (chart) chart.destroy();
 
-    // Build arrays by month index for latest + previous only
+    // store month values for each year
     const prevArr = Array(12).fill(null);
     const currArr = Array(12).fill(null);
 
@@ -88,7 +101,7 @@ if (!canvas || !selector) {
       if (info.year === meta.latestYear)   currArr[info.monthIndex] = val;
     }
 
-    // ---- Single year mode ----
+    // ========== single year ==========
     if (meta.yearMode !== "both") {
       const yearToShow = meta.yearMode === "previous" ? meta.previousYear : meta.latestYear;
       const arr = yearToShow === meta.previousYear ? prevArr : currArr;
@@ -102,19 +115,19 @@ if (!canvas || !selector) {
         }
       }
 
-      if (labels.length === 0) {
+      if (!labels.length) {
         showMsg("No valid solar data to display (after filtering).");
         return;
       }
 
       chart = new Chart(ctx, {
-        type: "bar",
+        type: meta.graphType,
         data: {
           labels,
           datasets: [{
             label: String(yearToShow),
             data,
-            backgroundColor: yearToShow === meta.previousYear ? COLOR_PREVIOUS : COLOR_CURRENT
+            ...styleFor(meta, yearToShow === meta.previousYear ? COLOR_PREVIOUS : COLOR_CURRENT)
           }]
         },
         options: {
@@ -137,7 +150,7 @@ if (!canvas || !selector) {
       return;
     }
 
-    // ---- BOTH mode (grouped like screenshot) ----
+    // ========== BOTH mode ==========
     const labels = [];
     const prevData = [];
     const currData = [];
@@ -153,18 +166,18 @@ if (!canvas || !selector) {
       }
     }
 
-    if (labels.length === 0) {
+    if (!labels.length) {
       showMsg("No valid solar data to display (after filtering).");
       return;
     }
 
     chart = new Chart(ctx, {
-      type: "bar",
+      type: meta.graphType,
       data: {
         labels,
         datasets: [
-          { label: String(meta.previousYear), data: prevData, backgroundColor: COLOR_PREVIOUS },
-          { label: String(meta.latestYear),   data: currData, backgroundColor: COLOR_CURRENT }
+          { label: String(meta.previousYear), data: prevData, ...styleFor(meta, COLOR_PREVIOUS) },
+          { label: String(meta.latestYear),   data: currData, ...styleFor(meta, COLOR_CURRENT) }
         ]
       },
       options: {
@@ -187,26 +200,31 @@ if (!canvas || !selector) {
 
   async function initSolar() {
     try {
-      const result = await loadSolarFromApi();
+      showMsg("");
+
+      const [result, settings] = await Promise.all([
+        loadSolarFromApi(),
+        loadGraphSettings()
+      ]);
 
       if (!result || !Array.isArray(result.data)) {
         showMsg("Solar API error: invalid data format.");
-        console.error("Invalid API result:", result);
+        console.error("Invalid solar API result:", result);
         return;
       }
 
       const meta = {
-        yearMode: result.yearMode || "current",
+        yearMode: settings?.yearMode || result.yearMode || "current",
+        graphType: settings?.graphType || "bar",
         latestYear: result.latestYear,
         previousYear: result.previousYear
       };
 
-      // ✅ KEEP your previous filtering behavior
       const filteredRows = result.data
         .filter(r => !isHeaderRow(r))
         .filter(isCompleteRow);
 
-      if (filteredRows.length === 0) {
+      if (!filteredRows.length) {
         showMsg("No valid solar data after filtering (need all 3 fields present).");
         return;
       }

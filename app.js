@@ -51,10 +51,26 @@ app.use(session({
     }
 }));
 
+
+// ✅ defaults first
 app.use((req, res, next) => {
-    res.locals.session = req.session;
-    next();
+  if (!req.session.yearMode) req.session.yearMode = "current";
+  if (!req.session.graphType) req.session.graphType = "bar";
+  next();
 });
+
+// ✅ locals after
+app.use((req, res, next) => {
+  res.locals.session = req.session;
+  next();
+});
+app.get("/api/graph-settings", (req, res) => {
+  res.json({
+    yearMode: req.session.yearMode,
+    graphType: req.session.graphType
+  });
+});
+
 
 function adminOnly(req, res, next) {
     if (!req.session.isAdmin) {
@@ -249,12 +265,7 @@ app.post('/set-graph-year', adminOnly, (req, res) => {
 
     res.redirect('/manage_graph');
 });
-app.use((req, res, next) => {
-    if (!req.session.yearMode) {
-        req.session.yearMode = "current";
-    }
-    next();
-});
+
 
 app.delete('/delete-xlsx/:filename', adminOnly, (req, res) => {
     const filePath = path.join(__dirname, 'public/excel', req.params.filename);
@@ -348,6 +359,8 @@ app.get('/deleteGame/:id', (req, res) => {
 });
 
 
+
+
 app.get("/api/summary", (req, res) => {
   try {
     // ✅ FRONT DASHBOARD → IGNORE admin yearMode
@@ -410,6 +423,7 @@ app.get("/api/summary", (req, res) => {
   }
 
 });
+
 app.get("/api/solar-detailed", (req, res) => {
   try {
     const yearMode = req.session.yearMode || "current";

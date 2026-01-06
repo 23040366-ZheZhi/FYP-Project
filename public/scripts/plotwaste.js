@@ -1,29 +1,26 @@
-// ======================= /public/scripts/plotwaste.js (WASTE COMPARISON) =======================
-// ✅ compares previous vs current when yearMode === "both"
-// ✅ only 2 colors: previous green, current skyblue
-// ✅ aligns months together (Jan..Dec)
-// ✅ keeps totals display
-// ✅ keeps safe destroy logic
-// ✅ keeps auto-rotate (only once)
-
 let chart;
 
-const COLOR_PREVIOUS = "#43a047";
-const COLOR_CURRENT  = "skyblue";
+const COLOR_PREVIOUS = "#43a047"; // green
+const COLOR_CURRENT  = "skyblue"; // skyblue
 
-const canvas   = document.getElementById("wasteChart");
-const selector = document.getElementById("datasetSelector");
+const canvas    = document.getElementById("wasteChart");
+const selector  = document.getElementById("datasetSelector");
 const totalsDiv = document.getElementById("totalsDisplay");
-const msgBox   = document.getElementById("msgBox");
+const msgBox    = document.getElementById("msgBox");
 
 if (!canvas || !selector) {
   console.warn("plotwaste.js: required DOM not found, skipping");
 } else {
   const ctx = canvas.getContext("2d");
 
+  const MONTHS_FULL = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+
   function showMsg(text) {
     if (!msgBox) return;
-    msgBox.textContent = text;
+    msgBox.textContent = text || "";
     msgBox.style.display = text ? "block" : "none";
   }
 
@@ -31,6 +28,7 @@ if (!canvas || !selector) {
     const s = String(raw ?? "").trim();
     if (!s) return NaN;
 
+    // allow "12.3%" values
     if (s.includes("%")) {
       const n = Number(s.replace("%", "").trim());
       return Number.isFinite(n) ? n : NaN;
@@ -54,23 +52,23 @@ if (!canvas || !selector) {
     return { monthIndex, year: Number(m[2]) };
   }
 
-  const MONTHS_FULL = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-  ];
-
-  async function loadWaste() {
-    showMsg("");
+  async function loadWasteDetailed() {
     const res = await fetch("/api/waste-detailed");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`Waste HTTP ${res.status}`);
     return await res.json(); // {monthly, totals, yearMode, latestYear, previousYear}
+  }
+
+  async function loadGraphSettings() {
+    const res = await fetch("/api/graph-settings");
+    if (!res.ok) throw new Error(`Settings HTTP ${res.status}`);
+    return await res.json(); // {yearMode, graphType}
   }
 
   function updateTotals(fyTotals, field) {
     if (!totalsDiv) return;
 
-    const lines = fyTotals.map(row => {
-      const fy = row["General & Recyclable Waste"]; // "FY2024"
+    const lines = (fyTotals || []).map(row => {
+      const fy = row["General & Recyclable Waste"]; // e.g. "FY2024"
       const val = row[field] ?? "-";
       return `${fy}: ${val}`;
     });
@@ -78,10 +76,27 @@ if (!canvas || !selector) {
     totalsDiv.textContent = lines.join(" | ");
   }
 
-  function render(meta, monthlyData, fyTotals, field, labelText) {
+  function styleFor(meta, color) {
+    if (meta.graphType === "line") {
+      return {
+        borderColor: color,
+        backgroundColor: color,
+        tension: 0.3,
+        fill: false,
+        pointRadius: 3
+      };
+    }
+    return { backgroundColor: color };
+  }
+
+  function unitFor(field) {
+    return (field === "field4" || field === "field5") ? "%" : "kg";
+  }
+
+  function render(meta, monthlyData, fyTotals, field, titleText) {
     if (chart) chart.destroy();
 
-    // build arrays for prev/curr aligned by month
+    // build aligned arrays for prev/curr
     const prevArr = Array(12).fill(null);
     const currArr = Array(12).fill(null);
 
@@ -96,10 +111,12 @@ if (!canvas || !selector) {
       if (info.year === meta.latestYear)   currArr[info.monthIndex] = val;
     }
 
-    // choose datasets based on yearMode
+    updateTotals(fyTotals, field);
+
+    // ---------- single year ----------
     if (meta.yearMode !== "both") {
-      const yearToShow = (meta.yearMode === "previous") ? meta.previousYear : meta.latestYear;
-      const arr = (meta.yearMode === "previous") ? prevArr : currArr;
+      const yearToShow = meta.yearMode === "previous" ? meta.previousYear : meta.latestYear;
+      const arr = meta.yearMode === "previous" ? prevArr : currArr;
 
       const labels = [];
       const data = [];
@@ -116,27 +133,23 @@ if (!canvas || !selector) {
       }
 
       chart = new Chart(ctx, {
-        type: "bar",
+        type: meta.graphType,
         data: {
           labels,
           datasets: [{
             label: String(yearToShow),
             data,
-            backgroundColor: (yearToShow === meta.previousYear) ? COLOR_PREVIOUS : COLOR_CURRENT
+            ...styleFor(meta, yearToShow === meta.previousYear ? COLOR_PREVIOUS : COLOR_CURRENT)
           }]
         },
         options: {
           responsive: true,
           plugins: {
-            title: { display: true, text: labelText, font: { size: 18 } },
+            title: { display: true, text: titleText, font: { size: 18 } },
             legend: { display: true, position: "top" },
             tooltip: {
               callbacks: {
-                label: c => {
-                  const v = c.parsed.y;
-                  const unit = field === "field4" || field === "field5" ? "%" : "kg";
-                  return `${c.dataset.label}: ${v?.toLocaleString() ?? "-"} ${unit}`;
-                }
+                label: c => `${c.dataset.label}: ${c.parsed.y?.toLocaleString() ?? "-"} ${unitFor(field)}`
               }
             }
           },
@@ -147,7 +160,7 @@ if (!canvas || !selector) {
       return;
     }
 
-    // BOTH mode (2 datasets, months aligned)
+    // ---------- BOTH mode ----------
     const labels = [];
     const prevData = [];
     const currData = [];
@@ -169,26 +182,22 @@ if (!canvas || !selector) {
     }
 
     chart = new Chart(ctx, {
-      type: "bar",
+      type: meta.graphType,
       data: {
         labels,
         datasets: [
-          { label: String(meta.previousYear), data: prevData, backgroundColor: COLOR_PREVIOUS },
-          { label: String(meta.latestYear),   data: currData, backgroundColor: COLOR_CURRENT }
+          { label: String(meta.previousYear), data: prevData, ...styleFor(meta, COLOR_PREVIOUS) },
+          { label: String(meta.latestYear),   data: currData, ...styleFor(meta, COLOR_CURRENT) }
         ]
       },
       options: {
         responsive: true,
         plugins: {
-          title: { display: true, text: labelText, font: { size: 18 } },
+          title: { display: true, text: titleText, font: { size: 18 } },
           legend: { display: true, position: "top" },
           tooltip: {
             callbacks: {
-              label: c => {
-                const v = c.parsed.y;
-                const unit = field === "field4" || field === "field5" ? "%" : "kg";
-                return `${c.dataset.label}: ${v?.toLocaleString() ?? "-"} ${unit}`;
-              }
+              label: c => `${c.dataset.label}: ${c.parsed.y?.toLocaleString() ?? "-"} ${unitFor(field)}`
             }
           }
         },
@@ -199,24 +208,27 @@ if (!canvas || !selector) {
 
   async function init() {
     try {
-      const result = await loadWaste();
+      showMsg("");
 
-      if (!result || !Array.isArray(result.monthly) || !Array.isArray(result.totals)) {
+      const [waste, settings] = await Promise.all([
+        loadWasteDetailed(),
+        loadGraphSettings()
+      ]);
+
+      if (!waste || !Array.isArray(waste.monthly) || !Array.isArray(waste.totals)) {
         showMsg("Waste API error: invalid data format.");
-        console.error("Invalid API result:", result);
+        console.error("Invalid waste result:", waste);
         return;
       }
 
       const meta = {
-        yearMode: result.yearMode || "current",
-        latestYear: result.latestYear,
-        previousYear: result.previousYear
+        yearMode: settings?.yearMode || waste.yearMode || "current",
+        graphType: settings?.graphType || "bar",
+        latestYear: waste.latestYear,
+        previousYear: waste.previousYear
       };
 
-      const monthlyData = result.monthly;
-      const fyTotals = result.totals;
-
-      if (!monthlyData.length) {
+      if (!waste.monthly.length) {
         showMsg("No waste monthly data returned.");
         return;
       }
@@ -224,10 +236,8 @@ if (!canvas || !selector) {
       const draw = () => {
         showMsg("");
         const field = selector.value;
-        const labelText = selector.options[selector.selectedIndex].text;
-
-        updateTotals(fyTotals, field);
-        render(meta, monthlyData, fyTotals, field, labelText);
+        const titleText = selector.options[selector.selectedIndex].text;
+        render(meta, waste.monthly, waste.totals, field, titleText);
       };
 
       selector.addEventListener("change", draw);
@@ -241,9 +251,9 @@ if (!canvas || !selector) {
 
   init();
 
-  // ✅ auto-rotate
+  // ✅ auto-rotate (fixed waste route)
   (function () {
-    const routes = ["/", "/electgraph", "/solargraph", "/watergraph", "/wastegraph"];
+    const routes = ["/", "/electgraph", "/solargraph", "/watergraph", "/waste"];
     const delay = 30000;
 
     const path = window.location.pathname.replace(/\/+$/, "") || "/";

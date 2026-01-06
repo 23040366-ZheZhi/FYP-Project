@@ -1,25 +1,25 @@
-// ======================= /public/scripts/plotelect.js =======================
-// ✅ all logic moved here: fetch, filtering, both-mode grouping, 2 colors, auto-rotate
-// ✅ previous = green, current = skyblue
-// ✅ ONLY when yearMode === "both" => grouped bars like your screenshot requirement
-// ✅ keeps your existing filtering rules (must have month label + numeric field3)
-
 let chart;
 
-const COLOR_PREVIOUS = "#43a047";
-const COLOR_CURRENT = "skyblue";
+const COLOR_PREVIOUS = "#43a047"; // green
+const COLOR_CURRENT  = "skyblue"; // skyblue
 
 const canvas = document.getElementById("electricChart");
 const msgBox = document.getElementById("msgBox");
 
 if (!canvas) {
-  console.warn("plotelect.js: #electricChart not found, skipping");
+  console.warn("plotelect.js: electric DOM not found, skipping");
 } else {
   const ctx = canvas.getContext("2d");
 
+  const MONTHS_FULL = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+
+  // ---------- helpers ----------
   function showMsg(text) {
     if (!msgBox) return;
-    msgBox.textContent = text;
+    msgBox.textContent = text || "";
     msgBox.style.display = text ? "block" : "none";
   }
 
@@ -31,7 +31,7 @@ if (!canvas) {
   }
 
   function parseMonthIndex(label) {
-    // Elect is usually "Jan-24" like solar, but some files might be "Jan" etc.
+    // supports "Jan-24" or "Jan"
     const s = String(label ?? "").trim().toLowerCase();
     const mon = s.slice(0, 3);
     const map = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
@@ -45,29 +45,43 @@ if (!canvas) {
     return 2000 + Number(m[1]);
   }
 
-  const MONTHS_FULL = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-  ];
+  // ✅ KEEP YOUR FILTER RULE: month label + numeric field3
+  function applyYourFilters(rows) {
+    return rows.filter(r => {
+      if (!r.Elect || r.Elect === "Month") return false;
+      return Number.isFinite(toNum(r.field3));
+    });
+  }
 
-  async function loadElectric() {
-    showMsg("");
+  async function loadElectricDetailed() {
     const res = await fetch("/api/electric-detailed");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`Electric HTTP ${res.status}`);
     return await res.json(); // {yearMode, latestYear, previousYear, data}
+  }
+
+  async function loadGraphSettings() {
+    const res = await fetch("/api/graph-settings");
+    if (!res.ok) throw new Error(`Settings HTTP ${res.status}`);
+    return await res.json(); // {yearMode, graphType}
+  }
+
+  function styleFor(meta, color) {
+    if (meta.graphType === "line") {
+      return {
+        borderColor: color,
+        backgroundColor: color,
+        tension: 0.3,
+        fill: false,
+        pointRadius: 3
+      };
+    }
+    return { backgroundColor: color };
   }
 
   function render(meta, rows) {
     if (chart) chart.destroy();
 
-    // Keep your previous filter rules:
-    // - Must have month label
-    // - Must have numeric value
-    const cleaned = rows.filter(r => {
-      if (!r.Elect || r.Elect === "Month") return false;
-      return Number.isFinite(toNum(r.field3));
-    });
-
+    const cleaned = applyYourFilters(rows);
     if (!cleaned.length) {
       showMsg("No valid electricity data after filtering.");
       return;
@@ -83,24 +97,22 @@ if (!canvas) {
       const val = toNum(r.field3);
       if (!Number.isFinite(val)) continue;
 
-      // If label contains year, use it. If not, fall back to meta logic:
       const y = yearFromLabel(r.Elect);
 
       if (y != null) {
         if (y === meta.previousYear) prevArr[idx] = val;
-        if (y === meta.latestYear) currArr[idx] = val;
+        if (y === meta.latestYear)   currArr[idx] = val;
       } else {
-        // If your Elect is just "Jan", your API already filtered by yearMode,
-        // so in "current"/"previous" we just treat it as the active year.
+        // if label has no year, API already filtered by yearMode
         if (meta.yearMode === "previous") prevArr[idx] = val;
         else currArr[idx] = val;
       }
     }
 
-    // single-year chart
+    // ========= single year =========
     if (meta.yearMode !== "both") {
-      const yearToShow = (meta.yearMode === "previous") ? meta.previousYear : meta.latestYear;
-      const arr = (meta.yearMode === "previous") ? prevArr : currArr;
+      const yearToShow = meta.yearMode === "previous" ? meta.previousYear : meta.latestYear;
+      const arr = meta.yearMode === "previous" ? prevArr : currArr;
 
       const labels = [];
       const data = [];
@@ -117,13 +129,13 @@ if (!canvas) {
       }
 
       chart = new Chart(ctx, {
-        type: "bar",
+        type: meta.graphType,
         data: {
           labels,
           datasets: [{
             label: String(yearToShow),
             data,
-            backgroundColor: (meta.yearMode === "previous") ? COLOR_PREVIOUS : COLOR_CURRENT
+            ...styleFor(meta, meta.yearMode === "previous" ? COLOR_PREVIOUS : COLOR_CURRENT)
           }]
         },
         options: {
@@ -146,7 +158,7 @@ if (!canvas) {
       return;
     }
 
-    // BOTH mode grouped bars
+    // ========= BOTH mode =========
     const labels = [];
     const prevData = [];
     const currData = [];
@@ -154,7 +166,6 @@ if (!canvas) {
     for (let i = 0; i < 12; i++) {
       const hasPrev = prevArr[i] != null;
       const hasCurr = currArr[i] != null;
-
       if (hasPrev || hasCurr) {
         labels.push(MONTHS_FULL[i]);
         prevData.push(prevArr[i]);
@@ -168,12 +179,12 @@ if (!canvas) {
     }
 
     chart = new Chart(ctx, {
-      type: "bar",
+      type: meta.graphType,
       data: {
         labels,
         datasets: [
-          { label: String(meta.previousYear), data: prevData, backgroundColor: COLOR_PREVIOUS },
-          { label: String(meta.latestYear), data: currData, backgroundColor: COLOR_CURRENT }
+          { label: String(meta.previousYear), data: prevData, ...styleFor(meta, COLOR_PREVIOUS) },
+          { label: String(meta.latestYear),   data: currData, ...styleFor(meta, COLOR_CURRENT) }
         ]
       },
       options: {
@@ -188,7 +199,7 @@ if (!canvas) {
           }
         },
         scales: {
-          y: { beginAtZero: true, title: { display: true, text: "Electricity Usage" } }
+          y: { beginAtZero: true, title: { display: true, text: "Electricity (kWh)" } }
         }
       }
     });
@@ -196,7 +207,12 @@ if (!canvas) {
 
   async function init() {
     try {
-      const result = await loadElectric();
+      showMsg("");
+
+      const [result, settings] = await Promise.all([
+        loadElectricDetailed(),
+        loadGraphSettings()
+      ]);
 
       if (!result || !Array.isArray(result.data)) {
         showMsg("Electric API error: invalid data format.");
@@ -205,7 +221,8 @@ if (!canvas) {
       }
 
       const meta = {
-        yearMode: result.yearMode || "current",
+        yearMode: settings?.yearMode || result.yearMode || "current",
+        graphType: settings?.graphType || "bar",
         latestYear: result.latestYear,
         previousYear: result.previousYear
       };
@@ -220,9 +237,9 @@ if (!canvas) {
 
   init();
 
-  // ✅ auto-rotate (same as your pages)
+  // ✅ auto-rotate (fixed waste route)
   (function () {
-    const routes = ["/", "/electgraph", "/solargraph", "/watergraph", "/wastegraph"];
+    const routes = ["/", "/electgraph", "/solargraph", "/watergraph", "/waste"];
     const delay = 30000;
 
     const path = window.location.pathname.replace(/\/+$/, "") || "/";
