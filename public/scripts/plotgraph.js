@@ -83,6 +83,8 @@ if (!canvas || !selector) {
     return { backgroundColor: color };
   }
 
+  
+
   function renderChart(filteredRows, field, titleText, meta) {
     if (chart) chart.destroy();
 
@@ -250,5 +252,22 @@ if (!canvas || !selector) {
     }
   }
 
+  window.addEventListener("solar:render", () => {
   initSolar();
+  }, { once: true });
+
+
+  // ✅ auto-rotate
+  (function () {
+    const routes = ["/", "/electgraph", "/solargraph", "/watergraph", "/waste"];
+    const delay = 10000;
+
+    const path = window.location.pathname.replace(/\/+$/, "") || "/";
+    const index = routes.indexOf(path);
+    if (index === -1) return;
+
+    setTimeout(() => {
+      window.location.href = routes[(index + 1) % routes.length];
+    }, delay);
+  })();
 }

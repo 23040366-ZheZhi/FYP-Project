@@ -8,7 +8,7 @@
   <style>
     :root{
       --page-bg: #f7f7f7;
-      --card-bg: rgba(255,255,255,.86);
+      --card-bg: rgba(255, 255, 255, 0.86);
       --text: #111827;
       --muted: #374151;
       --sea-top: rgba(59,130,246,.55);
@@ -36,7 +36,7 @@
     .tap{
       position: fixed;
       top: 14px;
-      left: 50%;
+      left: 98%;
       transform: translateX(-50%);
       border: 0;
       background: transparent;
@@ -51,38 +51,42 @@
     }
 
     .tapImg{
-      width: 120px;
+      width: 160px;   /* ⬅ bigger tap */
       height: auto;
       display: block;
-      filter: drop-shadow(0 12px 18px rgba(0,0,0,.18));
       transition: transform 140ms ease;
-    }
-    .tap:active .tapImg{
-      transform: scale(.97);
+      
     }
 
-    /* ===== Water pour stream ===== */
-    .pour{
-      width: 10px;
-      height: 0;
-      background: linear-gradient(
-        to bottom,
-        rgba(180,220,255,.9),
-        rgba(80,160,255,.95)
-      );
-      border-radius: 0 0 6px 6px;
-      margin-top: -6px;
-      opacity: 0;
-      transition:
-        height 600ms cubic-bezier(.2,.9,.2,1),
-        opacity 200ms ease;
-      box-shadow: 0 0 12px rgba(120,180,255,.6);
-    }
 
-    .pouring .pour{
-      height: 170px;   /* stream length */
-      opacity: 1;
-    }
+
+.pour{
+  position: relative;
+
+  width: 22px;             
+  height: 0;
+
+  margin-top: -10px;      
+  right: 34px;            
+
+  background: linear-gradient(
+    to bottom,
+    rgba(180,220,255,.9),
+    rgba(80,160,255,.95)
+  );
+
+  border-radius: 0 0 8px 8px;
+  opacity: 0;
+  transition:
+    height 600ms cubic-bezier(.2,.9,.2,1),
+    opacity 200ms ease;
+
+  box-shadow: 0 0 12px rgba(120,180,255,.6);
+}
+
+.pouring .pour { height: 170px; opacity: 1; }
+
+
 
     /* SEA container rises using transform */
     .sea{
@@ -97,7 +101,7 @@
     }
 
     /* FULL fill: 0% = fill up */
-    .page.filled .sea{ transform: translateY(0%); }
+    .page.filled .sea{ transform: translateY(15%)}
 
     /* moving wave surface (2 layers) */
     .sea .wave{
@@ -259,6 +263,71 @@
       pointer-events: none;
       transition: opacity 250ms ease;
     }
+    /* Hide label but keep for accessibility */
+.sr-only{
+  position:absolute;
+  width:1px; height:1px;
+  padding:0; margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  border:0;
+}
+
+/* Integrated header inside chart card */
+.chart-header{
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 4px 10px;
+}
+
+.chart-title-main{
+  font-weight: 800;
+  font-size: 18px;
+  color: #0b1220;
+  letter-spacing: 0.2px;
+}
+
+.chart-title-sub{
+  margin-top: 2px;
+  font-size: 12px;
+  color: rgba(17,24,39,.65);
+}
+
+.chart-controls select{
+  padding: 10px 14px;
+  font-size: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,.10);
+  background: rgba(255,255,255,.72);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 8px 18px rgba(0,0,0,.06);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.chart-controls select:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(0,0,0,.09);
+  border-color: rgba(37,99,235,.35);
+}
+
+.chart-controls select:focus{
+  outline: none;
+  border-color: rgba(37,99,235,.55);
+  box-shadow: 0 0 0 4px rgba(37,99,235,.18);
+}
+
+.chart-divider{
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(0,0,0,.12), transparent);
+  margin: 2px 0 12px;
+  position: relative;
+  z-index: 2;
+}
+
   </style>
 </head>
 
@@ -277,18 +346,27 @@
     <div class="content" id="content">
       <h2>Whole Campus Water Usage (m³)</h2>
 
-      <div class="controls">
-        <label for="datasetSelector">Choose data:</label>
-        <select id="datasetSelector">
-          <option value="field3">Portable Water</option>
-          <option value="field4">NEWater</option>
-          <option value="field5">Total Water</option>
-        </select>
-      </div>
+   <div class="chart-wrap floaty" id="chartCard">
+  <div class="chart-header">
+    <div class="chart-title">
+      <div class="chart-title-main">Water Usage</div>
+      <div class="chart-title-sub">Monthly (m³)</div>
+    </div>
 
-      <div class="chart-wrap floaty" id="chartCard">
-        <canvas id="waterChart"></canvas>
-      </div>
+    <div class="chart-controls">
+      <label class="sr-only" for="datasetSelector">Choose data</label>
+      <select id="datasetSelector">
+        <option value="field3">Portable Water</option>
+        <option value="field4">NEWater</option>
+        <option value="field5">Total Water</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="chart-divider"></div>
+
+  <canvas id="waterChart"></canvas>
+</div>
 
       <div class="msg" id="msgBox"></div>
     </div>
@@ -297,36 +375,44 @@
       <a href="/" class="graph-back-btn">Back</a>
     </div>
 
-    <script>
-    const page = document.getElementById("page");
-    const tapBtn = document.getElementById("tapBtn");
+<script>
+  const page = document.getElementById("page");
+  const tapBtn = document.getElementById("tapBtn");
 
-    tapBtn.addEventListener("click", () => {
-      // pour ON
-      tapBtn.classList.add("pouring");
+  function startWater() {
+    // safety: run only once
+    if (page.classList.contains("filled")) return;
 
-      // start sea
-      requestAnimationFrame(() => {
-        page.classList.add("filled");
-      });
+    // start pour
+    tapBtn.classList.add("pouring");
 
-      // pour OFF after 1.2s
-      setTimeout(() => {
-        tapBtn.classList.remove("pouring");
-      }, 1200);
-
-      // HIDE TAP after pour ends (so you can actually see the stream)
-      setTimeout(() => {
-        tapBtn.classList.add("hide");
-      }, 1300);
-
-      // chart render after sea starts rising
-      setTimeout(() => {
-        window.dispatchEvent(new Event("water:render"));
-      }, 700);
+    // start sea rising
+    requestAnimationFrame(() => {
+      page.classList.add("filled");
     });
-</script>
 
+    // stop pour
+    setTimeout(() => {
+      tapBtn.classList.remove("pouring");
+    }, 1200);
+
+    // hide tap
+    setTimeout(() => {
+      tapBtn.classList.add("hide");
+    }, 1300);
+
+    // render chart AFTER water starts
+    setTimeout(() => {
+      window.dispatchEvent(new Event("water:render"));
+    }, 700);
+  }
+
+  // ✅ AUTO START (no click, no interaction)
+  window.addEventListener("load", () => {
+    // small delay so browser paints first
+    setTimeout(startWater, 200);
+  });
+</script>
 
     <script type="module" src="/scripts/plotwater.js"></script>
   </div>

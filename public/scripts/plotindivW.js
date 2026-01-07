@@ -1,26 +1,45 @@
-let chart;
+// /public/scripts/plotindivW.js
+let chartA = null;
+let chartB = null;
 
+// Colors
 const COLOR_PREVIOUS = "#43a047";
 const COLOR_CURRENT  = "skyblue";
 
-const canvas = document.getElementById("buildingChart");
-const select = document.getElementById("buildingSelect");
-const msgBox = document.getElementById("msgBox");
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-if (!canvas || !select) {
+// DOM
+const canvasA = document.getElementById("buildingChartA");
+const canvasB = document.getElementById("buildingChartB");
+const selectA = document.getElementById("buildingSelectA");
+const selectB = document.getElementById("buildingSelectB");
+const msgA    = document.getElementById("msgA");
+const msgB    = document.getElementById("msgB");
+
+if (!canvasA || !canvasB || !selectA || !selectB) {
   console.warn("plotindivW.js: required DOM not found");
 } else {
-  const ctx = canvas.getContext("2d");
+  const ctxA = canvasA.getContext("2d");
+  const ctxB = canvasB.getContext("2d");
 
+  // Data & meta
   let globalRows = [];
   let buildings = [];
   let monthKey = "";
-  let meta = { yearMode: "current", latestYear: null, previousYear: null, graphType: "bar" };
 
-  function showMsg(t) {
-    if (!msgBox) return;
-    msgBox.textContent = t;
-    msgBox.style.display = t ? "block" : "none";
+  const meta = {
+    graphType: "bar",
+    yearMode: "current",     // "current" | "previous" | "both"
+    latestYear: null,
+    previousYear: null
+  };
+
+  // ---------- helpers ----------
+  function setMsg(which, text) {
+    const el = which === "A" ? msgA : msgB;
+    if (!el) return;
+    el.textContent = text || "";
+    el.style.display = text ? "block" : "none";
   }
 
   function toNum(v) {
@@ -30,8 +49,9 @@ if (!canvas || !select) {
     return Number.isFinite(n) ? n : NaN;
   }
 
+  // expects "25-Jan" (your format)
   function parseLabel(val) {
-    const s = String(val ?? "");
+    const s = String(val ?? "").trim();
     const m = s.match(/^(\d{2})-([A-Za-z]{3})$/);
     if (!m) return null;
 
@@ -44,76 +64,54 @@ if (!canvas || !select) {
     return { year, idx };
   }
 
-  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-
   async function loadGraphSettings() {
     const res = await fetch("/api/graph-settings");
     if (!res.ok) throw new Error(`Settings HTTP ${res.status}`);
     return await res.json();
   }
 
-  async function load() {
-    showMsg("");
+  async function loadWaterData() {
+    const res = await fetch("/api/water-individual");
+    if (!res.ok) throw new Error(`Water-individual HTTP ${res.status}`);
+    return await res.json();
+  }
 
-    const [data, settings] = await Promise.all([
-      fetch("/api/water-individual").then(r => r.json()),
-      loadGraphSettings()
-    ]);
-
-    if (!Array.isArray(data) || data.length < 2) {
-      showMsg("No data returned.");
-      return;
-    }
-
-    meta.graphType = settings?.graphType || "bar";
-
-    const header = data[0];
-    const rows = data.slice(1);
-
-    monthKey = Object.keys(header)[0];
-    globalRows = rows;
-
-    const years = rows.map(r => parseLabel(r[monthKey])?.year).filter(Boolean);
-    meta.latestYear = Math.max(...years);
-    meta.previousYear = meta.latestYear - 1;
-    meta.yearMode = years.some(y => y === meta.previousYear) ? "both" : "current";
-
-    buildings = Object.entries(header)
-      .filter(([k]) => k !== monthKey)
-      .map(([k, name]) => ({ key: k, name: String(name).trim() }));
-
-    select.innerHTML = "";
+  function fillDropdown(selectEl) {
+    selectEl.innerHTML = "";
     for (const b of buildings) {
       const opt = document.createElement("option");
       opt.value = b.key;
       opt.textContent = b.name;
-      select.appendChild(opt);
+      selectEl.appendChild(opt);
     }
+  }
 
-    render(buildings[0]);
-
-    select.onchange = () => {
-      const b = buildings.find(x => x.key === select.value);
-      if (b) render(b);
+  // ---------- dataset styling ----------
+function styleFor(color) {
+  if (meta.graphType === "line") {
+    return {
+      borderColor: color,
+      backgroundColor: color,
+      tension: 0.3,
+      fill: false,
+      pointRadius: 3,
+      pointHoverRadius: 4
     };
   }
 
-  function styleFor(color) {
-    if (meta.graphType === "line") {
-      return {
-        borderColor: color,
-        backgroundColor: color,
-        tension: 0.3,
-        fill: false,
-        pointRadius: 3
-      };
-    }
-    return { backgroundColor: color };
-  }
+  // BAR styling — make them fat and readable
+  return {
+    backgroundColor: color,
+    borderRadius: 8,        // round corners a bit more
+    barThickness: 40,       // ⬅️ THIS makes bars fat
+    maxBarThickness: 50,    // prevents insane sizes on big screens
+    categoryPercentage: 0.9,
+    barPercentage: 1.0      // use full category width
+  };
+}
 
-  function render(building) {
-    if (chart) chart.destroy();
 
+  function buildDatasets(buildingKey) {
     const prev = Array(12).fill(null);
     const curr = Array(12).fill(null);
 
@@ -121,13 +119,14 @@ if (!canvas || !select) {
       const info = parseLabel(r[monthKey]);
       if (!info) continue;
 
-      const val = toNum(r[building.key]);
+      const val = toNum(r[buildingKey]);
       if (!Number.isFinite(val)) continue;
 
       if (info.year === meta.previousYear) prev[info.idx] = val;
       if (info.year === meta.latestYear)   curr[info.idx] = val;
     }
 
+    // only keep months that have data (either year)
     const labels = [];
     const prevData = [];
     const currData = [];
@@ -158,20 +157,61 @@ if (!canvas || !select) {
       });
     }
 
-    chart = new Chart(ctx, {
+    return { labels, datasets };
+  }
+
+  function allEmptyOrZero(datasets) {
+    return datasets.every(ds => ds.data.every(v => v == null || v === 0));
+  }
+
+  // ---------- render ----------
+  function renderChart(which, ctx, building) {
+    const { labels, datasets } = buildDatasets(building.key);
+
+    // no data => show msg and destroy chart
+    if (!labels.length || !datasets.length || allEmptyOrZero(datasets)) {
+      setMsg(which, `No meaningful data for ${building.name} (all 0/empty).`);
+
+      if (which === "A" && chartA) { chartA.destroy(); chartA = null; }
+      if (which === "B" && chartB) { chartB.destroy(); chartB = null; }
+
+      return;
+    }
+
+    setMsg(which, "");
+
+    if (which === "A" && chartA) chartA.destroy();
+    if (which === "B" && chartB) chartB.destroy();
+
+    const chart = new Chart(ctx, {
       type: meta.graphType,
       data: { labels, datasets },
       options: {
         responsive: true,
+        maintainAspectRatio: false, // ✅ fixes skinny charts
         plugins: {
-          title: { display: true, text: building.name, font: { size: 18 } },
+          title: {
+            display: true,
+            text: building.name,
+            font: { size: 16, weight: "bold" }
+          },
+          legend: {
+            display: true,
+            labels: { boxWidth: 14, boxHeight: 14 }
+          },
           tooltip: {
             callbacks: {
-              label: c => `${c.dataset.label}: ${c.parsed.y?.toLocaleString() ?? "-"} m³`
+              label: (c) => {
+                const v = c.parsed?.y;
+                return `${c.dataset.label}: ${Number.isFinite(v) ? v.toLocaleString() : "-"} m³`;
+              }
             }
           }
         },
         scales: {
+          x: {
+            ticks: { maxRotation: 0, minRotation: 0 }
+          },
           y: {
             beginAtZero: true,
             title: { display: true, text: "Water Consumption (m³)" }
@@ -179,10 +219,90 @@ if (!canvas || !select) {
         }
       }
     });
+
+    if (which === "A") chartA = chart;
+    else chartB = chart;
   }
 
-  load().catch(e => {
-    console.error(e);
-    showMsg("Failed to load water data.");
+  // ---------- init ----------
+  async function init() {
+    // load both at once
+    const [data, settings] = await Promise.all([
+      loadWaterData(),
+      loadGraphSettings()
+    ]);
+
+    // validate
+    if (!Array.isArray(data) || data.length < 2) {
+      setMsg("A", "No data returned.");
+      setMsg("B", "No data returned.");
+      return;
+    }
+
+    meta.graphType = settings?.graphType || "bar";
+
+    const header = data[0];
+    const rows = data.slice(1);
+
+    monthKey = Object.keys(header)[0];
+    globalRows = rows;
+
+    // compute years
+    const years = rows
+      .map(r => parseLabel(r[monthKey])?.year)
+      .filter(Boolean);
+
+    if (!years.length) {
+      setMsg("A", "Invalid month labels (expected format like 25-Jan).");
+      setMsg("B", "Invalid month labels (expected format like 25-Jan).");
+      return;
+    }
+
+    meta.latestYear = Math.max(...years);
+    meta.previousYear = meta.latestYear - 1;
+
+    const hasPrev = years.some(y => y === meta.previousYear);
+    meta.yearMode = hasPrev ? "both" : "current";
+
+    // building list from header
+    buildings = Object.entries(header)
+      .filter(([k]) => k !== monthKey)
+      .map(([k, name]) => ({ key: k, name: String(name).trim() }))
+      .filter(b => b.name);
+
+    if (!buildings.length) {
+      setMsg("A", "No building columns found.");
+      setMsg("B", "No building columns found.");
+      return;
+    }
+
+    // dropdowns
+    fillDropdown(selectA);
+    fillDropdown(selectB);
+
+    // defaults
+    selectA.value = buildings[0].key;
+    selectB.value = buildings[1]?.key || buildings[0].key;
+
+    // first render
+    renderChart("A", ctxA, buildings.find(b => b.key === selectA.value) || buildings[0]);
+    renderChart("B", ctxB, buildings.find(b => b.key === selectB.value) || buildings[0]);
+
+    // handlers
+    selectA.addEventListener("change", () => {
+      const b = buildings.find(x => x.key === selectA.value);
+      if (b) renderChart("A", ctxA, b);
+    });
+
+    selectB.addEventListener("change", () => {
+      const b = buildings.find(x => x.key === selectB.value);
+      if (b) renderChart("B", ctxB, b);
+    });
+  }
+
+  init().catch(err => {
+    console.error(err);
+    setMsg("A", "Failed to load water data.");
+    setMsg("B", "Failed to load water data.");
   });
 }
