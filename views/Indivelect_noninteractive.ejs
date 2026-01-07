@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Electricity (Individual Buildings) - Non Interactive</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body { font-family: Arial, sans-serif; background:#f3f4f6; margin:0; padding:10px; }
+    h2 { text-align:center; margin:10px 0 18px; font-size:20px; font-weight:800; }
+
+    .wrap{
+      max-width:1800px;
+      width:95%;
+      margin:0 auto;
+      background:#fff;
+      border:1px solid rgba(0,0,0,.10);
+      border-radius:14px;
+      padding:12px;
+      box-shadow:0 8px 20px rgba(0,0,0,.08);
+      min-height:640px;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .chart-area{ position:relative; flex:1; min-height:560px; }
+    canvas{ width:100% !important; height:100% !important; display:block; }
+
+    .note{
+      margin-top:10px;
+      text-align:center;
+      font-weight:700;
+      color:#b00020;
+      display:none;
+      font-size:13px;
+    }
+
+    .graph-back-nav{
+      position:fixed; bottom:18px; left:50%;
+      transform:translateX(-50%);
+      z-index:2000;
+    }
+    .graph-back-btn{
+      width:130px; height:56px;
+      background:#343a40; color:white;
+      border-radius:50px;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:700; text-decoration:none;
+      transition:.2s ease;
+      box-shadow:0 8px 20px rgba(0,0,0,.18);
+    }
+    .graph-back-btn:hover{ background:#23272b; }
+  </style>
+</head>
+
+<body>
+  <h2>Electricity Consumption (Individual Buildings) - Non Interactive</h2>
+
+  <div class="wrap">
+    <div class="chart-area">
+      <canvas id="chart"></canvas>
+    </div>
+    <div class="note" id="msg"></div>
+  </div>
+
+  <div class="graph-back-nav">
+    <a href="/" class="graph-back-btn">Back</a>
+  </div>
+
+  <script type="module" src="/scripts/plotindivE_noninteractive.js"></script>
+</body>
+</html>

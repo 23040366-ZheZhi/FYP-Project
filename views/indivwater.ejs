@@ -1,3 +1,4 @@
+<!-- /views/compareWater.html (or your page) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,140 +8,144 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    :root {
-      --bg: #f3f4f6;
-      --card: #ffffff;
-      --text: #111827;
-      --muted: #6b7280;
-      --border: rgba(0,0,0,.10);
-      --shadow: 0 8px 20px rgba(0,0,0,.08);
+    :root{
+      --bg:#f3f4f6;
+      --card:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --border:rgba(0,0,0,.10);
+      --shadow:0 8px 20px rgba(0,0,0,.08);
+      --focus:rgba(59,130,246,.15);
     }
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      padding: 10px;
+    body{
+      margin:0;
+      font-family:Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      padding:10px;
     }
 
-    h2 {
-      text-align: center;
-      margin: 10px 0 18px;
-      font-size: 20px;
-      font-weight: 800;
+    h2{
+      text-align:center;
+      margin:10px 0 18px;
+      font-size:20px;
+      font-weight:800;
     }
 
-    /* Layout for 2 charts */
-  .compare-grid {
-  max-width: 1600px;           /* ⬅️ wider */
-  width: 95%;                  /* use most of the screen */
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;                   /* more breathing space */
-  align-items: stretch;
-}
-
-
-    @media (max-width: 950px) {
-      .compare-grid { grid-template-columns: 1fr; }
+    /* 2 charts layout */
+    .compare-grid{
+      max-width:1800px;
+      width:95%;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:24px;
+      align-items:stretch;
+    }
+    @media (max-width:950px){
+      .compare-grid{ grid-template-columns:1fr; }
     }
 
-   .chart-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
-  padding: 10px;               /* ⬅️ tighter padding */
-  display: flex;
-  flex-direction: column;
-  min-height: 520px;
-}
-
-
-    .chart-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 10px;
+    .chart-card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      min-height:520px;
     }
 
-    .chart-title {
-      font-size: 14px;
-      font-weight: 800;
-      letter-spacing: .2px;
+    /* Title only at top */
+    .chart-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:8px;
     }
-
-    select {
-      padding: 8px 12px;
-      font-size: 14px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: #fff;
-      outline: none;
-    }
-
-    select:focus {
-      border-color: rgba(59,130,246,.6);
-      box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    .chart-title{
+      font-size:14px;
+      font-weight:800;
+      letter-spacing:.2px;
     }
 
     /* Chart area */
-    .chart-area {
-      position: relative;
-      flex: 1;
-      min-height: 420px; /* chart height */
+    .chart-area{
+      position:relative;
+      flex:1;
+      min-height:420px;
+    }
+    canvas{
+      width:100% !important;
+      height:100% !important;
+      display:block;
     }
 
-    canvas {
-      width: 100% !important;
-      height: 100% !important; /* fill chart-area height */
-      display: block;
+    /* Footer control (dropdown at bottom) */
+    .chart-footer{
+      margin-top:12px;
+      padding-top:10px;
+      border-top:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+    }
+    .footer-label{
+      font-size:13px;
+      font-weight:700;
+      color:var(--muted);
+    }
+    select{
+      min-width:240px;
+      padding:10px 14px;
+      font-size:14px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#fff;
+      outline:none;
+    }
+    select:focus{
+      border-color:rgba(59,130,246,.6);
+      box-shadow:0 0 0 3px var(--focus);
     }
 
     /* Per-card message */
-    .note {
-      margin-top: 10px;
-      text-align: center;
-      font-weight: 700;
-      color: #b00020;
-      display: none;
-      font-size: 13px;
+    .note{
+      margin-top:10px;
+      text-align:center;
+      font-weight:700;
+      color:#b00020;
+      display:none;
+      font-size:13px;
     }
 
     /* Back button */
-    .graph-back-nav {
-      position: fixed;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 2000;
+    .graph-back-nav{
+      position:fixed;
+      bottom:18px;
+      left:50%;
+      transform:translateX(-50%);
+      z-index:2000;
     }
-
-    .graph-back-btn {
-      width: 130px;
-      height: 56px;
-      background: #343a40;
-      color: white;
-      border-radius: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      text-decoration: none;
-      transition: 0.2s ease;
-      box-shadow: 0 8px 20px rgba(0,0,0,.18);
+    .graph-back-btn{
+      width:130px;
+      height:56px;
+      background:#343a40;
+      color:white;
+      border-radius:50px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      text-decoration:none;
+      transition:.2s ease;
+      box-shadow:0 8px 20px rgba(0,0,0,.18);
     }
-
-    .graph-back-btn:hover { background: #23272b; }
-    @media (min-width: 1600px) {
-  .compare-grid {
-    max-width: 1800px;
-  }
-}
-
+    .graph-back-btn:hover{ background:#23272b; }
   </style>
 </head>
 
@@ -152,11 +157,15 @@
     <div class="chart-card">
       <div class="chart-header">
         <div class="chart-title">Compare A</div>
-        <select id="buildingSelectA"></select>
       </div>
 
       <div class="chart-area">
         <canvas id="buildingChartA"></canvas>
+      </div>
+
+      <div class="chart-footer">
+        <label class="footer-label" for="buildingSelectA">Building</label>
+        <select id="buildingSelectA"></select>
       </div>
 
       <div class="note" id="msgA"></div>
@@ -166,11 +175,15 @@
     <div class="chart-card">
       <div class="chart-header">
         <div class="chart-title">Compare B</div>
-        <select id="buildingSelectB"></select>
       </div>
 
       <div class="chart-area">
         <canvas id="buildingChartB"></canvas>
+      </div>
+
+      <div class="chart-footer">
+        <label class="footer-label" for="buildingSelectB">Building</label>
+        <select id="buildingSelectB"></select>
       </div>
 
       <div class="note" id="msgB"></div>

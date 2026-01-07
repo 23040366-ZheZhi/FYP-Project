@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Individual Water (Autoplay)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body { font-family: Arial; padding: 12px; background: #f7f7f7; }
+    h2 { text-align: center; margin-bottom: 20px; }
+
+    .chart-wrap {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 18px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .chart-area { height: 520px; }
+    canvas { width: 100% !important; height: 100% !important; }
+
+    .msg {
+      text-align: center;
+      margin-top: 10px;
+      color: #b00020;
+      font-weight: bold;
+    }
+
+    .graph-back-nav {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+    }
+
+    .graph-back-btn {
+      width: 130px;
+      height: 56px;
+      background: #343a40;
+      color: white;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      text-decoration: none;
+      transition: 0.2s ease;
+      box-shadow: 0 8px 20px rgba(0,0,0,.18);
+    }
+
+    .graph-back-btn:hover {
+      background: #23272b;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Individual Water</h2>
+
+<div class="chart-wrap">
+  <div class="chart-area">
+    <canvas id="chart"></canvas>
+  </div>
+</div>
+
+<div class="msg" id="msgBox"></div>
+
+<div class="graph-back-nav">
+  <a href="/" class="graph-back-btn">Back</a>
+</div>
+
+<script type="module" src="/scripts/indiv_water_autoplay.js"></script>
+
+</body>
+</html>

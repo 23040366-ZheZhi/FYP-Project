@@ -1,110 +1,193 @@
+<!-- /views/compareElectric.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Electricity Consumption by Building</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Electricity Consumption by Building (Comparison)</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    body {
-      font-family: Arial;
-      padding: 12px;
-      background: #f7f7f7;
+    :root{
+      --bg:#f3f4f6;
+      --card:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --border:rgba(0,0,0,.10);
+      --shadow:0 8px 20px rgba(0,0,0,.08);
+      --focus:rgba(59,130,246,.15);
     }
 
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
+    body{
+      margin:0;
+      font-family:Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      padding:10px;
     }
 
-    .controls {
-      text-align: center;
-      margin-bottom: 12px;
+    h2{
+      text-align:center;
+      margin:10px 0 18px;
+      font-size:20px;
+      font-weight:800;
     }
 
-    select {
-      padding: 8px 12px;
-      font-size: 16px;
-      border-radius: 6px;
+    .compare-grid{
+      max-width:1800px;
+      width:95%;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:24px;
+      align-items:stretch;
+    }
+    @media (max-width:950px){
+      .compare-grid{ grid-template-columns:1fr; }
     }
 
-    .chart-wrap {
-      max-width: 1000px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 18px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    .chart-card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      min-height:520px;
     }
 
-    canvas {
-      width: 100% !important;
-      height: 450px !important;
+    .chart-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:8px;
+    }
+    .chart-title{
+      font-size:14px;
+      font-weight:800;
+      letter-spacing:.2px;
     }
 
-    /* 🔴 Error / info message (same as water graph) */
-    .msg {
-      max-width: 1000px;
-      margin: 10px auto 0;
-      text-align: center;
-      color: #b00020;
-      font-weight: bold;
-      display: none;
+    .chart-area{
+      position:relative;
+      flex:1;
+      min-height:420px;
+    }
+    canvas{
+      width:100% !important;
+      height:100% !important;
+      display:block;
     }
 
-    /* ⬅ Back button – EXACT SAME AS WATER GRAPH */
-    .graph-back-nav {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      justify-content: center;
-      z-index: 2000;
+    .chart-footer{
+      margin-top:12px;
+      padding-top:10px;
+      border-top:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+    }
+    .footer-label{
+      font-size:13px;
+      font-weight:700;
+      color:var(--muted);
+    }
+    select{
+      min-width:240px;
+      padding:10px 14px;
+      font-size:14px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#fff;
+      outline:none;
+    }
+    select:focus{
+      border-color:rgba(59,130,246,.6);
+      box-shadow:0 0 0 3px var(--focus);
     }
 
-    .graph-back-btn {
-      width: 120px;
-      height: 60px;
-      background: #343a40;
-      color: white;
-      border-radius: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      font-size: 14px;
-      text-decoration: none;
-      transition: 0.2s ease;
+    .note{
+      margin-top:10px;
+      text-align:center;
+      font-weight:700;
+      color:#b00020;
+      display:none;
+      font-size:13px;
     }
 
-    .graph-back-btn:hover {
-      background: #23272b;
+    .graph-back-nav{
+      position:fixed;
+      bottom:18px;
+      left:50%;
+      transform:translateX(-50%);
+      z-index:2000;
     }
+    .graph-back-btn{
+      width:130px;
+      height:56px;
+      background:#343a40;
+      color:white;
+      border-radius:50px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      text-decoration:none;
+      transition:.2s ease;
+      box-shadow:0 8px 20px rgba(0,0,0,.18);
+    }
+    .graph-back-btn:hover{ background:#23272b; }
   </style>
 </head>
 
 <body>
+  <h2>Electricity Consumption by Building (Comparison)</h2>
 
-<h2>Electricity Consumption by Building</h2>
+  <div class="compare-grid">
+    <!-- LEFT -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Compare A</div>
+      </div>
 
-<div class="controls">
-  <label for="buildingSelect">Select Building:</label>
-  <select id="buildingSelect"></select>
-</div>
+      <div class="chart-area">
+        <canvas id="buildingChartA"></canvas>
+      </div>
 
-<div class="chart-wrap">
-  <canvas id="chart"></canvas>
-</div>
+      <div class="chart-footer">
+        <label class="footer-label" for="buildingSelectA">Building</label>
+        <select id="buildingSelectA"></select>
+      </div>
 
-<div class="msg" id="msgBox"></div>
+      <div class="note" id="msgA"></div>
+    </div>
 
-<!-- ⬅ SAME BACK BUTTON -->
-<div class="graph-back-nav">
-  <a href="/" class="graph-back-btn">Back</a>
-</div>
+    <!-- RIGHT -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Compare B</div>
+      </div>
 
-<script type="module" src="/scripts/plotindividual.js"></script>
+      <div class="chart-area">
+        <canvas id="buildingChartB"></canvas>
+      </div>
 
+      <div class="chart-footer">
+        <label class="footer-label" for="buildingSelectB">Building</label>
+        <select id="buildingSelectB"></select>
+      </div>
+
+      <div class="note" id="msgB"></div>
+    </div>
+  </div>
+
+  <div class="graph-back-nav">
+    <a href="/" class="graph-back-btn">Back</a>
+  </div>
+
+  <script type="module" src="/scripts/plotindividual.js"></script>
 </body>
 </html>

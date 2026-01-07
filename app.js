@@ -50,14 +50,24 @@ app.use(session({
         sameSite: 'none'          //  REQUIRED for HTTPS + tabs
     }
 }));
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
 
 // ✅ defaults first
 app.use((req, res, next) => {
   if (!req.session.yearMode) req.session.yearMode = "current";
   if (!req.session.graphType) req.session.graphType = "bar";
+  if (!req.session.individualMode) req.session.individualMode = "interactive";
   next();
 });
+
+app.use((req, res, next) => {
+  res.locals.session = req.session;
+  res.locals.individualMode = req.session.individualMode; // ✅ NEW
+  next();
+});
+
 
 // ✅ locals after
 app.use((req, res, next) => {
@@ -67,9 +77,24 @@ app.use((req, res, next) => {
 app.get("/api/graph-settings", (req, res) => {
   res.json({
     yearMode: req.session.yearMode,
-    graphType: req.session.graphType
+    graphType: req.session.graphType,
+    individualMode: req.session.individualMode
   });
 });
+
+app.post("/set-individual-settings", adminOnly, (req, res) => {
+  const { individualMode } = req.body;
+
+  if (!["interactive", "non-interactive"].includes(individualMode)) {
+    return res.status(400).send("Invalid individual mode");
+  }
+
+  req.session.individualMode = individualMode;
+  console.log("Individual mode set to:", individualMode);
+
+  res.redirect("/manage_graph");
+});
+
 
 
 function adminOnly(req, res, next) {
@@ -465,6 +490,7 @@ app.get("/api/solar-detailed", (req, res) => {
 });
 
 
+
 // ======================= water api =======================
 app.get("/api/water-detailed", (req, res) => {
   try {
@@ -778,9 +804,17 @@ app.get('/solargraph', (req, res) => res.render('solargraph'));
 // wastegraph
 app.get('/waste', (req, res) => res.render('waste'));
 // IndivWater
-app.get('/indivwater', (req, res) => res.render('IndivWater'));
+app.get('/indivwater', (req, res) => {
+  const mode = req.session.individualMode || "interactive";
+  if (mode === "interactive") return res.render('IndivWater');
+  return res.render('IndivWater_noninteractive');
+});
 // IndivEnergy
-app.get('/indivelect', (req, res) => res.render('Indivelect'));
+app.get('/indivelect', (req, res) => {
+  const mode = req.session.individualMode || "interactive";
+  if (mode === "interactive") return res.render('Indivelect');
+  return res.render('Indivelect_noninteractive');
+});
 
 //only accessible by admin to sequence videos
 app.get('/sequence', adminOnly, (req, res) => {
@@ -804,7 +838,8 @@ app.get('/manage_graph', adminOnly, (req, res) => {
     res.render('manage_graph', {
       files: xlsxFiles,
       yearMode: req.session.yearMode || 'current',
-      graphType: req.session.graphType || 'bar'   // ✅ ADD THIS
+      graphType: req.session.graphType || 'bar' , // ✅ ADD THIS
+      individualMode: req.session.individualMode || 'interactive' // ✅ NEW
     });
   });
 });

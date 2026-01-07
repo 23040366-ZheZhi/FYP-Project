@@ -79,7 +79,6 @@
                         Current Year Only
                     </label>
                 </div>
-                
 
                 <div class="form-check">
                     <input class="form-check-input"
@@ -109,45 +108,78 @@
             </form>
         </div>
     </div>
+
+    <!-- GRAPH FORMAT -->
     <div class="card mt-4">
-    <div class="card-body">
-        <h5 class="mb-3">Graph Format</h5>
+        <div class="card-body">
+            <h5 class="mb-3">Graph Format</h5>
 
-        <form action="/set-graph-format" method="POST">
-            <div class="form-check">
-                <input class="form-check-input"
-                       type="radio"
-                       name="graphType"
-                       value="bar"
-                       <%= (graphType || 'bar') === 'bar' ? 'checked' : '' %>>
-                <label class="form-check-label">
-                    Bar Graph
-                </label>
-            </div>
+            <form action="/set-graph-format" method="POST">
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="radio"
+                           name="graphType"
+                           value="bar"
+                           <%= (graphType || 'bar') === 'bar' ? 'checked' : '' %>>
+                    <label class="form-check-label">
+                        Bar Graph
+                    </label>
+                </div>
 
-            <div class="form-check">
-                <input class="form-check-input"
-                       type="radio"
-                       name="graphType"
-                       value="line"
-                       <%= graphType === 'line' ? 'checked' : '' %>>
-                <label class="form-check-label">
-                    Line Graph
-                </label>
-            </div>
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="radio"
+                           name="graphType"
+                           value="line"
+                           <%= graphType === 'line' ? 'checked' : '' %>>
+                    <label class="form-check-label">
+                        Line Graph
+                    </label>
+                </div>
 
-            <button class="btn btn-success mt-3">
-                Save Selection
-            </button>
-        </form>
+                <button class="btn btn-success mt-3">
+                    Save Selection
+                </button>
+            </form>
+        </div>
     </div>
-</div>
+
+    <!-- ✅ NEW: INDIVIDUAL SETTINGS -->
+    <div class="card mt-4 mb-5">
+        <div class="card-body">
+            <h5 class="mb-3">Individual Graph Settings</h5>
+
+            <form action="/set-individual-settings" method="POST">
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="radio"
+                           name="individualMode"
+                           value="interactive"
+                           <%= (individualMode || 'interactive') === 'interactive' ? 'checked' : '' %>>
+                    <label class="form-check-label">
+                        Interactive
+                    </label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="radio"
+                           name="individualMode"
+                           value="non-interactive"
+                           <%= individualMode === 'non-interactive' ? 'checked' : '' %>>
+                    <label class="form-check-label">
+                        Non Interactive
+                    </label>
+                </div>
+
+                <button class="btn btn-success mt-3">
+                    Save Selection
+                </button>
+            </form>
+        </div>
+    </div>
 
 </div> <!-- END container -->
-<!-- GRAPH FORMAT DISPLAY -->
-
-
-
 
 <script>
 function deleteXlsx(filename) {
