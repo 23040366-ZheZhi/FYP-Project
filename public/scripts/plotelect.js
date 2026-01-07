@@ -235,7 +235,10 @@ if (!canvas) {
     }
   }
 
+  // ✅ let the page paint first, then render chart (prevents "pop/flicker")
   init();
+
+
 
   // ✅ auto-rotate (fixed waste route)
   (function () {
