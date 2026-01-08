@@ -18,7 +18,7 @@
 <%- include("partials/navbar.ejs") %>
 
 <div class="container mt-4">
-    <h2 class="text-center mb-4">Sequence Videos</h2>
+    <h2 class="text-center mb-4">Video Sequence</h2>
 
     <form action="/sequence" method="POST">
 
@@ -29,7 +29,7 @@
                         <strong>Name: <%= video.name %></strong><br>
                         <small>Description: <%= video.description %></small>
                     </div>
-                    <button class="btn btn-danger btn-sm" onclick="deleteVideo(<%= video.id %>)" type="button"> <!-- Error is flagged, but code works -->
+                    <button type="submit" class="btn btn-danger btn-sm" formaction="/deleteVideo/<%= video.id %>" formmethod="POST" onclick="return confirm('Are you sure you want to delete this video?')">
                         Delete
                     </button>
                 </li>
@@ -41,7 +41,7 @@
         <button type="submit" class="btn btn-primary">Save Order</button>
     </form>
     <br><br>
-    <h2 class="text-center mb-4">Add New Videos</h2>
+    <h2 class="text-center mb-4">Add Videos to Sequence</h2>
 
     <form action="/addVideo" method="POST" enctype="multipart/form-data">
         <div id="video-container">
@@ -82,27 +82,6 @@
             document.getElementById("orderInput").value = newOrder.join(",");
         }
     });
-
-    // Delete video
-    function deleteVideo(id) {
-        if (!confirm("Are you sure you want to delete this video?")) return;
-
-        fetch(`/deleteVideo/${id}`, {
-            method: "DELETE"
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert("Failed to delete video.");
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Error deleting video.");
-        });
-    }
 
     // Add more upload blocks
     function addMore() {

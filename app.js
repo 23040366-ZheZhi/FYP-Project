@@ -310,7 +310,7 @@ app.get('/game/:id', (req, res) => {
  
 
     if (!Number.isInteger(Number(id))) {
-        return res.status(400).send('Invalid game ID');
+        return res.status(400).send('Invalid video ID');
     }
  
     const sql = 'SELECT * FROM videos WHERE id = ?';
@@ -369,21 +369,6 @@ app.post('/updateGame/:id', upload.single('image'), (req, res) => {
         }
     });
 });
-
-app.get('/deleteGame/:id', (req, res) => {
-    const id = req.params.id;
-    const sql = 'DELETE FROM videos WHERE id = ?';
-    connection.query( sql , [id], (error, results) => {
-        if (error) {
-            console.error("Error deleting game:", error);
-            res.status(500).send('Error deleting game');
-        } else {
-            res.redirect('/');
-        }
-    });
-});
-
-
 
 
 app.get("/api/summary", (req, res) => {
@@ -749,18 +734,45 @@ app.use((err, req, res, next) => {
 });
 
 
-app.delete('/deleteVideo/:id', adminOnly, (req, res) => {
+app.post('/deleteVideo/:id', adminOnly, (req, res) => {
     const id = req.params.id;
 
-    const sql = "DELETE FROM videos WHERE id = ?";
-    connection.query(sql, [id], (err) => {
+    const vidfolder = __dirname + "/videos/";
+
+    //get file name from database
+    const getSql  = "SELECT video FROM videos WHERE id = ?";
+    connection.query (getSql, [id], (err, results) => {
+      if (err) {
+        console.error("Error finding video", err);
+        return res.status(500).send("Error finding video");
+      }
+      if (results.length === 0) {
+        return res.redirect('/sequence');
+      }
+      const filename = results[0].video;
+      const filePath = vidfolder + filename;
+
+      //delete video file from videos folder
+      fs.unlink(filePath, (err) => {
         if (err) {
-            console.error("Error deleting video:", err);
-            return res.json({ success: false });
+          console.error("Failed to delete file:", err);
+          return res.status(500).send("Failed to delete video file");
         }
-        res.json({ success: true });
-    });
+
+        //delete database record
+        const deletefile = "DELETE FROM videos WHERE id= ?";
+        connection.query(deletefile, [id], (err) => {
+          if (err) {
+            console.error("Error deleting video record:", err);
+            return res.status(500).send("Error deleting video");
+          }
+          res.redirect('/sequence');
+        });
+      });
+  });
 });
+
+
 
 
 
