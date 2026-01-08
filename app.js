@@ -151,7 +151,7 @@ const videoStorage = multer.diskStorage({
 
 const uploadVideo = multer({
   storage: videoStorage,
-  limits: { fileSize: 80 * 1024 * 1024 }, // 80MB limit
+  limits: { fileSize: 100 * 1024 * 1024 }, //100MB limit
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('video/') || file.mimetype.startsWith('image/')) {
       cb(null, true);
@@ -301,31 +301,6 @@ app.delete('/delete-xlsx/:filename', adminOnly, (req, res) => {
             return res.json({ success: false });
         }
         res.json({ success: true });
-    });
-});
-
-
-app.get('/game/:id', (req, res) => {
-    const id = req.params.id;
- 
-
-    if (!Number.isInteger(Number(id))) {
-        return res.status(400).send('Invalid video ID');
-    }
- 
-    const sql = 'SELECT * FROM videos WHERE id = ?';
- 
-    connection.query(sql, [id], (error, results) => {
-        if (error) {
-            console.error('Database query error:', error.message);
-            return res.status(500).send('Internal Server Error');
-        }
- 
-        if (results.length > 0) {
-            res.render('video', { video: results[0] });
-        } else {
-            res.status(404).send('Video not found');
-        }
     });
 });
 
@@ -719,16 +694,22 @@ app.post('/addVideo', uploadVideo.array('videos[]'), (req, res) => {
         });
     });
 
-    res.redirect('/sequence');
+    res.redirect('/media_management');
 });
 
 // Middleware that shows error message
 app.use((err, req, res, next) => {
     if (err && err.code === "LIMIT_FILE_SIZE") {
-        return res.status(400).send("Upload failed: Video file size exceeds 80MB.");
+        return res.status(400).send(`<script>
+        alert("Upload failed: Video file size exceeds 100MB.")
+        window.history.back();
+        </script>`);
     }
     if (err) {
-        return res.status(400).send(`Upload failed: ${err.message}`);
+        return res.status(400).send(`<script>
+        alert("Upload failed: ${err.message}");
+        window.history.back();
+        </script>`);
     }
     next();
 });
@@ -747,7 +728,7 @@ app.post('/deleteVideo/:id', adminOnly, (req, res) => {
         return res.status(500).send("Error finding video");
       }
       if (results.length === 0) {
-        return res.redirect('/sequence');
+        return res.redirect('/media_management');
       }
       const filename = results[0].video;
       const filePath = vidfolder + filename;
@@ -766,7 +747,7 @@ app.post('/deleteVideo/:id', adminOnly, (req, res) => {
             console.error("Error deleting video record:", err);
             return res.status(500).send("Error deleting video");
           }
-          res.redirect('/sequence');
+          res.redirect('/media_management');
         });
       });
   });
@@ -829,11 +810,11 @@ app.get('/indivelect', (req, res) => {
 });
 
 //only accessible by admin to sequence videos
-app.get('/sequence', adminOnly, (req, res) => {
+app.get('/media_management', adminOnly, (req, res) => {
     connection.query("SELECT * FROM videos ORDER BY position ASC, id ASC", (err, results) => {
         if (err) return res.status(500).send("Error loading videos");
 
-        res.render('sequence', { videos: results });
+        res.render('media_management', { videos: results });
     });
 });
 app.get('/manage_graph', adminOnly, (req, res) => {
@@ -873,7 +854,7 @@ app.post('/set-graph-format', adminOnly, (req, res) => {
 
 
 //
-app.post('/sequence', adminOnly, (req, res) => {
+app.post('/media_management', adminOnly, (req, res) => {
     console.log("BODY: ", req.body);
     console.log("ORDER RECEIVED: ", req.body.order);
 

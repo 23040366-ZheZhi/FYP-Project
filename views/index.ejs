@@ -140,6 +140,9 @@
 
 
   <div class="carousel-container container mt-4">
+
+    <% if (videos && videos.length > 0) { %>
+
     <div id="productCarousel" class="carousel slide">
       <div class="carousel-inner">
         <% videos.forEach((video, index) => { %>
@@ -151,6 +154,13 @@
         <% }) %>
       </div>
     </div>
+  <% } else { %>
+    <!-- Fallback message -->
+    <div class="alert alert-warning text-center">
+      No videos are available at the moment.
+    </div>
+
+  <% } %>
   </div>
 
   <div class="container mt-5 text-center">
