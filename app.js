@@ -210,7 +210,7 @@ app.get('/', (req, res) => {
             return res.status(500).send('Error retrieving videos')
         }
 
-        res.render('index', { videos:results });
+        res.render('dashboard', { videos:results });
     });
 });
 
@@ -767,19 +767,9 @@ app.get('/cardmethod', (req, res) => {
     res.render('cardmethod');
 });
 
-app.get('/reachingend', (req, res) => {
-    
-    res.render('reachingend');
-});
-
 app.get('/paynow', (req, res) => {
     
     res.render('paynow');
-});
-
-app.get('/end', (req, res) => {
-    
-    res.render('end');
 });
 
 
