@@ -254,7 +254,7 @@ if (!canvas || !selector) {
   // ✅ auto-rotate (fixed waste route)
   (function () {
     const routes = ["/", "/electgraph", "/solargraph", "/watergraph", "/waste"];
-    const delay = 10000;
+    const delay = 30000;
 
     const path = window.location.pathname.replace(/\/+$/, "") || "/";
     const index = routes.indexOf(path);
