@@ -951,15 +951,22 @@ app.get('/toggle-on', adminOnly, (req, res) => {
 });
 
 
-app.get('/logout', (req, res) => {
-    app.get('/logout', (req, res) => {
-    req.session.destroy(() => {
-        res.redirect('/');
-    });
-});     // logout admin
-    // DO NOT reset disableInteractive
-    res.redirect('/');
+app.get("/logout", (req, res) => {
+  // keep this setting before logout
+  const keepDisable = req.session.disableInteractive;
+
+  // logout = just remove admin access
+  req.session.isAdmin = false;
+  delete req.session.tempAdmin;
+
+  // restore the setting (so it won't reset)
+  req.session.disableInteractive = keepDisable;
+
+  // go back to home page
+  res.redirect("/");
 });
+
+
 
 app.get('/create-admin', adminOnly, (req, res) => {
     res.render('createAdmin');
