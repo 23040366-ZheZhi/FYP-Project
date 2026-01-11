@@ -8,7 +8,7 @@
   <style>
     :root{
       --page-bg: #f7f7f7;
-      --card-bg: rgba(255, 255, 255, 0.86);
+      --card-bg: rgba(255,255,255,.86);
       --text: #111827;
       --muted: #374151;
       --sea-top: rgba(59,130,246,.55);
@@ -41,67 +41,156 @@
       border: 0;
       background: transparent;
       padding: 0;
-      cursor: pointer;
       z-index: 3000;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 6px;
       user-select: none;
+      pointer-events: none; /* auto mode */
     }
 
     .tapImg{
-      width: 160px;   /* ⬅ bigger tap */
+      width: 160px;
       height: auto;
       display: block;
-      transition: transform 140ms ease;
-      
+      filter: drop-shadow(0 12px 18px rgba(0,0,0,.18));
     }
 
+    /* ===== Water pour stream ===== */
+    .pour{
+      position: relative;
+      width: 22px;
+      height: 0;
+      margin-top: -10px;
+      left: 22px; /* tweak alignment if your tap image changes */
+      background: linear-gradient(
+        to bottom,
+        rgba(180,220,255,.9),
+        rgba(80,160,255,.95)
+      );
+      border-radius: 0 0 8px 8px;
+      opacity: 0;
+      transition:
+        height 600ms cubic-bezier(.2,.9,.2,1),
+        opacity 200ms ease;
+      box-shadow: 0 0 12px rgba(120,180,255,.6);
+    }
 
+    .pouring .pour{
+      height: 180px;
+      opacity: 1;
+    }
 
-.pour{
-  position: relative;
+    .tap.hide{
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 300ms ease;
+    }
 
-  width: 22px;             
-  height: 0;
+    /* ===== BUBBLES ===== */
+    .bubbles{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 15; /* above sea, below content */
+      overflow: hidden;
+    }
 
-  margin-top: -10px;      
-  right: 34px;            
+    .bubble{
+      position: absolute;
+      bottom: -70px;
+      border-radius: 999px;
+      opacity: 0;
+      background: radial-gradient(circle at 30% 30%,
+        rgba(255,255,255,0.85),
+        rgba(186,230,253,0.35),
+        rgba(34,211,238,0.18)
+      );
+      border: 1px solid rgba(255,255,255,0.28);
+      box-shadow: inset -2px -2px 4px rgba(255,255,255,.35),
+                  0 0 10px rgba(34,211,238,.22);
+      will-change: transform, opacity;
+      animation: bubbleRise var(--dur) ease-out infinite;
+      animation-delay: var(--delay);
+    }
 
-  background: linear-gradient(
-    to bottom,
-    rgba(180,220,255,.9),
-    rgba(80,160,255,.95)
-  );
+    @keyframes bubbleRise{
+      0%   { transform: translate3d(0, 0, 0) scale(.7); opacity: 0; }
+      10%  { opacity: .9; }
+      80%  { opacity: .9; }
+      100% {
+        transform: translate3d(var(--wobble), calc(-1 * var(--rise)), 0) scale(1.05);
+        opacity: 0;
+      }
+    }
 
-  border-radius: 0 0 8px 8px;
-  opacity: 0;
-  transition:
-    height 600ms cubic-bezier(.2,.9,.2,1),
-    opacity 200ms ease;
+    /* ===== SEAWEED ===== */
+    .seaweed-bed{
+      position: fixed;
+      left: 0; right: 0;
+      bottom: 0;
+      height: 220px;
+      pointer-events: none;
+      z-index: 12; /* above sea bg, below bubbles */
+    }
 
-  box-shadow: 0 0 12px rgba(120,180,255,.6);
-}
+    .seaweed{
+      position: absolute;
+      bottom: -10px;
+      width: 34px;
+      height: 220px;
+      border-radius: 999px;
+      transform-origin: bottom center;
+      filter: drop-shadow(0 10px 12px rgba(0,0,0,.15));
+      opacity: .95;
+      background: linear-gradient(to top,
+        rgba(4,120,87,1),
+        rgba(16,185,129,.95),
+        rgba(5,150,105,.75)
+      );
+      animation: sway var(--swayDur) ease-in-out infinite;
+      animation-delay: var(--swayDelay);
+    }
 
-.pouring .pour { height: 170px; opacity: 1; }
+    .seaweed::before,
+    .seaweed::after{
+      content:"";
+      position: absolute;
+      width: 18px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(16,185,129,.75);
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: .85;
+    }
+    .seaweed::before{ top: 70px;  transform: translateX(-50%) rotate(18deg); }
+    .seaweed::after { top: 120px; transform: translateX(-50%) rotate(-18deg); }
 
+    @keyframes sway{
+      0%,100% { transform: rotate(-4deg); }
+      50%     { transform: rotate(6deg); }
+    }
 
+    .s1{ left: 4%;  height: 180px; --swayDur: 3.3s; --swayDelay: 0s; }
+    .s2{ left: 12%; height: 220px; --swayDur: 3.8s; --swayDelay: .2s; }
+    .s3{ left: 72%; height: 200px; --swayDur: 3.5s; --swayDelay: .1s; }
+    .s4{ left: 82%; height: 240px; --swayDur: 4.1s; --swayDelay: .3s; }
+    .s5{ left: 92%; height: 190px; --swayDur: 3.6s; --swayDelay: .15s; }
 
-    /* SEA container rises using transform */
+    /* ===== SEA container rises ===== */
     .sea{
       position: fixed;
       left: 0; right: 0;
       bottom: 0;
       height: 120vh;
       transform: translateY(100%);
-      transition: transform 2200ms cubic-bezier(.2,.9,.2,1);
+      transition: transform 3200ms cubic-bezier(.2,.9,.2,1); /* slower */
       z-index: 5;
       background: linear-gradient(180deg, var(--sea-top), var(--sea-deep));
     }
-
-    /* FULL fill: 0% = fill up */
-    .page.filled .sea{ transform: translateY(15%)}
+    .page.filled .sea{ transform: translateY(15%); }
 
     /* moving wave surface (2 layers) */
     .sea .wave{
@@ -148,7 +237,7 @@
       50%     { transform: translateY(-10px); }
     }
 
-    /* Content + Chart */
+    /* Content */
     .content{
       position: relative;
       z-index: 30;
@@ -171,19 +260,7 @@
       text-shadow: 0 1px 0 rgba(255,255,255,.35);
     }
 
-    .controls{
-      text-align: center;
-      margin-bottom: 12px;
-      color: var(--muted);
-    }
-    select{
-      padding: 8px 12px;
-      font-size: 16px;
-      border-radius: 10px;
-      border: 1px solid rgba(0,0,0,.12);
-      background: rgba(255,255,255,.9);
-    }
-
+    /* chart card entrance */
     .chart-wrap{
       max-width: 1000px;
       margin: 0 auto;
@@ -195,6 +272,14 @@
       backdrop-filter: blur(10px);
       position: relative;
       overflow: hidden;
+
+      opacity: 0;
+      transform: translateY(18px) scale(.985);
+      transition: opacity 900ms ease, transform 1200ms cubic-bezier(.2,.9,.2,1);
+    }
+    .page.filled .chart-wrap{
+      opacity: 1;
+      transform: translateY(0) scale(1);
     }
 
     .chart-wrap::before{
@@ -257,116 +342,122 @@
     }
     .graph-back-btn:hover{ background: #23272b; }
 
-    /* Hide tap after animation starts */
-    .tap.hide{
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 250ms ease;
+    /* Integrated header inside chart card */
+    .sr-only{
+      position:absolute;
+      width:1px; height:1px;
+      padding:0; margin:-1px;
+      overflow:hidden;
+      clip:rect(0,0,0,0);
+      border:0;
     }
-    /* Hide label but keep for accessibility */
-.sr-only{
-  position:absolute;
-  width:1px; height:1px;
-  padding:0; margin:-1px;
-  overflow:hidden;
-  clip:rect(0,0,0,0);
-  border:0;
-}
 
-/* Integrated header inside chart card */
-.chart-header{
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 6px 4px 10px;
-}
+    .chart-header{
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 4px 10px;
+    }
 
-.chart-title-main{
-  font-weight: 800;
-  font-size: 18px;
-  color: #0b1220;
-  letter-spacing: 0.2px;
-}
+    .chart-title-main{
+      font-weight: 800;
+      font-size: 18px;
+      color: #0b1220;
+      letter-spacing: 0.2px;
+    }
 
-.chart-title-sub{
-  margin-top: 2px;
-  font-size: 12px;
-  color: rgba(17,24,39,.65);
-}
+    .chart-title-sub{
+      margin-top: 2px;
+      font-size: 12px;
+      color: rgba(17,24,39,.65);
+    }
 
-.chart-controls select{
-  padding: 10px 14px;
-  font-size: 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(0,0,0,.10);
-  background: rgba(255,255,255,.72);
-  backdrop-filter: blur(6px);
-  box-shadow: 0 8px 18px rgba(0,0,0,.06);
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
+    .chart-controls select{
+      padding: 10px 14px;
+      font-size: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,.10);
+      background: rgba(255,255,255,.72);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 8px 18px rgba(0,0,0,.06);
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
 
-.chart-controls select:hover{
-  transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(0,0,0,.09);
-  border-color: rgba(37,99,235,.35);
-}
+    .chart-controls select:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(0,0,0,.09);
+      border-color: rgba(37,99,235,.35);
+    }
 
-.chart-controls select:focus{
-  outline: none;
-  border-color: rgba(37,99,235,.55);
-  box-shadow: 0 0 0 4px rgba(37,99,235,.18);
-}
+    .chart-controls select:focus{
+      outline: none;
+      border-color: rgba(37,99,235,.55);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.18);
+    }
 
-.chart-divider{
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(0,0,0,.12), transparent);
-  margin: 2px 0 12px;
-  position: relative;
-  z-index: 2;
-}
-
+    .chart-divider{
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(0,0,0,.12), transparent);
+      margin: 2px 0 12px;
+      position: relative;
+      z-index: 2;
+    }
   </style>
 </head>
 
 <body>
   <div class="page" id="page">
+
+    <!-- bubbles -->
+    <div id="bubbles" class="bubbles"></div>
+
+    <!-- tap -->
     <button class="tap" id="tapBtn" aria-label="Turn on tap">
       <img class="tapImg" src="/images/tap.jpg" alt="Tap">
       <div class="pour" id="pour"></div>
     </button>
 
+    <!-- water -->
     <div class="sea" id="sea">
       <div class="wave wave1"></div>
       <div class="wave wave2"></div>
     </div>
 
+    <!-- seaweed -->
+    <div class="seaweed-bed">
+      <div class="seaweed s1"></div>
+      <div class="seaweed s2"></div>
+      <div class="seaweed s3"></div>
+      <div class="seaweed s4"></div>
+      <div class="seaweed s5"></div>
+    </div>
+
     <div class="content" id="content">
       <h2>Whole Campus Water Usage (m³)</h2>
 
-   <div class="chart-wrap floaty" id="chartCard">
-  <div class="chart-header">
-    <div class="chart-title">
-      <div class="chart-title-main">Water Usage</div>
-      <div class="chart-title-sub">Monthly (m³)</div>
-    </div>
+      <div class="chart-wrap floaty" id="chartCard">
+        <div class="chart-header">
+          <div class="chart-title">
+            <div class="chart-title-main">Water Usage</div>
+            <div class="chart-title-sub">Monthly (m³)</div>
+          </div>
 
-    <div class="chart-controls">
-      <label class="sr-only" for="datasetSelector">Choose data</label>
-      <select id="datasetSelector">
-        <option value="field3">Portable Water</option>
-        <option value="field4">NEWater</option>
-        <option value="field5">Total Water</option>
-      </select>
-    </div>
-  </div>
+          <div class="chart-controls">
+            <label class="sr-only" for="datasetSelector">Choose data</label>
+            <select id="datasetSelector">
+              <option value="field3">Portable Water</option>
+              <option value="field4">NEWater</option>
+              <option value="field5">Total Water</option>
+            </select>
+          </div>
+        </div>
 
-  <div class="chart-divider"></div>
-
-  <canvas id="waterChart"></canvas>
-</div>
+        <div class="chart-divider"></div>
+        <canvas id="waterChart"></canvas>
+      </div>
 
       <div class="msg" id="msgBox"></div>
     </div>
@@ -375,44 +466,70 @@
       <a href="/" class="graph-back-btn">Back</a>
     </div>
 
-<script>
-  const page = document.getElementById("page");
-  const tapBtn = document.getElementById("tapBtn");
+    <script>
+      const page = document.getElementById("page");
+      const tapBtn = document.getElementById("tapBtn");
 
-  function startWater() {
-    // safety: run only once
-    if (page.classList.contains("filled")) return;
+      function makeBubbles(count = 24){
+        const host = document.getElementById("bubbles");
+        if (!host) return;
 
-    // start pour
-    tapBtn.classList.add("pouring");
+        host.innerHTML = "";
+        const rise = window.innerHeight + 180;
 
-    // start sea rising
-    requestAnimationFrame(() => {
-      page.classList.add("filled");
-    });
+        for (let i = 0; i < count; i++){
+          const b = document.createElement("div");
+          b.className = "bubble";
 
-    // stop pour
-    setTimeout(() => {
-      tapBtn.classList.remove("pouring");
-    }, 1200);
+          const size = Math.random() * 18 + 8;   // 8 - 26px
+          const left = Math.random() * 100;      // %
+          const dur = Math.random() * 4 + 4;     // 4 - 8s
+          const delay = Math.random() * 4;       // 0 - 4s
+          const wobble = (Math.random() * 40 - 20) + "px"; // -20..20px
 
-    // hide tap
-    setTimeout(() => {
-      tapBtn.classList.add("hide");
-    }, 1300);
+          b.style.width = size + "px";
+          b.style.height = size + "px";
+          b.style.left = left + "%";
+          b.style.setProperty("--dur", dur + "s");
+          b.style.setProperty("--delay", delay + "s");
+          b.style.setProperty("--rise", rise + "px");
+          b.style.setProperty("--wobble", wobble);
 
-    // render chart AFTER water starts
-    setTimeout(() => {
-      window.dispatchEvent(new Event("water:render"));
-    }, 700);
-  }
+          host.appendChild(b);
+        }
+      }
 
-  // ✅ AUTO START (no click, no interaction)
-  window.addEventListener("load", () => {
-    // small delay so browser paints first
-    setTimeout(startWater, 200);
-  });
-</script>
+      function startWater(){
+        if (page.classList.contains("filled")) return;
+
+        makeBubbles(26);
+
+        // pour ON
+        tapBtn.classList.add("pouring");
+
+        // start sea rising
+        requestAnimationFrame(() => page.classList.add("filled"));
+
+        // stop pour later (so user can see it)
+        setTimeout(() => tapBtn.classList.remove("pouring"), 1600);
+
+        // hide tap
+        setTimeout(() => tapBtn.classList.add("hide"), 1850);
+
+        // chart render AFTER water starts rising
+        setTimeout(() => window.dispatchEvent(new Event("water:render")), 950);
+      }
+
+      // AUTO START
+      window.addEventListener("load", () => {
+        setTimeout(startWater, 200);
+      });
+
+      // optional: rebuild bubbles after resize
+      window.addEventListener("resize", () => {
+        if (page.classList.contains("filled")) makeBubbles(26);
+      });
+    </script>
 
     <script type="module" src="/scripts/plotwater.js"></script>
   </div>
