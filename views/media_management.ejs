@@ -12,7 +12,18 @@
         .list-group-item { cursor: grab; }
         .list-group-item:active { cursor: grabbing; }
     </style>
+    <link rel="stylesheet" href="/stylesheets/glass.css">
 </head>
+<style>
+    body {
+      background-image: url("/images/breeze.gif");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      min-height: 100vh;
+    }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <body>
 
 <%- include("partials/navbar.ejs") %>
@@ -20,7 +31,7 @@
 <div class="container mt-4">
     <h2 class="text-center mb-4">Video Sequence</h2>
 
-    <form action="/media_management" method="POST">
+    <form action="/media_management" method="POST" style="margin-bottom: 100px;">
 
         <ul id="videoList" class="list-group mb-3">
             <% videos.forEach(video => { %>
@@ -40,7 +51,6 @@
 
         <button type="submit" class="btn btn-primary">Save Order</button>
     </form>
-    <br><br><br><br><br>
     <h2 class="text-center mb-4">Add Videos to Sequence</h2>
 
     <form action="/addVideo" method="POST" enctype="multipart/form-data">
