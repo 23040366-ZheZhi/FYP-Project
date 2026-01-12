@@ -405,6 +405,56 @@
       position: relative;
       z-index: 2;
     }
+
+    /* ===== NEW: dropdown footer pinned at bottom (doesn't touch animation) ===== */
+    .chart-body{
+      display:flex;
+      flex-direction:column;
+      min-height:520px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .chart-area{
+      flex:1;
+      min-height:420px;
+    }
+
+    .chart-footer{
+      margin-top:auto;
+      padding-top:12px;
+      border-top:1px solid rgba(0,0,0,.10);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .chart-footer select{
+      min-width:240px;
+      padding:10px 14px;
+      font-size:14px;
+      border-radius:999px;
+      border:1px solid rgba(0,0,0,.10);
+      background: rgba(255,255,255,.72);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 8px 18px rgba(0,0,0,.06);
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+
+    .chart-footer select:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(0,0,0,.09);
+      border-color: rgba(37,99,235,.35);
+    }
+
+    .chart-footer select:focus{
+      outline:none;
+      border-color: rgba(37,99,235,.55);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.18);
+    }
   </style>
 </head>
 
@@ -439,13 +489,23 @@
       <h2>Whole Campus Water Usage (m³)</h2>
 
       <div class="chart-wrap floaty" id="chartCard">
-        <div class="chart-header">
-          <div class="chart-title">
-            <div class="chart-title-main">Water Usage</div>
-            <div class="chart-title-sub">Monthly (m³)</div>
+        <!-- ONLY moved dropdown into footer, animation untouched -->
+        <div class="chart-body">
+
+          <div class="chart-header">
+            <div class="chart-title">
+              <div class="chart-title-main">Water Usage</div>
+              <div class="chart-title-sub">Monthly (m³)</div>
+            </div>
           </div>
 
-          <div class="chart-controls">
+          <div class="chart-divider"></div>
+
+          <div class="chart-area">
+            <canvas id="waterChart"></canvas>
+          </div>
+
+          <div class="chart-footer">
             <label class="sr-only" for="datasetSelector">Choose data</label>
             <select id="datasetSelector">
               <option value="field3">Portable Water</option>
@@ -453,10 +513,8 @@
               <option value="field5">Total Water</option>
             </select>
           </div>
-        </div>
 
-        <div class="chart-divider"></div>
-        <canvas id="waterChart"></canvas>
+        </div>
       </div>
 
       <div class="msg" id="msgBox"></div>

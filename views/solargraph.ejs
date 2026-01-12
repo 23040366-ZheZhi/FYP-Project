@@ -10,6 +10,7 @@
       --card-bg: rgba(255,255,255,.86);
       --text: #111827;
       --muted: #374151;
+      --focus: rgba(59,130,246,.18);
     }
 
     *{ box-sizing: border-box; }
@@ -30,7 +31,7 @@
       padding: 12px;
     }
 
-    /* ===== SOLAR SUNRISE BACKGROUND ===== */
+    /* ===== SOLAR SUNRISE BACKGROUND (KEEP SAME) ===== */
     .solar-sky{
       position: fixed;
       inset: 0;
@@ -120,17 +121,15 @@
       transform: translateY(0) scale(1);
     }
 
-    h2 { text-align: center; margin: 82px 0 18px; color: #0b1220; text-shadow: 0 1px 0 rgba(255,255,255,.35); }
-
-    .controls{ text-align: center; margin-bottom: 12px; color: var(--muted); }
-    select{
-      padding: 8px 12px;
-      font-size: 16px;
-      border-radius: 10px;
-      border: 1px solid rgba(0,0,0,.12);
-      background: rgba(255,255,255,.9);
+    h2{
+      text-align: center;
+      margin: 82px 0 18px;
+      color: white;
+      text-shadow: 0 1px 0 rgba(255,255,255,.20);
+      font-weight: 800;
     }
 
+    /* ===== Make Solar card look like Water card (layout only) ===== */
     .chart-wrap{
       max-width: 1000px;
       margin: 0 auto;
@@ -140,9 +139,101 @@
       border: 1px solid rgba(255,255,255,.35);
       box-shadow: 0 18px 50px rgba(0,0,0,.12);
       backdrop-filter: blur(10px);
+      position: relative;
+      overflow: hidden;
     }
 
-    canvas { width: 100% !important; height: 450px !important; }
+    .chart-wrap::before{
+      content:"";
+      position:absolute;
+      inset:-40px;
+      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.25), transparent 55%);
+      pointer-events:none;
+    }
+
+    /* header / divider like Water */
+    .sr-only{
+      position:absolute;
+      width:1px; height:1px;
+      padding:0; margin:-1px;
+      overflow:hidden;
+      clip:rect(0,0,0,0);
+      border:0;
+    }
+
+    .chart-body{
+      display:flex;
+      flex-direction:column;
+      min-height:520px; /* so footer stays bottom */
+      position: relative;
+      z-index: 2;
+    }
+
+    .chart-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding: 6px 4px 10px;
+    }
+
+    .chart-title-main{
+      font-weight: 800;
+      font-size: 18px;
+      color: #0b1220;
+      letter-spacing: .2px;
+    }
+
+    .chart-title-sub{
+      margin-top: 2px;
+      font-size: 12px;
+      color: rgba(17,24,39,.65);
+    }
+
+    .chart-divider{
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(0,0,0,.12), transparent);
+      margin: 2px 0 12px;
+    }
+
+    .chart-area{
+      flex: 1;
+      min-height: 420px;
+    }
+
+    canvas{
+      width: 100% !important;
+      height: 450px !important;
+      display:block;
+    }
+
+    /* dropdown footer (same idea as your Water page) */
+    .chart-footer{
+      margin-top:auto;
+      padding-top:12px;
+      border-top:1px solid rgba(0,0,0,.10);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+    }
+
+    .chart-footer select{
+      min-width:240px;
+      padding:10px 14px;
+      font-size:14px;
+      border-radius:999px;
+      border:1px solid rgba(0,0,0,.10);
+      background: rgba(255,255,255,.72);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 8px 18px rgba(0,0,0,.06);
+    }
+
+    .chart-footer select:focus{
+      outline:none;
+      border-color: rgba(59,130,246,.55);
+      box-shadow: 0 0 0 4px var(--focus);
+    }
 
     .msg{
       max-width: 1000px;
@@ -151,6 +242,8 @@
       color: #b00020;
       font-weight: bold;
       display: none;
+      position: relative;
+      z-index: 40;
     }
 
     .graph-back-nav{
@@ -184,25 +277,42 @@
 
 <body>
   <div class="page" id="page">
-    <!-- Sunrise layers -->
+    <!-- Sunrise layers (KEEP SAME) -->
     <div class="solar-sky"></div>
     <div class="sun"></div>
     <div class="rays"></div>
 
     <div class="content">
-      <h2 style="color:white">Whole Campus Solar Energy (kWh)</h2>
+      <h2>Whole Campus Solar Energy (kWh)</h2>
 
-      <div class="controls">
-        <label for="datasetSelector" style="color:white">Choose data:</label>
-        <select id="datasetSelector">
-          <option value="field3">Urban Renewables</option>
-          <option value="field4">Green House (kWh)</option>
-          <option value="field5">Total Solar Energy</option>
-        </select>
-      </div>
+      <!-- ✅ Solar card now matches Water card layout -->
+      <div class="chart-wrap" id="chartCard">
+        <div class="chart-body">
 
-      <div class="chart-wrap">
-        <canvas id="solarChart"></canvas>
+          <div class="chart-header">
+            <div class="chart-title">
+              <div class="chart-title-main">Solar Energy</div>
+              <div class="chart-title-sub">Monthly (kWh)</div>
+            </div>
+          </div>
+
+          <div class="chart-divider"></div>
+
+          <div class="chart-area">
+            <canvas id="solarChart"></canvas>
+          </div>
+
+          <!-- ✅ dropdown moved to bottom like water graph -->
+          <div class="chart-footer">
+            <label class="sr-only" for="datasetSelector">Choose data</label>
+            <select id="datasetSelector">
+              <option value="field3">Urban Renewables</option>
+              <option value="field4">Green House (kWh)</option>
+              <option value="field5">Total Solar Energy</option>
+            </select>
+          </div>
+
+        </div>
       </div>
 
       <div class="msg" id="msgBox"></div>
@@ -212,7 +322,7 @@
       <a href="/" class="graph-back-btn">Back</a>
     </div>
 
-    <!-- AUTO START sunrise + chart render -->
+    <!-- AUTO START sunrise + chart render (KEEP SAME) -->
     <script>
       const page = document.getElementById("page");
 
