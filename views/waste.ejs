@@ -14,6 +14,7 @@
     body{
       font-family: Arial, sans-serif;
       overflow-x: hidden;
+      overflow-y: auto;
       background: url("/images/waste-bg.png") center / cover no-repeat fixed;
     }
 
@@ -318,5 +319,12 @@
 
   <!-- ✅ DO NOT TOUCH YOUR GRAPH SCRIPT -->
   <script type="module" src="/scripts/plotwaste.js"></script>
+
+  <script>
+      window.__ROTATE_CFG__ = <%- JSON.stringify(rotateCfg) %>;
+      console.log(window.__ROTATE_CFG__);
+  </script>
+  <script src="/scripts/idle-rotate.js"></script>
+
 </body>
 </html>
