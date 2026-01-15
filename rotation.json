@@ -1,5 +1,11 @@
 {
   "enabled": true,
-  "idleSeconds": 10,
-  "routes": ["/", "/electgraph", "/solargraph", "/watergraph", "/waste"]
+  "idleSeconds": 30,
+  "routes": [
+    "/",
+    "/electgraph",
+    "/solargraph",
+    "/watergraph",
+    "/waste"
+  ]
 }

@@ -3,228 +3,344 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Water Consumption Terminal</title>
+  <title>Water Consumption by Building</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    :root {
-      --bg: #03070d;
-      --panel: #0b1627;
-      --border: rgba(90, 220, 255, 0.4);
-      --neon: #5adcff;
-      --text: #e0f7ff;
+    :root{
+      --bg1:#020611;
+      --bg2:#071a2f;
+      --neon:#5adcff;
+      --text:#e8fbff;
+      --glass: rgba(10, 24, 40, .55);
+      --border: rgba(90, 220, 255, .25);
+      --shadow: 0 30px 90px rgba(0,0,0,.55);
     }
 
-    body {
-      margin: 0;
-      background-color: var(--bg);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    body{
+      margin:0;
+      font-family: Arial, sans-serif;
       color: var(--text);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow-x: hidden;
+      overflow-x:hidden;
+      background:
+        radial-gradient(1200px 700px at 50% -10%, rgba(90,220,255,.14), transparent 65%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
     }
 
-    h2 {
-      text-transform: uppercase;
-      letter-spacing: 4px;
-      font-size: 1.2rem;
-      margin-bottom: 20px;
-      color: var(--neon);
-      text-shadow: 0 0 10px rgba(90, 220, 255, 0.5);
+    /* ===== SCENE LAYERS ===== */
+    .scene{
+      position: relative;
+      min-height: 100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      padding: 18px 14px 170px; /* leave space for bottom tank */
     }
 
-    /* ===== THE VERTICAL PIPE ===== */
-    .pipeline {
+    /* Rain layer */
+    .rain{
       position: fixed;
-      top: 0;
+      inset: 0;
+      pointer-events:none;
+      z-index: 0;
+      overflow:hidden;
+      opacity: .9;
+    }
+
+    .drop{
+      position:absolute;
+      top:-20vh;
+      width:2px;
+      height: 14vh;
+      background: linear-gradient(to bottom, transparent, rgba(90,220,255,.45), transparent);
+      filter: blur(.2px);
+      animation: fall linear infinite;
+    }
+
+    @keyframes fall{
+      from{ transform: translateY(0); }
+      to{ transform: translateY(140vh); }
+    }
+
+    /* ===== CHARTS (REVEAL) ===== */
+    .compare-grid{
+      width: min(1400px, 95vw);
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      position: relative;
+      z-index: 2;
+      margin-top: 10px;
+    }
+    @media (max-width: 950px){
+      .compare-grid{ grid-template-columns: 1fr; }
+    }
+
+    .screen{
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      backdrop-filter: blur(12px);
+      overflow:hidden;
+
+      /* reveal state */
+      opacity: 0;
+      transform: translateY(18px) scale(.985);
+      filter: blur(1px);
+      transition: opacity 900ms ease, transform 900ms cubic-bezier(.2,.9,.2,1), filter 900ms ease;
+      pointer-events:none;
+    }
+
+    .screen.on{
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+      pointer-events:auto;
+    }
+
+    .screen-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding: 4px 6px 10px;
+      border-bottom: 1px solid rgba(90,220,255,.14);
+      margin-bottom: 12px;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing:.3px;
+    }
+
+    .status{
+      font-size: 11px;
+      font-weight: 900;
+      color: rgba(0,255,170,.9);
+      text-shadow: 0 0 10px rgba(0,255,170,.25);
+    }
+
+    .chart-area{
+      height: 360px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.92); /* keep chart readable */
+      overflow:hidden;
+    }
+
+    canvas{
+      width:100% !important;
+      height:100% !important;
+      display:block;
+    }
+
+    .screen-footer{
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(90,220,255,.14);
+      display:flex;
+      justify-content:center;
+      gap: 10px;
+      align-items:center;
+    }
+
+    .footer-label{
+      font-size: 12px;
+      font-weight: 900;
+      color: rgba(255,255,255,.8);
+    }
+
+    select{
+      min-width: 240px;
+      padding: 10px 14px;
+      font-size: 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(90,220,255,.22);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.92);
+      outline:none;
+    }
+    select option{
+      background:#0b1220;
+      color:#fff;
+    }
+
+    /* ===== BOTTOM TANK (NO TEXT) ===== */
+    .tank-wrap{
+      position: fixed;
       left: 50%;
       transform: translateX(-50%);
-      width: 40px;
-      height: 100vh;
-      background: linear-gradient(90deg, #111 0%, #333 50%, #111 100%);
-      border-left: 2px solid rgba(255,255,255,0.1);
-      border-right: 2px solid rgba(255,255,255,0.1);
-      z-index: 1; /* Sits behind the screens but in the middle gap */
-      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      bottom: 92px; /* keep above back button */
+      width: min(720px, 94vw);
+      z-index: 3;
+      pointer-events:none;
     }
 
-    .pipeline-water {
-      position: absolute;
-      top: 0;
-      left: 20%;
-      width: 60%;
-      height: 100%;
-      background: rgba(0, 150, 255, 0.2);
-      overflow: hidden;
-    }
-
-    /* Flowing Water Effect */
-    .pipeline-water::after {
-      content: "";
-      position: absolute;
-      top: -100%;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(to bottom, 
-        transparent 0%, 
-        rgba(90, 220, 255, 0.4) 50%, 
-        transparent 100%);
-      animation: waterFlow 3s linear infinite;
-    }
-
-    @keyframes waterFlow {
-      from { transform: translateY(0); }
-      to { transform: translateY(100%); }
-    }
-
-    /* ===== LAYOUT GRID ===== */
-    .compare-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 100px; /* Space for the pipe to breathe */
-      width: 95%;
-      max-width: 1400px;
+    .tank{
+      height: 92px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(90,220,255,.25);
+      box-shadow: 0 16px 50px rgba(0,0,0,.35);
+      overflow:hidden;
       position: relative;
-      z-index: 2; /* Sits above the pipe background */
+      backdrop-filter: blur(10px);
     }
 
-    /* ===== SCI-FI COMPUTER SCREEN ===== */
-    .screen {
-      background: rgba(11, 22, 39, 0.85);
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      padding: 20px;
-      position: relative;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 1), inset 0 0 15px rgba(90, 220, 255, 0.1);
-      backdrop-filter: blur(8px);
+    .tank::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.08), transparent 30%, transparent 70%, rgba(255,255,255,.06));
+      pointer-events:none;
     }
 
-    /* Screen Bezel Effect */
-    .screen::before {
-      content: "";
-      position: absolute;
-      top: -5px; left: -5px; right: -5px; bottom: -5px;
-      border: 1px solid rgba(90, 220, 255, 0.2);
-      border-radius: 12px;
-      pointer-events: none;
+    .water{
+      position:absolute;
+      left:0; right:0;
+      bottom:0;
+      height: 0%;
+      background: linear-gradient(180deg, rgba(90,220,255,.35), rgba(0,140,255,.25));
+      transition: height 3.2s ease;
     }
 
-    .screen-header {
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 8px;
-      margin-bottom: 15px;
-      font-family: monospace;
-      font-size: 0.8rem;
+    .water::before{
+      content:"";
+      position:absolute;
+      left:-30%;
+      top:-18px;
+      width:160%;
+      height:36px;
+      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.22), rgba(255,255,255,0) 60%);
+      filter: blur(2px);
+      opacity:.8;
+      animation: surface 2.4s ease-in-out infinite;
     }
 
-    .status-active {
-      color: #00ffaa;
-      text-shadow: 0 0 5px #00ffaa;
+    @keyframes surface{
+      0%{ transform: translateX(-2%) }
+      50%{ transform: translateX(2%) }
+      100%{ transform: translateX(-2%) }
     }
 
-    /* Chart Container - Forced white/light for Chart.js readability */
-    .chart-area {
-      background: rgba(255, 255, 255, 0.05); /* Dark background for sci-fi look */
-      border-radius: 4px;
-      height: 350px;
-      position: relative;
+    /* ===== BACK BUTTON ===== */
+    .graph-back-nav{
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
     }
-
-    /* Footer / Select Styling */
-    .screen-footer {
-      margin-top: 20px;
-      text-align: center;
-    }
-
-    select {
-      background: #050b14;
-      color: var(--neon);
-      border: 1px solid var(--border);
-      padding: 8px 15px;
-      border-radius: 5px;
-      cursor: pointer;
-      outline: none;
-    }
-
-    /* HUD Decorations */
-    .bracket {
-      position: absolute;
-      width: 15px; height: 15px;
-      border: 2px solid var(--neon);
-    }
-    .br-tl { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
-    .br-tr { top: -2px; right: -2px; border-left: 0; border-bottom: 0; }
-    .br-bl { bottom: -2px; left: -2px; border-right: 0; border-top: 0; }
-    .br-br { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
-
-    @media (max-width: 950px) {
-      .compare-grid { grid-template-columns: 1fr; gap: 40px; }
-      .pipeline { display: none; }
+    .graph-back-btn{
+      width: 150px;
+      height: 56px;
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.92);
+      border-radius: 999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-decoration:none;
+      font-weight:900;
+      border:1px solid rgba(90,220,255,.22);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 12px 30px rgba(0,0,0,.45);
     }
   </style>
 </head>
 
 <body>
+  <!-- RAIN -->
+  <div class="rain" id="rain" aria-hidden="true"></div>
 
-  <h2>System Comparison: Water Infrastructure</h2>
+  <div class="scene">
+    <!-- CHARTS -->
+    <div class="compare-grid">
+      <section class="screen" id="screenA">
+        <div class="screen-header">
+          <span>Graph 1 </span>
+          <span class="status">● ONLINE</span>
+        </div>
 
-  <div class="pipeline">
-    <div class="pipeline-water"></div>
+        <div class="chart-area">
+          <canvas id="buildingChartA"></canvas>
+        </div>
+
+        <div class="screen-footer">
+          <label class="footer-label" for="buildingSelectA">Building</label>
+          <select id="buildingSelectA"></select>
+        </div>
+
+        <div class="note" id="msgA"></div>
+      </section>
+
+      <section class="screen" id="screenB">
+        <div class="screen-header">
+          <span>Graph 2</span>
+          <span class="status">● ONLINE</span>
+        </div>
+
+        <div class="chart-area">
+          <canvas id="buildingChartB"></canvas>
+        </div>
+
+        <div class="screen-footer">
+          <label class="footer-label" for="buildingSelectB">Building</label>
+          <select id="buildingSelectB"></select>
+        </div>
+
+        <div class="note" id="msgB"></div>
+      </section>
+    </div>
+
+    <div class="graph-back-nav">
+      <a href="/" class="graph-back-btn">Back</a>
+    </div>
   </div>
 
-  <div class="compare-grid">
-    <section class="screen" id="screenA">
-      <div class="bracket br-tl"></div><div class="bracket br-tr"></div>
-      <div class="bracket br-bl"></div><div class="bracket br-br"></div>
-
-      <div class="screen-header">
-        <span>TERMINAL_01 // DATA_FEED</span>
-        <span class="status-active">● ONLINE</span>
-      </div>
-
-      <div class="chart-area">
-        <canvas id="buildingChartA"></canvas>
-      </div>
-
-      <div class="screen-footer">
-        <select id="buildingSelectA">
-            <option>Loading Buildings...</option>
-        </select>
-      </div>
-    </section>
-
-    <section class="screen" id="screenB">
-      <div class="bracket br-tl"></div><div class="bracket br-tr"></div>
-      <div class="bracket br-bl"></div><div class="bracket br-br"></div>
-
-      <div class="screen-header">
-        <span>TERMINAL_02 // COMP_ANALYSIS</span>
-        <span class="status-active">● ONLINE</span>
-      </div>
-
-      <div class="chart-area">
-        <canvas id="buildingChartB"></canvas>
-      </div>
-
-      <div class="screen-footer">
-        <select id="buildingSelectB">
-            <option>Loading Buildings...</option>
-        </select>
-      </div>
-    </section>
+  <!-- BOTTOM TANK (NO WORDS, NO %) -->
+  <div class="tank-wrap" aria-hidden="true">
+    <div class="tank">
+      <div class="water" id="tankWater"></div>
+    </div>
   </div>
 
-  <div style="margin-top: 40px; z-index: 10;">
-    <a href="/" style="color: var(--neon); text-decoration: none; font-weight: bold; border: 1px solid var(--neon); padding: 10px 20px; border-radius: 20px;">RETURN TO COMMAND</a>
-  </div>
+  <!-- Story Animation Controller (does NOT touch Chart.js) -->
+  <script>
+    // Build rain drops (automatic)
+    const rain = document.getElementById('rain');
+    const DROP_COUNT = 70;
+    for(let i=0;i<DROP_COUNT;i++){
+      const d = document.createElement('span');
+      d.className = 'drop';
+      const left = Math.random() * 100;
+      const dur = 1.2 + Math.random() * 1.8; // 1.2-3.0s
+      const delay = Math.random() * 2.5;
+      d.style.left = left + 'vw';
+      d.style.animationDuration = dur + 's';
+      d.style.animationDelay = delay + 's';
+      d.style.opacity = (0.35 + Math.random()*0.55).toFixed(2);
+      d.style.height = (8 + Math.random()*18) + 'vh';
+      rain.appendChild(d);
+    }
 
+    // Fill tank then reveal screens (no % shown)
+    const tankWater = document.getElementById('tankWater');
+    const screenA = document.getElementById('screenA');
+    const screenB = document.getElementById('screenB');
+
+    window.addEventListener('load', () => {
+      // Fill tank (visual only)
+      tankWater.style.height = '70%';
+
+      // Reveal charts after fill
+      setTimeout(() => screenA.classList.add('on'), 2600);
+      setTimeout(() => screenB.classList.add('on'), 2900);
+    });
+  </script>
+
+  <!-- DO NOT TOUCH YOUR CHART SCRIPT -->
   <script type="module" src="/scripts/plotindivW.js"></script>
 </body>
 </html>

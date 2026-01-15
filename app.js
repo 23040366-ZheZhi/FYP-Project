@@ -54,6 +54,14 @@ app.use(
   })
 );
 
+app.use((req, res, next) => {
+  res.locals.session = req.session;
+  res.locals.disableInteractive = req.session.disableInteractive;
+  next();
+});
+
+
+
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
@@ -61,6 +69,34 @@ function adminOnly(req, res, next) {
   if (!req.session.isAdmin) return res.redirect("/login");
   next();
 }
+
+app.get("/manage-rotation", adminOnly, (req, res) => {
+  res.render("manage_rotation", { cfg: readRotateCfg() });
+});
+
+app.post("/manage-rotation", adminOnly, (req, res) => {
+  const enabled = req.body.enabled === "on";
+
+  const idleSeconds = Math.max(
+    5,
+    Math.min(600, Number(req.body.idleSeconds) || 30)
+  );
+
+  const routes = String(req.body.routes || "")
+    .split("\n")
+    .map(r => r.trim())
+    .filter(Boolean)
+    .map(r => (r.startsWith("/") ? r : "/" + r));
+
+  fs.writeFileSync(
+    ROT_FILE,
+    JSON.stringify({ enabled, idleSeconds, routes }, null, 2),
+    "utf8"
+  );
+
+  res.redirect("/manage-rotation");
+});
+
 
 /* defaults */
 app.use((req, res, next) => {
