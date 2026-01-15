@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "idleSeconds": 30,
+  "idleSeconds": 10,
   "routes": [
     "/",
     "/electgraph",
