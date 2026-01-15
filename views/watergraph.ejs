@@ -23,6 +23,7 @@
       background: var(--page-bg);
       color: var(--text);
       overflow-x: hidden;
+      overflow-y: auto;
     }
 
     .page{
@@ -590,6 +591,12 @@
     </script>
 
     <script type="module" src="/scripts/plotwater.js"></script>
+    <script>
+      window.__ROTATE_CFG__ = <%- JSON.stringify(rotateCfg) %>;
+      console.log(window.__ROTATE_CFG__);
+    </script>
+    <script src="/scripts/idle-rotate.js"></script>
+
   </div>
 </body>
 </html>

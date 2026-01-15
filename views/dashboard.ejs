@@ -13,7 +13,7 @@
 
   <style>
     body {
-      background-image: url("/images/drew-saurus-unsplash.jpg");
+      background-image: url("/images/Republic-Polytechnic.jpg");
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -477,30 +477,11 @@ document.getElementById("miniWasteValue").textContent =
 </script>
 
 <script>
-(function () {
-  const routes = [
-    "/",
-    "/electgraph",
-    "/solargraph",
-    "/watergraph",
-    "/wastegraph"
-  ];
-
-  const delay = 10000;
-
-  const path = window.location.pathname.replace(/\/+$/, "") || "/";
-  const index = routes.indexOf(path);
-
-  if (index === -1) return;
-
-  setTimeout(() => {
-    window.location.href = routes[(index + 1) % routes.length];
-  }, delay);
-})();
+  window.__ROTATE_CFG__ = <%- JSON.stringify(rotateCfg) %>;
+  console.log(window.__ROTATE_CFG__);
 </script>
 
-
-
+<script src="/scripts/idle-rotate.js"></script>
 
 
 </body>

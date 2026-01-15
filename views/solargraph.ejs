@@ -20,6 +20,7 @@
       font-family: Arial, sans-serif;
       color: var(--text);
       overflow-x: hidden;
+      overflow-y: auto;
       background: #0b1020; /* base while loading */
     }
 
@@ -338,8 +339,17 @@
       });
     </script>
 
+    
+
     <!-- ✅ keep your module file -->
     <script type="module" src="/scripts/plotgraph.js"></script>
+    <script>
+      window.__ROTATE_CFG__ = <%- JSON.stringify(rotateCfg) %>;
+      console.log(window.__ROTATE_CFG__);
+    </script>
+    <script src="/scripts/idle-rotate.js"></script>
+
+
   </div>
 </body>
 </html>

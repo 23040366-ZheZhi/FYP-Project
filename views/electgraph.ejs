@@ -25,7 +25,8 @@
       margin:0;
       font-family: Arial, sans-serif;
       color: var(--text);
-      overflow:hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     /* ===== Cinematic stage ===== */
@@ -346,6 +347,13 @@
 
     <!-- Your existing chart logic -->
     <script type="module" src="/scripts/plotelect.js"></script>
+    <script>
+      window.ROTATE_CFG = <%- JSON.stringify(rotateCfg || {}) %>;
+      console.log(window.__ROTATE_CFG__);
+    </script>
+    <script src="/scripts/idle-rotate.js"></script>
+
+
   </div>
 </body>
 </html>
