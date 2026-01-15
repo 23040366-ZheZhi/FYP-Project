@@ -9,17 +9,46 @@
   <link href="https://fonts.googleapis.com/css2?family=Lalezar&display=swap" rel="stylesheet">
 
   <style>
-    /* ===== FULL SCREEN FIGMA BACKGROUND ===== */
-    html, body { height: 100%; margin: 0; }
-    body{
-      font-family: Arial, sans-serif;
-      overflow-x: hidden;
-      background: url("/images/waste-bg.png") center / cover no-repeat fixed;
+    /* ===== GREEN BACKGROUND WITH MOVING LIGHT-GREEN WAVES ===== */
+    .waste-bg{
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background: #1fa34a; /* main green */
+      overflow: hidden;
     }
 
-    .stage{
-      min-height: 100vh;
-      position: relative;
+    .waste-bg .wave{
+      position: absolute;
+      left: 0;
+      width: 200%;
+      height: 45%;
+      background-repeat: repeat-x;
+      background-size: 1200px 420px;
+      opacity: 0.95;
+    }
+
+    .waste-bg .wave1{
+      top: 10%;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='420'%3E%3Cpath d='M0 140 C 160 40 320 260 480 140 C 640 40 800 260 960 140 C 1120 40 1200 200 1200 200 L1200 420 L0 420 Z' fill='%23b6ef3a'/%3E%3C/svg%3E");
+      animation: waveMove1 14s linear infinite;
+    }
+
+    .waste-bg .wave2{
+      top: 42%;
+      opacity: 0.85;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='420'%3E%3Cpath d='M0 160 C 200 60 360 300 560 160 C 760 60 900 300 1100 160 L1200 200 L1200 420 L0 420 Z' fill='%23b6ef3a'/%3E%3C/svg%3E");
+      animation: waveMove2 20s linear infinite;
+    }
+
+    @keyframes waveMove1{
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    @keyframes waveMove2{
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
     }
 
     /* Optional overlay to help chart readability */
@@ -35,10 +64,10 @@
     /* ===== RECYCLE LOGO (smaller + moved down) ===== */
     .recycle-logo{
       position: fixed;
-      top: 50px;          /* ⬅ move down (adjust if needed) */
+      top: 50px;
       left: 50%;
       transform: translateX(-50%);
-      width: 120px;        /* ⬅ smaller */
+      width: 120px;
       height: auto;
       z-index: 2;
       pointer-events: none;
@@ -92,13 +121,12 @@
       z-index: 3;
       max-width: 1100px;
       margin: 0 auto;
-      padding: 170px 12px 120px; /* ⬅ space for logo */
-      opacity: 1;               /* always visible */
+      padding: 170px 12px 120px;
+      opacity: 1;
       transform: none;
       pointer-events: auto;
     }
 
-    /* ===== Card now matches Water page layout (NO animation touched) ===== */
     .chart-wrap{
       max-width: 1000px;
       margin: 0 auto;
@@ -128,7 +156,6 @@
       border:0;
     }
 
-    /* header + divider like your water page */
     .chart-header{
       position: relative;
       z-index: 2;
@@ -160,7 +187,6 @@
       z-index: 2;
     }
 
-    /* body pushes footer down (same trick as water page) */
     .chart-body{
       display:flex;
       flex-direction:column;
@@ -180,7 +206,6 @@
       display:block;
     }
 
-    /* footer dropdown like water page */
     .chart-footer{
       margin-top:auto;
       padding-top:12px;
@@ -200,19 +225,17 @@
       border-radius: 999px;
       border: 1px solid rgba(0,0,0,.10);
       background: rgba(255,255,255,.72);
-      color: #111827; /* selected text */
+      color: #111827;
       backdrop-filter: blur(10px);
       outline: none;
       box-shadow: 0 8px 18px rgba(0,0,0,.10);
     }
 
-    /* keep options readable */
     #datasetSelector option{
       background: #ffffff;
       color: #111827;
     }
 
-    /* Back button (KEEP SAME) */
     .graph-back-nav{
       position: fixed;
       bottom: 20px;
@@ -235,7 +258,6 @@
       backdrop-filter: blur(10px);
     }
 
-    /* Optional: your totals + msg (KEEP SAME) */
     .totals{
       text-align:center;
       margin-top:14px;
@@ -253,11 +275,25 @@
       display: none;
       text-shadow: 0 10px 30px rgba(0,0,0,.35);
     }
+
+    /* ✅ Lock chart UI font to match your other graph pages */
+    .ui,
+    .chart-wrap,
+    .chart-wrap * {
+      font-family: Arial, sans-serif !important;
+    }
+
   </style>
 </head>
 
 <body>
   <div class="stage" id="stage">
+
+    <!-- ✅ green wave background -->
+    <div class="waste-bg" aria-hidden="true">
+      <div class="wave wave1"></div>
+      <div class="wave wave2"></div>
+    </div>
 
     <!-- ✅ recycle logo -->
     <img src="/images/recycle.png" class="recycle-logo" alt="Recycle">
@@ -274,11 +310,8 @@
 
     <!-- UI -->
     <div class="ui">
-
-      <!-- ✅ chart card now matches water layout: header + divider + chart + footer dropdown -->
       <div class="chart-wrap">
         <div class="chart-body">
-
           <div class="chart-header">
             <div class="chart-title">
               <div class="chart-title-main">Waste Data</div>
@@ -287,13 +320,12 @@
           </div>
 
           <div class="chart-divider"></div>
-            <div class="totals" id="totalsDisplay"></div>
+          <div class="totals" id="totalsDisplay"></div>
 
           <div class="chart-area">
             <canvas id="wasteChart"></canvas>
           </div>
 
-          <!-- dropdown moved to bottom (same as water) -->
           <div class="chart-footer">
             <label class="sr-only" for="datasetSelector">Choose data</label>
             <select id="datasetSelector">
@@ -307,7 +339,6 @@
         </div>
       </div>
 
-    
       <div class="msg" id="msgBox"></div>
     </div>
 
