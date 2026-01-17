@@ -145,7 +145,7 @@
         </div>
     </div>
 
-    <!-- ✅ NEW: INDIVIDUAL SETTINGS -->
+    <!-- ✅ INDIVIDUAL SETTINGS (fixed + same style) -->
     <div class="card mt-4 mb-5">
         <div class="card-body">
             <h5 class="mb-3">Individual Graph Settings</h5>
@@ -162,7 +162,7 @@
                     </label>
                 </div>
 
-                <div class="form-check">
+                <div class="form-check mb-2">
                     <input class="form-check-input"
                            type="radio"
                            name="individualMode"
@@ -171,6 +171,21 @@
                     <label class="form-check-label">
                         Non Interactive
                     </label>
+                </div>
+
+                <!-- ✅ same spacing as other sections -->
+                <div class="mt-3">
+                    <label class="form-label">Seconds before rotate (for non-interactive)</label>
+                    <input
+                        class="form-control"
+                        type="number"
+                        name="rotateSeconds"
+                        min="5"
+                        max="600"
+                        value="<%= rotateSeconds || 10 %>"
+                        required
+                    >
+                    <div class="form-text">Default: 10 seconds. Range: 5–600.</div>
                 </div>
 
                 <button class="btn btn-success mt-3">

@@ -10,22 +10,32 @@
     body { font-family: Arial, sans-serif; background:#f3f4f6; margin:0; padding:10px; }
     h2 { text-align:center; margin:10px 0 18px; font-size:20px; font-weight:800; }
 
-    .wrap{
-      max-width:1800px;
-      width:95%;
-      margin:0 auto;
-      background:#fff;
-      border:1px solid rgba(0,0,0,.10);
-      border-radius:14px;
-      padding:12px;
-      box-shadow:0 8px 20px rgba(0,0,0,.08);
-      min-height:640px;
-      display:flex;
-      flex-direction:column;
-    }
+   .wrap{
+  max-width:1400px;          /* closer to water look */
+  width:92%;
+  margin:0 auto;
+  background:#fff;
+  border:1px solid rgba(0,0,0,.10);
+  border-radius:14px;
+  padding:14px;
+  box-shadow:0 8px 20px rgba(0,0,0,.08);
+  display:flex;
+  flex-direction:column;
+}
 
-    .chart-area{ position:relative; flex:1; min-height:560px; }
-    canvas{ width:100% !important; height:100% !important; display:block; }
+/* ✅ taller like water */
+.chart-area{
+  position:relative;
+  height:520px;              /* key: make it look like water */
+  width:100%;
+}
+
+canvas{
+  width:100% !important;
+  height:100% !important;
+  display:block;
+}
+
 
     .note{
       margin-top:10px;
@@ -51,6 +61,16 @@
       box-shadow:0 8px 20px rgba(0,0,0,.18);
     }
     .graph-back-btn:hover{ background:#23272b; }
+
+    /* ✅ Optional: better on large screens */
+    @media (min-width: 1400px){
+      .chart-area{ height:480px; }
+    }
+
+    /* ✅ Optional: better on mobile */
+    @media (max-width: 600px){
+      .chart-area{ height:320px; }
+    }
   </style>
 </head>
 
@@ -58,6 +78,7 @@
   <h2>Electricity Consumption (Individual Buildings) - Non Interactive</h2>
 
   <div class="wrap">
+    <!-- ✅ If you added summary box in JS, it will insert above this canvas automatically -->
     <div class="chart-area">
       <canvas id="chart"></canvas>
     </div>

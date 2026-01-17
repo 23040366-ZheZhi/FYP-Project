@@ -22,6 +22,35 @@ function showMsg(text) {
   msgBox.textContent = text || "";
   msgBox.style.display = text ? "block" : "none";
 }
+// ✅ summary box (will be created and inserted above the canvas)
+let summaryBox = document.getElementById("waterSummary");
+
+function ensureSummaryBox() {
+  if (summaryBox) return summaryBox;
+
+  summaryBox = document.createElement("div");
+  summaryBox.id = "waterSummary";
+  summaryBox.style.margin = "10px 0 12px";
+  summaryBox.style.padding = "10px 12px";
+  summaryBox.style.border = "1px solid rgba(0,0,0,0.12)";
+  summaryBox.style.borderRadius = "10px";
+  summaryBox.style.background = "rgba(255,255,255,0.85)";
+  summaryBox.style.backdropFilter = "blur(4px)";
+  summaryBox.style.fontSize = "14px";
+  summaryBox.style.lineHeight = "1.35";
+
+  // Put it above the chart canvas
+  if (canvas?.parentNode) canvas.parentNode.insertBefore(summaryBox, canvas);
+
+  return summaryBox;
+}
+
+function setSummaryHTML(html) {
+  const box = ensureSummaryBox();
+  box.innerHTML = html || "";
+  box.style.display = html ? "block" : "none";
+}
+
 
 function toNum(v) {
   const s = String(v ?? "").trim();
@@ -123,14 +152,30 @@ function renderLineChart(timeline, rows, firstColKey, buildingKeys, buildingName
 
   const labels = timeline.map(t => t.label);
 
+  // ✅ scan plotted data to find global highest/lowest (non-zero)
+  let maxPoint = null; // { v, building, month }
+  let minPoint = null; // { v, building, month }
+
   const datasets = buildingKeys.map((k, i) => {
     const c = colorForIndex(i, buildingKeys.length);
 
     const data = timeline.map(t => {
       const row = findRow(rows, firstColKey, t.year, t.month);
       const n = toNum(row?.[k]);
+
       // skip 0 / invalid
-      return Number.isFinite(n) && n !== 0 ? n : null;
+      const v = Number.isFinite(n) && n !== 0 ? n : null;
+
+      // ✅ update max/min from the same values used for the chart
+      if (v != null) {
+        const building = buildingNames[i] || k;
+        const month = t.label;
+
+        if (!maxPoint || v > maxPoint.v) maxPoint = { v, building, month };
+        if (!minPoint || v < minPoint.v) minPoint = { v, building, month };
+      }
+
+      return v;
     });
 
     return {
@@ -148,10 +193,23 @@ function renderLineChart(timeline, rows, firstColKey, buildingKeys, buildingName
 
   if (!datasets.length) {
     showMsg("No valid data (all values are 0/invalid).");
+    setSummaryHTML(""); // hide summary
     return;
   }
 
   showMsg("");
+
+  // ✅ show summary above the chart
+  const fmt = (n) => Number(n).toLocaleString();
+  const maxLine = maxPoint
+    ? `<b>Highest</b>: ${maxPoint.building} — ${fmt(maxPoint.v)} m³ <span style="opacity:.75">(at ${maxPoint.month})</span>`
+    : `<b>Highest</b>: N/A`;
+
+  const minLine = minPoint
+    ? `<b>Lowest</b>: ${minPoint.building} — ${fmt(minPoint.v)} m³ <span style="opacity:.75">(at ${minPoint.month})</span>`
+    : `<b>Lowest</b>: N/A`;
+
+  setSummaryHTML(`${maxLine}<br>${minLine}`);
 
   chart = new Chart(ctx, {
     type: "line",
@@ -188,6 +246,7 @@ function renderLineChart(timeline, rows, firstColKey, buildingKeys, buildingName
   });
 }
 
+
 // =====================
 // ✅ BAR MODE (AUTOPLAY BY MONTH)
 // =====================
@@ -195,7 +254,33 @@ function renderBarMonth(titleLabel, buildingNames, values) {
   destroy();
 
   const hasAny = values.some(v => v != null);
-  if (!hasAny) return false;
+  if (!hasAny) {
+    setSummaryHTML(""); // hide if no data
+    return false;
+  }
+
+  // ✅ summary for THIS month (bar frame)
+  let maxPoint = null; // { v, building }
+  let minPoint = null;
+
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (v == null) continue; // skip 0/invalid
+    const building = buildingNames[i];
+
+    if (!maxPoint || v > maxPoint.v) maxPoint = { v, building };
+    if (!minPoint || v < minPoint.v) minPoint = { v, building };
+  }
+
+  const fmt = (n) => Number(n).toLocaleString();
+  if (maxPoint && minPoint) {
+    setSummaryHTML(
+      `<b>Highest</b>: ${maxPoint.building} — ${fmt(maxPoint.v)} m³ <span style="opacity:.75">(at ${titleLabel})</span><br>` +
+      `<b>Lowest</b>: ${minPoint.building} — ${fmt(minPoint.v)} m³ <span style="opacity:.75">(at ${titleLabel})</span>`
+    );
+  } else {
+    setSummaryHTML("");
+  }
 
   chart = new Chart(ctx, {
     type: "bar",
@@ -221,7 +306,15 @@ function renderBarMonth(titleLabel, buildingNames, values) {
           text: `Water — ${titleLabel}`,
           font: { size: 16, weight: "bold" }
         },
-        legend: { display: false }
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: c => {
+              const v = c.parsed.y;
+              return v == null ? "-" : `${v.toLocaleString()} m³`;
+            }
+          }
+        }
       },
       scales: {
         x: { ticks: { maxRotation: 60, minRotation: 60 } },
@@ -233,7 +326,8 @@ function renderBarMonth(titleLabel, buildingNames, values) {
   return true;
 }
 
-function autoplayBars(timeline, rows, firstColKey, buildingKeys, buildingNames) {
+
+function autoplayBars(timeline, rows, firstColKey, buildingKeys, buildingNames, rotateMs){
   stopTimer();
   showMsg("");
 
@@ -260,13 +354,12 @@ function autoplayBars(timeline, rows, firstColKey, buildingKeys, buildingNames) 
     showMsg("No valid data to display.");
     return;
   }
+timer = setInterval(() => {
+  const more = showNext();
+  if (!more) stopTimer();
+}, rotateMs);
 
-  timer = setInterval(() => {
-    const more = showNext();
-    if (!more) stopTimer();
-  }, 10000);
 }
-
 async function init() {
   try {
     if (!ctx) return;
@@ -294,10 +387,12 @@ async function init() {
       return;
     }
 
+    const rotateMs = Math.max(5000, Number(settings?.rotateSeconds || 10) * 1000);
+
     if (settings?.graphType === "line") {
       renderLineChart(timeline, rows, firstColKey, buildingKeys, buildingNames);
     } else {
-      autoplayBars(timeline, rows, firstColKey, buildingKeys, buildingNames);
+      autoplayBars(timeline, rows, firstColKey, buildingKeys, buildingNames, rotateMs);
     }
 
   } catch (e) {

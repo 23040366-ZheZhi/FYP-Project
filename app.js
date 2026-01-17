@@ -103,6 +103,7 @@ app.use((req, res, next) => {
   if (!req.session.yearMode) req.session.yearMode = "current";
   if (!req.session.graphType) req.session.graphType = "bar";
   if (!req.session.individualMode) req.session.individualMode = "interactive";
+  if (!req.session.rotateSeconds) req.session.rotateSeconds = 10; // ✅ default 10s
   if (req.session.disableInteractive === undefined) req.session.disableInteractive = false;
   next();
 });
@@ -191,22 +192,30 @@ app.get("/api/graph-settings", (req, res) => {
   res.json({
     yearMode: req.session.yearMode,
     graphType: req.session.graphType,
-    individualMode: req.session.individualMode
+    individualMode: req.session.individualMode,
+    rotateSeconds: req.session.rotateSeconds || 10
   });
 });
 
 app.post("/set-individual-settings", adminOnly, (req, res) => {
-  const { individualMode } = req.body;
+  const { individualMode, rotateSeconds } = req.body;
 
   if (!["interactive", "non-interactive"].includes(individualMode)) {
     return res.status(400).send("Invalid individual mode");
   }
 
+  const sec = Math.max(5, Math.min(600, Number(rotateSeconds) || 10));
+
   req.session.individualMode = individualMode;
+  req.session.rotateSeconds = sec;
+
   console.log("Individual mode set to:", individualMode);
+  console.log("Rotate seconds set to:", sec);
 
   res.redirect("/manage_graph");
 });
+
+
 
 /* disableInteractive toggle locals already handled above */
 
@@ -705,7 +714,9 @@ app.get("/manage_graph", adminOnly, (req, res) => {
       files: xlsxFiles,
       yearMode: req.session.yearMode || "current",
       graphType: req.session.graphType || "bar",
-      individualMode: req.session.individualMode || "interactive"
+      individualMode: req.session.individualMode || "interactive",
+      rotateSeconds: req.session.rotateSeconds || 10
+
     });
   });
 });

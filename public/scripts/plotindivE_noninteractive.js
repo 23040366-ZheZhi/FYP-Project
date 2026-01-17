@@ -1,18 +1,21 @@
 // /public/scripts/plotindivE_noninteractive.js
 let chart = null;
-let intervalTimer = null;  // for bar slideshow
-let timeoutTimer = null;   // for line slideshow steps
+let intervalTimer = null;  // bar slideshow
+let timeoutTimer = null;   // line slideshow
 
 const ctx = document.getElementById("chart")?.getContext("2d");
 const msg = document.getElementById("msg");
 
 const BAR_COLOR = "skyblue";
-const INTERVAL_MS = 10000;
 
 const MONTH_ORDER = [
   "January","February","March","April","May","June",
   "July","August","September","October","November","December"
 ];
+
+/* =========================
+   Helpers
+   ========================= */
 
 function showMsg(text) {
   if (!msg) return;
@@ -39,43 +42,79 @@ function destroy() {
 }
 
 function stopTimers() {
-  if (intervalTimer) {
-    clearInterval(intervalTimer);
-    intervalTimer = null;
-  }
-  if (timeoutTimer) {
-    clearTimeout(timeoutTimer);
-    timeoutTimer = null;
-  }
+  if (intervalTimer) clearInterval(intervalTimer);
+  if (timeoutTimer) clearTimeout(timeoutTimer);
+  intervalTimer = null;
+  timeoutTimer = null;
 }
+
+function fmtNum(n) {
+  return Number(n).toLocaleString();
+}
+
+/* =========================
+   Summary box
+   ========================= */
+
+const canvasEl = document.getElementById("chart");
+let summaryBox = document.getElementById("electricSummary");
+
+function ensureSummaryBox() {
+  if (summaryBox) return summaryBox;
+
+  summaryBox = document.createElement("div");
+  summaryBox.id = "electricSummary";
+  summaryBox.style.margin = "10px 0 12px";
+  summaryBox.style.padding = "10px 12px";
+  summaryBox.style.border = "1px solid rgba(0,0,0,0.12)";
+  summaryBox.style.borderRadius = "10px";
+  summaryBox.style.background = "rgba(255,255,255,0.85)";
+  summaryBox.style.backdropFilter = "blur(4px)";
+  summaryBox.style.fontSize = "14px";
+  summaryBox.style.lineHeight = "1.35";
+
+  if (canvasEl?.parentNode) {
+    canvasEl.parentNode.insertBefore(summaryBox, canvasEl);
+  }
+
+  return summaryBox;
+}
+
+function setSummaryHTML(html) {
+  const box = ensureSummaryBox();
+  box.innerHTML = html || "";
+  box.style.display = html ? "block" : "none";
+}
+
+/* =========================
+   API loaders
+   ========================= */
 
 async function loadGraphSettings() {
   const res = await fetch("/api/graph-settings");
   if (!res.ok) throw new Error(`graph-settings HTTP ${res.status}`);
-  return await res.json(); // { yearMode, graphType, individualMode }
+  return await res.json();
 }
 
 async function loadElectricBuilding() {
   const res = await fetch("/api/electric-building");
   if (!res.ok) throw new Error(`electric-building HTTP ${res.status}`);
-  return await res.json(); // { yearMode, latestYear, previousYear, data:[...] }
+  return await res.json();
 }
 
 function getBuildingKeys(sampleRow) {
   return Object.keys(sampleRow).filter(k => !["year", "month"].includes(k));
 }
 
-// ✅ nice distributed colours for many lines (22 buildings ok)
 function colorForIndex(i, total) {
   const hue = Math.round((i * 360) / Math.max(total, 1));
   return `hsl(${hue}, 70%, 45%)`;
 }
 
 /* =========================
-   BAR MODE (month slideshow)
+   BAR MODE
    ========================= */
 
-// returns { labels:[buildings], values:[numbers|null], hasAny:boolean }
 function buildMonthFrame(rows, buildingKeys, year, month) {
   const row = rows.find(r => r.year === year && r.month === month);
 
@@ -85,7 +124,7 @@ function buildMonthFrame(rows, buildingKeys, year, month) {
   for (const b of buildingKeys) {
     labels.push(b.trim());
     const n = toNum(row?.[b]);
-    values.push(Number.isFinite(n) && n !== 0 ? n : null); // ✅ skip 0
+    values.push(Number.isFinite(n) && n !== 0 ? n : null);
   }
 
   return { labels, values, hasAny: values.some(v => v != null) };
@@ -93,6 +132,25 @@ function buildMonthFrame(rows, buildingKeys, year, month) {
 
 function renderBarMonth(year, month, frame) {
   destroy();
+
+  let max = null;
+  let min = null;
+
+  frame.values.forEach((v, i) => {
+    if (v == null) return;
+    const building = frame.labels[i];
+    if (!max || v > max.v) max = { v, building };
+    if (!min || v < min.v) min = { v, building };
+  });
+
+  if (max && min) {
+    setSummaryHTML(
+      `<b>Highest</b>: ${max.building} — ${fmtNum(max.v)} kWh <span style="opacity:.75">(at ${month} ${year})</span><br>` +
+      `<b>Lowest</b>: ${min.building} — ${fmtNum(min.v)} kWh <span style="opacity:.75">(at ${month} ${year})</span>`
+    );
+  } else {
+    setSummaryHTML("");
+  }
 
   chart = new Chart(ctx, {
     type: "bar",
@@ -102,7 +160,6 @@ function renderBarMonth(year, month, frame) {
         label: `${month} ${year}`,
         data: frame.values,
         backgroundColor: BAR_COLOR,
-        borderRadius: 0,
         barThickness: 18,
         maxBarThickness: 26,
         categoryPercentage: 0.95,
@@ -118,15 +175,7 @@ function renderBarMonth(year, month, frame) {
           text: `Electricity — ${month} ${year}`,
           font: { size: 16, weight: "bold" }
         },
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: c => {
-              const v = c.parsed.y;
-              return v == null ? "-" : `${v.toLocaleString()} kWh`;
-            }
-          }
-        }
+        legend: { display: false }
       },
       scales: {
         x: { ticks: { maxRotation: 60, minRotation: 60 } },
@@ -140,16 +189,16 @@ function renderBarMonth(year, month, frame) {
 }
 
 function buildTimelineBar(rows, yearMode, latestYear, previousYear) {
-  let allowedYears;
-  if (yearMode === "both") allowedYears = [previousYear, latestYear];
-  else if (yearMode === "previous") allowedYears = [previousYear];
-  else allowedYears = [latestYear];
+  const allowed =
+    yearMode === "both" ? [previousYear, latestYear]
+    : yearMode === "previous" ? [previousYear]
+    : [latestYear];
 
   const seen = new Set();
   const points = [];
 
   for (const r of rows) {
-    if (!allowedYears.includes(r.year)) continue;
+    if (!allowed.includes(r.year)) continue;
     const mi = monthIndex(r.month);
     if (mi < 0) continue;
 
@@ -160,26 +209,16 @@ function buildTimelineBar(rows, yearMode, latestYear, previousYear) {
     points.push({ year: r.year, month: MONTH_ORDER[mi], mi });
   }
 
-  points.sort((a, b) => (a.year - b.year) || (a.mi - b.mi));
-
-  if (yearMode === "both") {
-    const lastCurr = [...points].reverse().find(p => p.year === latestYear);
-    if (lastCurr) {
-      const stopAt = points.findIndex(p => p.year === lastCurr.year && p.mi === lastCurr.mi);
-      return points.slice(0, stopAt + 1);
-    }
-  }
-
-  return points;
+  return points.sort((a, b) => (a.year - b.year) || (a.mi - b.mi));
 }
 
-function autoplayBar(rows, buildingKeys, yearMode, latestYear, previousYear) {
+function autoplayBar(rows, buildingKeys, yearMode, latestYear, previousYear, rotateMs) {
   stopTimers();
   showMsg("");
 
   const timeline = buildTimelineBar(rows, yearMode, latestYear, previousYear);
   if (!timeline.length) {
-    showMsg("No valid months found to autoplay.");
+    showMsg("No valid months found.");
     return;
   }
 
@@ -189,7 +228,7 @@ function autoplayBar(rows, buildingKeys, yearMode, latestYear, previousYear) {
     while (i < timeline.length) {
       const { year, month } = timeline[i++];
       const frame = buildMonthFrame(rows, buildingKeys, year, month);
-      if (!frame.hasAny) continue; // ✅ skip empty month
+      if (!frame.hasAny) continue;
       renderBarMonth(year, month, frame);
       return true;
     }
@@ -202,26 +241,13 @@ function autoplayBar(rows, buildingKeys, yearMode, latestYear, previousYear) {
   }
 
   intervalTimer = setInterval(() => {
-    const more = showNext();
-    if (!more) stopTimers();
-  }, INTERVAL_MS);
+    if (!showNext()) stopTimers();
+  }, rotateMs);
 }
 
 /* =========================
-   LINE MODE (year slideshow)
+   LINE MODE
    ========================= */
-
-// ✅ month has at least 1 building with real data (not 0 / not empty)
-function monthHasAnyData(rows, buildingKeys, year, month) {
-  const row = rows.find(r => r.year === year && r.month === month);
-  if (!row) return false;
-
-  for (const k of buildingKeys) {
-    const n = toNum(row?.[k]);
-    if (Number.isFinite(n) && n !== 0) return true;
-  }
-  return false;
-}
 
 function buildTimelineForYear(rows, year, buildingKeys) {
   const seen = new Set();
@@ -232,8 +258,11 @@ function buildTimelineForYear(rows, year, buildingKeys) {
     const mi = monthIndex(r.month);
     if (mi < 0) continue;
 
-    // ✅ REMOVE months where ALL buildings are 0/empty
-    if (!monthHasAnyData(rows, buildingKeys, year, MONTH_ORDER[mi])) continue;
+    const hasAny = buildingKeys.some(k => {
+      const n = toNum(r[k]);
+      return Number.isFinite(n) && n !== 0;
+    });
+    if (!hasAny) continue;
 
     const key = `${year}-${mi}`;
     if (seen.has(key)) continue;
@@ -241,125 +270,111 @@ function buildTimelineForYear(rows, year, buildingKeys) {
 
     points.push({
       year,
-      mi,
       month: MONTH_ORDER[mi],
       label: `${MONTH_ORDER[mi]} ${year}`
     });
   }
 
-  points.sort((a, b) => a.mi - b.mi);
-  return points;
+  return points.sort((a, b) => monthIndex(a.month) - monthIndex(b.month));
 }
 
-function renderLineYear(titleText, timeline, rows, buildingKeys) {
+function renderLineYear(title, timeline, rows, buildingKeys) {
   destroy();
 
-  if (!timeline.length) {
-    showMsg("No valid months (all values are 0/empty).");
-    return;
-  }
+  let max = null;
+  let min = null;
 
-  const labels = timeline.map(t => t.label);
-
-  const datasets = buildingKeys.map((key, idx) => {
-    const c = colorForIndex(idx, buildingKeys.length);
+  const datasets = buildingKeys.map((k, i) => {
+    const c = colorForIndex(i, buildingKeys.length);
 
     const data = timeline.map(t => {
       const row = rows.find(r => r.year === t.year && r.month === t.month);
-      const n = toNum(row?.[key]);
-      return Number.isFinite(n) && n !== 0 ? n : null; // ✅ skip 0
+      const v = Number.isFinite(toNum(row?.[k])) && toNum(row?.[k]) !== 0
+        ? toNum(row[k])
+        : null;
+
+      if (v != null) {
+        if (!max || v > max.v) max = { v, building: k, month: t.label };
+        if (!min || v < min.v) min = { v, building: k, month: t.label };
+      }
+
+      return v;
     });
 
     return {
-      label: key.trim(),
+      label: k,
       data,
       borderColor: c,
       backgroundColor: c,
-      fill: false,
       tension: 0.25,
       pointRadius: 2,
-      pointHoverRadius: 4,
       spanGaps: false
     };
   }).filter(ds => ds.data.some(v => v != null));
 
   if (!datasets.length) {
-    showMsg("No valid data (all buildings are 0/empty).");
+    showMsg("No valid data.");
+    setSummaryHTML("");
     return;
   }
 
-  showMsg("");
+  if (max && min) {
+    setSummaryHTML(
+      `<b>Highest</b>: ${max.building} — ${fmtNum(max.v)} kWh <span style="opacity:.75">(at ${max.month})</span><br>` +
+      `<b>Lowest</b>: ${min.building} — ${fmtNum(min.v)} kWh <span style="opacity:.75">(at ${min.month})</span>`
+    );
+  }
 
   chart = new Chart(ctx, {
     type: "line",
-    data: { labels, datasets },
+    data: { labels: timeline.map(t => t.label), datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
       plugins: {
-        title: {
-          display: true,
-          text: titleText,
-          font: { size: 16, weight: "bold" }
-        },
-        legend: {
-          display: true,
-          position: "bottom",
-          labels: { boxWidth: 12, boxHeight: 12 }
-        },
-        tooltip: {
-          callbacks: {
-            label: c => {
-              const v = c.parsed.y;
-              return v == null ? "" : `${c.dataset.label}: ${v.toLocaleString()} kWh`;
-            }
-          }
-        }
+        title: { display: true, text: title },
+        legend:{
+  position: "bottom",
+  labels: {
+    usePointStyle: true,
+    pointStyle: "rect",
+    boxWidth: 12,
+    boxHeight: 12
+  }
+}
+
       },
       scales: {
-        y: { beginAtZero: true, title: { display: true, text: "Electricity (kWh)" } },
-        x: { ticks: { autoSkip: true, maxRotation: 0 } }
+        y: { beginAtZero: true, title: { display: true, text: "Electricity (kWh)" } }
       }
     }
   });
 }
 
-function autoplayLine(rows, buildingKeys, yearMode, latestYear, previousYear) {
+function autoplayLine(rows, buildingKeys, yearMode, latestYear, previousYear, rotateMs) {
   stopTimers();
   showMsg("");
 
   const showYear = (year, title) => {
-    const timeline = buildTimelineForYear(rows, year, buildingKeys); // ✅ pruned
+    const timeline = buildTimelineForYear(rows, year, buildingKeys);
     if (!timeline.length) return false;
     renderLineYear(title, timeline, rows, buildingKeys);
     return true;
   };
 
   if (yearMode !== "both") {
-    const year = (yearMode === "previous") ? previousYear : latestYear;
-    const ok = showYear(year, `Electricity (Line) — ${year}`);
-    if (!ok) showMsg("No valid months for this year.");
+    const year = yearMode === "previous" ? previousYear : latestYear;
+    showYear(year, `Electricity (Line) — ${year}`);
     return;
   }
 
-  // ✅ both: previous year then current year (loop)
   const step = () => {
-    const okPrev = showYear(previousYear, `Electricity (Line) — Previous Year (${previousYear})`);
-    if (!okPrev) {
-      showMsg("No valid data for previous year.");
-      return;
-    }
+    if (!showYear(previousYear, `Electricity (Line) — Previous Year (${previousYear})`)) return;
 
     timeoutTimer = setTimeout(() => {
-      const okCurr = showYear(latestYear, `Electricity (Line) — Current Year (${latestYear})`);
-      if (!okCurr) {
-        showMsg("No valid data for current year.");
-        return;
-      }
-
-      timeoutTimer = setTimeout(step, INTERVAL_MS);
-    }, INTERVAL_MS);
+      showYear(latestYear, `Electricity (Line) — Current Year (${latestYear})`);
+      timeoutTimer = setTimeout(step, rotateMs);
+    }, rotateMs);
   };
 
   step();
@@ -371,8 +386,6 @@ function autoplayLine(rows, buildingKeys, yearMode, latestYear, previousYear) {
 
 async function init() {
   try {
-    showMsg("");
-
     if (!ctx) return;
 
     const [settings, meta] = await Promise.all([
@@ -381,33 +394,23 @@ async function init() {
     ]);
 
     const rows = meta?.data || [];
-    const yearMode = meta?.yearMode || "current";
-    const latestYear = meta?.latestYear ?? null;
-    const previousYear = meta?.previousYear ?? null;
-
     if (!rows.length) {
-      showMsg("No electricity individual data found.");
+      showMsg("No electricity data found.");
       return;
     }
 
+    const rotateMs = Math.max(5000, Number(settings?.rotateSeconds || 10) * 1000);
     const buildingKeys = getBuildingKeys(rows[0]);
-    if (!buildingKeys.length) {
-      showMsg("No building columns found.");
-      return;
+
+    if (settings?.graphType === "line") {
+      autoplayLine(rows, buildingKeys, meta.yearMode, meta.latestYear, meta.previousYear, rotateMs);
+    } else {
+      autoplayBar(rows, buildingKeys, meta.yearMode, meta.latestYear, meta.previousYear, rotateMs);
     }
-
-    const graphType = settings?.graphType || "bar";
-
-    if (graphType === "line") {
-      autoplayLine(rows, buildingKeys, yearMode, latestYear, previousYear);
-      return;
-    }
-
-    autoplayBar(rows, buildingKeys, yearMode, latestYear, previousYear);
 
   } catch (e) {
     console.error(e);
-    showMsg("Failed to load non-interactive electricity graph.");
+    showMsg("Failed to load electricity graph.");
   }
 }
 
