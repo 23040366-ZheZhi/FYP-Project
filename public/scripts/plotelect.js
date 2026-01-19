@@ -1,7 +1,7 @@
 let chart;
 
-const COLOR_PREVIOUS = "#43a047"; // green
-const COLOR_CURRENT  = "skyblue"; // skyblue
+const COLOR_PREVIOUS = "#edd60e"; 
+const COLOR_CURRENT  = "yellow"; // skyblue
 
 const canvas = document.getElementById("electricChart");
 const msgBox = document.getElementById("msgBox");

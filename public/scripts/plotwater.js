@@ -1,6 +1,6 @@
 let chart;
 
-const COLOR_PREVIOUS = "#43a047"; // green
+const COLOR_PREVIOUS = "#1c11ef"; // green
 const COLOR_CURRENT  = "skyblue"; // skyblue
 
 const canvas  = document.getElementById("waterChart");

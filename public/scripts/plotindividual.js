@@ -2,8 +2,8 @@
 let chartA = null;
 let chartB = null;
 
-const COLOR_CURRENT  = "skyblue";
-const COLOR_PREVIOUS = "#43a047";
+const COLOR_CURRENT  = "yellow";
+const COLOR_PREVIOUS = "#edd60e";
 
 const canvasA = document.getElementById("buildingChartA");
 const canvasB = document.getElementById("buildingChartB");
@@ -73,27 +73,31 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
   // - borderRadius: 0
   // - do NOT set huge rounding
   // - set barThickness moderately (optional)
-  function styleFor(color) {
-    if (state.graphType === "line") {
-      return {
-        borderColor: color,
-        backgroundColor: color,
-        fill: false,
-        tension: 0.3,
-        pointRadius: 3
-      };
-    }
-
+ function styleFor(color) {
+  if (state.graphType === "line") {
     return {
+      borderColor: color,
       backgroundColor: color,
-      borderRadius: 0,        // ✅ square corners
-      // optional: make bars a bit fatter but still “boxy”
-      barThickness: 34,
-      maxBarThickness: 42,
-      categoryPercentage: 0.85,
-      barPercentage: 0.95
+      fill: false,
+      tension: 0.3,
+      pointRadius: 3
     };
   }
+
+  return {
+    backgroundColor: color,
+    borderRadius: 0,
+
+    // ✅ let Chart.js auto-fit bars when there are 2 datasets
+    barThickness: "flex",
+    maxBarThickness: 28,
+
+    // ✅ creates “space” between month groups + between the 2 bars
+    categoryPercentage: 0.72,
+    barPercentage: 0.9
+  };
+}
+
 
   function buildSeries(buildingKey, year) {
     // all months in correct order (Jan..Dec) if your data month is "January" etc.
@@ -170,29 +174,50 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
       type: state.graphType,
       data: { labels, datasets },
       options: {
-        responsive: true,
-        maintainAspectRatio: false, // ✅ prevents skinny inside cards
-        spanGaps: false,
-        plugins: {
-          title: {
-            display: true,
-            text: building.name,
-            font: { size: 16, weight: "bold" }
-          },
-          legend: { display: true },
-          tooltip: {
-            callbacks: {
-              label: c => `${c.dataset.label}: ${c.parsed.y?.toLocaleString() ?? "-"} kWh`
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: { display: true, text: "Electricity (kWh)" }
-          }
-        }
+  responsive: true,
+  maintainAspectRatio: false,
+  spanGaps: false,
+
+  // ✅ breathing space around the plot area
+  layout: {
+    padding: { top: 12, right: 18, bottom: 18, left: 18 }
+  },
+
+  plugins: {
+    title: {
+      display: true,
+      text: building.name,
+      font: { size: 16, weight: "bold" },
+      padding: { top: 6, bottom: 12 } // ✅ space between title and chart
+    },
+
+    legend: {
+      display: true,
+      position: "bottom",
+      labels: { padding: 12 } // ✅ space around legend items
+    },
+
+    tooltip: {
+      callbacks: {
+        label: c => `${c.dataset.label}: ${c.parsed.y?.toLocaleString() ?? "-"} kWh`
       }
+    }
+  },
+
+  scales: {
+    x: {
+      offset: true,          // ✅ space left/right so bars aren’t hugging edges
+      grid: { offset: true },
+      ticks: { padding: 6 }  // ✅ space between labels and axis
+    },
+    y: {
+      beginAtZero: true,
+      title: { display: true, text: "Electricity (kWh)" },
+      ticks: { padding: 6 }
+    }
+  }
+}
+
     });
 
     if (which === "A") chartA = chart;

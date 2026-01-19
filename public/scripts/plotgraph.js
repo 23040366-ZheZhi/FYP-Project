@@ -1,7 +1,7 @@
 let chart;
 
-const COLOR_PREVIOUS = "#43a047"; // green
-const COLOR_CURRENT  = "skyblue"; // skyblue
+const COLOR_PREVIOUS = "#F4511E";
+const COLOR_CURRENT  = "orange"; // skyblue
 
 const canvas = document.getElementById("solarChart");
 const selector = document.getElementById("datasetSelector");

@@ -3,7 +3,7 @@ let chartA = null;
 let chartB = null;
 
 // Colors
-const COLOR_PREVIOUS = "#43a047";
+const COLOR_PREVIOUS = "#1c11ef";
 const COLOR_CURRENT  = "skyblue";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];

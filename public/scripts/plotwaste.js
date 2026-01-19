@@ -1,7 +1,7 @@
 let chart;
 
-const COLOR_PREVIOUS = "#43a047"; // green
-const COLOR_CURRENT  = "skyblue"; // skyblue
+const COLOR_PREVIOUS = "#0ff27d"; // green
+const COLOR_CURRENT  = "#43a047" // skyblue
 
 const canvas    = document.getElementById("wasteChart");
 const selector  = document.getElementById("datasetSelector");

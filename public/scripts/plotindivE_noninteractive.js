@@ -6,7 +6,7 @@ let timeoutTimer = null;   // line slideshow
 const ctx = document.getElementById("chart")?.getContext("2d");
 const msg = document.getElementById("msg");
 
-const BAR_COLOR = "skyblue";
+const BAR_COLOR = "yellow";
 
 const MONTH_ORDER = [
   "January","February","March","April","May","June",
