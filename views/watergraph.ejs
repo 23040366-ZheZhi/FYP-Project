@@ -190,6 +190,7 @@
       transition: transform 8000ms cubic-bezier(.2,.9,.2,1); /* slower */
       z-index: 5;
       background: linear-gradient(180deg, var(--sea-top), var(--sea-deep));
+      overflow: hidden;
     }
     .page.filled .sea{ transform: translateY(15%); }
 
@@ -456,6 +457,53 @@
       border-color: rgba(37,99,235,.55);
       box-shadow: 0 0 0 4px rgba(37,99,235,.18);
     }
+
+    /* ===========================
+       ✅ ADDED: FISH SWIMMING LAYER
+       (Uses YOUR 2 images only)
+       =========================== */
+    .fish-layer{
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 8; /* above sea, below bubbles & content */
+      overflow: hidden;
+    }
+
+    .fish{
+      position: absolute;
+      width: 120px; /* adjust if you want bigger/smaller */
+      opacity: 0.95;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.25));
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      will-change: transform;
+    }
+
+    /* blue fish swims L -> R */
+    .fish-a{
+      top: 46%;
+      left: -160px;
+      animation: swimRight 22s linear infinite;
+    }
+
+    /* yellow fish swims R -> L */
+    .fish-b{
+      top: 62%;
+      left: 110%;
+      transform: scaleX(-1);
+      animation: swimLeft 26s linear infinite;
+    }
+
+    @keyframes swimRight{
+      from { transform: translateX(0) scale(1); }
+      to   { transform: translateX(120vw) scale(1); }
+    }
+
+    @keyframes swimLeft{
+      from { transform: translateX(0) scaleX(-1); }
+      to   { transform: translateX(-120vw) scaleX(-1); }
+    }
   </style>
 </head>
 
@@ -475,6 +523,13 @@
     <div class="sea" id="sea">
       <div class="wave wave1"></div>
       <div class="wave wave2"></div>
+
+      <!-- ✅ ADDED: fish layer (YOUR images) -->
+      <div class="fish-layer" aria-hidden="true">
+        <!-- Change these filenames to match your project -->
+        <img src="/images/yellow-fish.png" class="fish fish-a" alt="">
+        <img src="/images/blue-fish.png" class="fish fish-b" alt="">
+      </div>
     </div>
 
     <!-- seaweed -->

@@ -9,13 +9,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Lalezar&display=swap" rel="stylesheet">
 
   <style>
-    /* ===== FULL SCREEN FIGMA BACKGROUND ===== */
-    html, body { height: 100%; margin: 0; }
-    body{
-      font-family: Arial, sans-serif;
-      overflow-x: hidden;
-      overflow-y: auto;
-      background: url("/images/waste-bg.png") center / cover no-repeat fixed;
+    /* ===== GREEN BACKGROUND WITH MOVING LIGHT-GREEN WAVES ===== */
+    .waste-bg{
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background: #1fa34a; /* main green */
+      overflow: hidden;
     }
 
     .waste-bg .wave{
@@ -48,7 +48,7 @@
 
     @keyframes waveMove2{
       from { transform: translateX(0); }
-      to   { transform: translateX(-50%); }
+      to   { transform:U: translateX(-50%); }
     }
 
     /* Optional overlay to help chart readability */
@@ -275,14 +275,6 @@
       display: none;
       text-shadow: 0 10px 30px rgba(0,0,0,.35);
     }
-
-    /* ✅ Lock chart UI font to match your other graph pages */
-    .ui,
-    .chart-wrap,
-    .chart-wrap * {
-      font-family: Arial, sans-serif !important;
-    }
-
   </style>
 </head>
 
@@ -349,12 +341,5 @@
 
   <!-- ✅ DO NOT TOUCH YOUR GRAPH SCRIPT -->
   <script type="module" src="/scripts/plotwaste.js"></script>
-
-  <script>
-      window.__ROTATE_CFG__ = <%- JSON.stringify(rotateCfg) %>;
-      console.log(window.__ROTATE_CFG__);
-  </script>
-  <script src="/scripts/idle-rotate.js"></script>
-
 </body>
 </html>
