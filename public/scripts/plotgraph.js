@@ -1,7 +1,13 @@
 let chart;
 
-const COLOR_PREVIOUS = "#F4511E";
-const COLOR_CURRENT  = "orange"; // skyblue
+const SOLAR_COLORS = [
+  "#FFD54F", // sun yellow
+  "#FFB300", // amber
+  "#FB8C00", // orange
+  "#F57C00", // deep orange
+  "#EF6C00"  // burnt orange
+];
+
 
 const canvas = document.getElementById("solarChart");
 const selector = document.getElementById("datasetSelector");
@@ -35,13 +41,11 @@ if (!canvas || !selector) {
     return String(r?.Solar ?? "").toLowerCase() === "month";
   }
 
-  // ✅ keep your rule: must have all 3 fields valid
-  function isCompleteRow(r) {
-    const a = toNum(r.field3);
-    const b = toNum(r.field4);
-    const c = toNum(r.field5);
-    return !isNaN(a) && !isNaN(b) && !isNaN(c);
-  }
+ function hasValueForField(r, field) {
+  const v = toNum(r[field]);
+  return Number.isFinite(v);
+}
+
 
   function parseSolarLabel(label) {
     // expects "Jan-24"
@@ -84,173 +88,142 @@ if (!canvas || !selector) {
   }
 
   
+function renderChart(rows, field, titleText, meta) {
+  if (chart) chart.destroy();
 
-  function renderChart(filteredRows, field, titleText, meta) {
-    if (chart) chart.destroy();
+  // years available in data
+  const yearsFound = [...new Set(
+    rows
+      .map(r => parseSolarLabel(r.Solar)?.year)
+      .filter(Number.isInteger)
+  )].sort((a, b) => a - b);
 
-    // store month values for each year
-    const prevArr = Array(12).fill(null);
-    const currArr = Array(12).fill(null);
+  if (!yearsFound.length) {
+    showMsg("No valid solar years found.");
+    return;
+  }
 
-    for (const r of filteredRows) {
-      const info = parseSolarLabel(r.Solar);
-      if (!info) continue;
+  const safeCount = Math.max(1, Math.min(meta.yearCount || 1, yearsFound.length, 5));
+  const yearsToShow = yearsFound.slice(-safeCount);
 
-      const val = toNum(r[field]);
-      if (!Number.isFinite(val)) continue;
+  // build 12-month series per year
+  const seriesByYear = new Map();
+  yearsToShow.forEach(y => seriesByYear.set(y, Array(12).fill(null)));
 
-      if (info.year === meta.previousYear) prevArr[info.monthIndex] = val;
-      if (info.year === meta.latestYear)   currArr[info.monthIndex] = val;
+  for (const r of rows) {
+    const info = parseSolarLabel(r.Solar);
+    if (!info) continue;
+    if (!seriesByYear.has(info.year)) continue;
+
+    const val = toNum(r[field]);
+    if (!Number.isFinite(val)) continue;
+
+    seriesByYear.get(info.year)[info.monthIndex] = val;
+  }
+
+  // build labels only for months that have ANY data
+  const monthIndices = [];
+  const labels = [];
+  for (let i = 0; i < 12; i++) {
+    const anyHas = yearsToShow.some(y => seriesByYear.get(y)[i] != null);
+    if (anyHas) {
+      monthIndices.push(i);
+      labels.push(MONTHS_FULL[i]);
     }
+  }
 
-    // ========== single year ==========
-    if (meta.yearMode !== "both") {
-      const yearToShow = meta.yearMode === "previous" ? meta.previousYear : meta.latestYear;
-      const arr = yearToShow === meta.previousYear ? prevArr : currArr;
+  if (!labels.length) {
+    showMsg("No valid solar data to display.");
+    return;
+  }
 
-      const labels = [];
-      const data = [];
-      for (let i = 0; i < 12; i++) {
-        if (arr[i] != null) {
-          labels.push(MONTHS_FULL[i]);
-          data.push(arr[i]);
-        }
-      }
+  // newest year = strongest colour
+  const datasets = yearsToShow.map((year, idx) => {
+    const arr12 = seriesByYear.get(year);
+    const data = monthIndices.map(i => arr12[i]);
 
-      if (!labels.length) {
-        showMsg("No valid solar data to display (after filtering).");
-        return;
-      }
+    const color = SOLAR_COLORS[idx % SOLAR_COLORS.length];
+    return {
+      label: String(year),
+      data,
+      ...styleFor(meta, color)
+    };
+  });
 
-      chart = new Chart(ctx, {
-        type: meta.graphType,
-        data: {
-          labels,
-          datasets: [{
-            label: String(yearToShow),
-            data,
-            ...styleFor(meta, yearToShow === meta.previousYear ? COLOR_PREVIOUS : COLOR_CURRENT)
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            title: { display: true, text: titleText, font: { size: 18 } },
-            legend: { display: true, position: "top" },
-            tooltip: {
-              callbacks: {
-                label: c => `${c.dataset.label}: ${c.parsed.y?.toLocaleString() ?? "-"} kWh`
-              }
+  chart = new Chart(ctx, {
+    type: meta.graphType,
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      plugins: {
+        title: { display: true, text: titleText, font: { size: 18 } },
+        legend: { display: true, position: "top" },
+        tooltip: {
+          callbacks: {
+            label: c => {
+              const v = c.parsed?.y;
+              return `${c.dataset.label}: ${Number.isFinite(v) ? v.toLocaleString() : "-"} kWh`;
             }
-          },
-          scales: {
-            y: { beginAtZero: true, title: { display: true, text: "kWh" } }
           }
         }
-      });
-
-      return;
-    }
-
-    // ========== BOTH mode ==========
-    const labels = [];
-    const prevData = [];
-    const currData = [];
-
-    for (let i = 0; i < 12; i++) {
-      const hasPrev = prevArr[i] != null;
-      const hasCurr = currArr[i] != null;
-
-      if (hasPrev || hasCurr) {
-        labels.push(MONTHS_FULL[i]);
-        prevData.push(prevArr[i]);
-        currData.push(currArr[i]);
-      }
-    }
-
-    if (!labels.length) {
-      showMsg("No valid solar data to display (after filtering).");
-      return;
-    }
-
-    chart = new Chart(ctx, {
-      type: meta.graphType,
-      data: {
-        labels,
-        datasets: [
-          { label: String(meta.previousYear), data: prevData, ...styleFor(meta, COLOR_PREVIOUS) },
-          { label: String(meta.latestYear),   data: currData, ...styleFor(meta, COLOR_CURRENT) }
-        ]
       },
-      options: {
-        responsive: true,
-        plugins: {
-          title: { display: true, text: titleText, font: { size: 18 } },
-          legend: { display: true, position: "top" },
-          tooltip: {
-            callbacks: {
-              label: c => `${c.dataset.label}: ${c.parsed.y?.toLocaleString() ?? "-"} kWh`
-            }
-          }
-        },
-        scales: {
-          y: { beginAtZero: true, title: { display: true, text: "kWh" } }
-        }
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: "kWh" } }
       }
-    });
-  }
-
-  async function initSolar() {
-    try {
-      showMsg("");
-
-      const [result, settings] = await Promise.all([
-        loadSolarFromApi(),
-        loadGraphSettings()
-      ]);
-
-      if (!result || !Array.isArray(result.data)) {
-        showMsg("Solar API error: invalid data format.");
-        console.error("Invalid solar API result:", result);
-        return;
-      }
-
-      const meta = {
-        yearMode: settings?.yearMode || result.yearMode || "current",
-        graphType: settings?.graphType || "bar",
-        latestYear: result.latestYear,
-        previousYear: result.previousYear
-      };
-
-      const filteredRows = result.data
-        .filter(r => !isHeaderRow(r))
-        .filter(isCompleteRow);
-
-      if (!filteredRows.length) {
-        showMsg("No valid solar data after filtering (need all 3 fields present).");
-        return;
-      }
-
-      const titles = {
-        field3: "Urban Renewables",
-        field4: "Green House (kWh)",
-        field5: "Total Solar Energy"
-      };
-
-      const draw = () => {
-        showMsg("");
-        const field = selector.value;
-        renderChart(filteredRows, field, titles[field], meta);
-      };
-
-      selector.addEventListener("change", draw);
-      draw();
-
-    } catch (err) {
-      console.error(err);
-      showMsg("Failed to load solar data.");
     }
+  });
+}
+  async function initSolar() {
+  try {
+    showMsg("");
+
+    const [result, settings] = await Promise.all([
+      loadSolarFromApi(),
+      loadGraphSettings()
+    ]);
+
+    if (!result || !Array.isArray(result.data)) {
+      showMsg("Solar API error: invalid data format.");
+      console.error("Invalid solar API result:", result);
+      return;
+    }
+
+    const filteredRowsBase = result.data.filter(r => !isHeaderRow(r));
+
+    const meta = {
+      graphType: settings?.graphType || "bar",
+      yearCount: Number(settings?.yearCount || 1)
+    };
+
+    const titles = {
+      field3: "Urban Renewables",
+      field4: "Green House (kWh)",
+      field5: "Total Solar Energy"
+    };
+
+    const draw = () => {
+      showMsg("");
+      const field = selector.value;
+
+      const rows = filteredRowsBase.filter(r => hasValueForField(r, field));
+
+      if (!rows.length) {
+        showMsg("No valid solar data for this dataset (after filtering).");
+        return;
+      }
+
+      renderChart(rows, field, titles[field], meta);
+    };
+
+    selector.addEventListener("change", draw);
+    draw();
+
+  } catch (err) {
+    console.error(err);
+    showMsg("Failed to load solar data.");
   }
+}
+
 
   window.addEventListener("solar:render", () => {
   initSolar();

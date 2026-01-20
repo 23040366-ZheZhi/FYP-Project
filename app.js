@@ -98,9 +98,11 @@ app.post("/manage-rotation", adminOnly, (req, res) => {
 });
 
 
+
+
 /* defaults */
 app.use((req, res, next) => {
-  if (!req.session.yearMode) req.session.yearMode = "current";
+  if (!req.session.yearCount) req.session.yearCount = 1; // default 1 year
   if (!req.session.graphType) req.session.graphType = "bar";
   if (!req.session.individualMode) req.session.individualMode = "interactive";
   if (!req.session.rotateSeconds) req.session.rotateSeconds = 10; // ✅ default 10s
@@ -190,7 +192,7 @@ app.set("view engine", "ejs");
 /* settings api */
 app.get("/api/graph-settings", (req, res) => {
   res.json({
-    yearMode: req.session.yearMode,
+    yearCount: req.session.yearCount || 1,
     graphType: req.session.graphType,
     individualMode: req.session.individualMode,
     rotateSeconds: req.session.rotateSeconds || 10
@@ -274,18 +276,13 @@ app.post("/upload-xlsx", adminOnly, uploadXlsx.single("xlsx"), async (req, res) 
   }
 });
 
-app.post("/set-graph-year", adminOnly, (req, res) => {
-  const { yearMode } = req.body;
-
-  if (!["current", "previous", "both"].includes(yearMode)) {
-    return res.status(400).send("Invalid year mode");
-  }
-
-  req.session.yearMode = yearMode;
-  console.log("Graph year mode set to:", yearMode);
-
-  res.redirect("/manage_graph");
+app.post("/set-graph-years", adminOnly, (req, res) => {
+  const yearCount = Math.max(1, Math.min(5, Number(req.body.yearCount) || 1));
+  req.session.yearCount = yearCount;          // ✅ store here (top-level)
+  console.log("Year count set to:", yearCount);
+  res.redirect("/manage_graph");              // ✅ correct route
 });
+
 
 app.delete("/delete-xlsx/:filename", adminOnly, (req, res) => {
   const filePath = path.join(__dirname, "public/excel", req.params.filename);
@@ -391,10 +388,22 @@ app.get("/api/summary", (req, res) => {
     res.status(500).json({ error: "Summary data load failed" });
   }
 });
+function pickAllowedYears(allYears, yearCount) {
+  const years = [...new Set(allYears)]
+    .filter(Number.isInteger)
+    .sort((a, b) => a - b);
+
+  const latestYear = years.length ? Math.max(...years) : null;
+  const safeCount = Math.max(1, Math.min(Number(yearCount) || 1, years.length));
+  const allowedYears = years.slice(-safeCount);
+
+  return { years, latestYear, allowedYears };
+}
+
 
 app.get("/api/solar-detailed", (req, res) => {
   try {
-    const yearMode = req.session.yearMode || "current";
+    const yearCount = req.session.yearCount || 1;
 
     delete require.cache[require.resolve("./public/output/3_Solar Data.json")];
     const solar = require("./public/output/3_Solar Data.json");
@@ -406,138 +415,161 @@ app.get("/api/solar-detailed", (req, res) => {
       return null;
     };
 
-    const years = solar.map(getYear).filter(y => Number.isFinite(y));
-    const latestYear = years.length ? Math.max(...years) : null;
-    const previousYear = latestYear ? latestYear - 1 : null;
+    const yearsRaw = solar.map(getYear).filter(Number.isInteger);
+    const { latestYear, allowedYears } = pickAllowedYears(yearsRaw, yearCount);
 
     const filtered = solar.filter(row => {
       const year = getYear(row);
-      if (!year) return false;
+      if (!Number.isInteger(year)) return false;
       if (String(row?.Solar ?? "").toLowerCase() === "month") return false;
-
-      if (yearMode === "current") return year === latestYear;
-      if (yearMode === "previous") return year === previousYear;
-      return true;
+      return allowedYears.includes(year);
     });
 
-    res.json({ yearMode, latestYear, previousYear, data: filtered });
+    res.json({ yearCount, latestYear, allowedYears, data: filtered });
   } catch (err) {
     console.error("Solar detailed API error:", err);
     res.status(500).json({ error: "Solar detailed data failed" });
   }
 });
 
+
 app.get("/api/water-detailed", (req, res) => {
   try {
-    const yearMode = req.session.yearMode || "current";
+    const yearCount = Math.max(1, Math.min(5, Number(req.session.yearCount) || 1));
 
     delete require.cache[require.resolve("./public/output/2_Water Bill.json")];
     const water = require("./public/output/2_Water Bill.json");
 
-    let activeYear = null;
+    const years = water
+      .map(r => Number(String(r.field1 || "").trim()))
+      .filter(Number.isInteger);
 
-    const years = water.map(r => Number(r.field1)).filter(y => Number.isInteger(y));
-    const latestYear = years.length ? Math.max(...years) : null;
-    const previousYear = latestYear ? latestYear - 1 : null;
+    const uniqueYears = [...new Set(years)].sort((a, b) => a - b);
+    const safeCount = Math.max(1, Math.min(yearCount, uniqueYears.length));
+    const allowedYears = uniqueYears.slice(-safeCount);
+
+    let activeYear = null;
 
     const filtered = water.filter(row => {
       if (!row.Water || row.Water === "Month") return false;
 
-      if (row.field1 && /^\d{4}$/.test(String(row.field1))) activeYear = Number(row.field1);
+      if (row.field1 && /^\d{4}$/.test(String(row.field1).trim())) {
+        activeYear = Number(row.field1);
+      }
       if (!activeYear) return false;
 
-      if (yearMode === "current" && activeYear !== latestYear) return false;
-      if (yearMode === "previous" && activeYear !== previousYear) return false;
+      if (!allowedYears.includes(activeYear)) return false;
 
-      const value = Number(String(row.field3 || "").replace(/,/g, ""));
+      // Keep your old rule: field3 must be numeric and not 0
+      const value = Number(String(row.field3 || "").replace(/,/g, "").trim());
       if (!Number.isFinite(value)) return false;
       if (value === 0) return false;
 
       return true;
     });
 
-    res.json({ yearMode, latestYear, previousYear, data: filtered });
+    res.json({ yearCount, allowedYears, data: filtered });
   } catch (err) {
     console.error("Water detailed API error:", err);
     res.status(500).json({ error: "Water detailed data failed" });
   }
 });
 
+
+
 app.get("/api/electric-detailed", (req, res) => {
   try {
-    const yearMode = req.session.yearMode || "current";
+    const yearCount = Math.max(1, Math.min(5, Number(req.session.yearCount) || 1));
 
     delete require.cache[require.resolve("./public/output/1_Elec Bill.json")];
     const electricity = require("./public/output/1_Elec Bill.json");
 
-    const years = electricity.map(r => Number(r.field1)).filter(y => Number.isInteger(y));
-    const latestYear = years.length ? Math.max(...years) : null;
-    const previousYear = latestYear ? latestYear - 1 : null;
+    // years exist only when field1 has 4 digits
+    const years = electricity
+      .map(r => Number(String(r.field1 || "").trim()))
+      .filter(Number.isInteger);
+
+    const uniqueYears = [...new Set(years)].sort((a, b) => a - b);
+    const safeCount = Math.max(1, Math.min(yearCount, uniqueYears.length));
+    const allowedYears = uniqueYears.slice(-safeCount);
 
     let activeYear = null;
 
     const filtered = electricity.filter(row => {
       if (!row.Elect || row.Elect === "Month") return false;
 
-      if (row.field1 && /^\d{4}$/.test(String(row.field1))) activeYear = Number(row.field1);
+      if (row.field1 && /^\d{4}$/.test(String(row.field1).trim())) {
+        activeYear = Number(row.field1);
+      }
       if (!activeYear) return false;
 
-      if (yearMode === "current" && activeYear !== latestYear) return false;
-      if (yearMode === "previous" && activeYear !== previousYear) return false;
+      if (!allowedYears.includes(activeYear)) return false;
 
-      const value = Number(String(row.field3 || "").replace(/,/g, ""));
-      return Number.isFinite(value);
+      // keep old rule: field3 must be numeric
+      const value = Number(String(row.field3 || "").replace(/,/g, "").trim());
+      if (!Number.isFinite(value)) return false;
+
+      return true;
     });
 
-    res.json({ yearMode, latestYear, previousYear, data: filtered });
+    res.json({ yearCount, allowedYears, data: filtered });
   } catch (err) {
     console.error("Electric detailed API error:", err);
     res.status(500).json({ error: "Electric detailed data failed" });
   }
 });
 
+
 app.get("/api/waste-detailed", (req, res) => {
   try {
-    const yearMode = req.session.yearMode || "current";
+    const yearCount = Math.max(1, Math.min(5, Number(req.session.yearCount) || 1));
 
     delete require.cache[require.resolve("./public/output/4_Waste and Recycled (Pivot).json")];
     const waste = require("./public/output/4_Waste and Recycled (Pivot).json");
 
+    // ----- get years from monthly labels like "Jan-2024" -----
     const years = waste
       .map(r => {
-        const m = String(r["General & Recyclable Waste"] || "").match(/-(\d{4})$/);
+        const label = String(r["General & Recyclable Waste"] || "");
+        const m = label.match(/-(\d{4})$/);
         return m ? Number(m[1]) : null;
       })
-      .filter(y => Number.isInteger(y));
+      .filter(Number.isInteger);
 
-    const latestYear = Math.max(...years);
-    const previousYear = latestYear - 1;
+    const uniqueYears = [...new Set(years)].sort((a, b) => a - b);
+    const safeCount = Math.max(1, Math.min(yearCount, uniqueYears.length));
+    const allowedYears = uniqueYears.slice(-safeCount);
 
+    // ----- monthly rows (only allowedYears) -----
     const monthlyRows = waste.filter(row => {
-      const label = row["General & Recyclable Waste"];
+      const label = String(row["General & Recyclable Waste"] || "").trim();
       if (!/^[A-Za-z]{3}-\d{4}$/.test(label)) return false;
 
       const year = Number(label.slice(-4));
-      if (yearMode === "current" && year !== latestYear) return false;
-      if (yearMode === "previous" && year !== previousYear) return false;
-
-      return true;
+      return allowedYears.includes(year);
     });
 
-    const fyTotals = waste.filter(row => /^FY\d{4}$/.test(row["General & Recyclable Waste"]));
+    // ----- FY totals (only allowedYears) -----
+    const fyTotals = waste.filter(row => {
+      const label = String(row["General & Recyclable Waste"] || "").trim(); // "FY2024"
+      const m = label.match(/^FY(\d{4})$/);
+      if (!m) return false;
+      const year = Number(m[1]);
+      return allowedYears.includes(year);
+    });
 
     res.json({
+      yearCount,
+      allowedYears,
       monthly: monthlyRows,
-      totals: fyTotals,
-      yearMode,
-      latestYear,
-      previousYear
+      totals: fyTotals
     });
   } catch (err) {
     console.error("Waste detailed API error:", err);
     res.status(500).json({ error: "Waste detailed data failed" });
   }
 });
+
 
 app.get("/api/water-individual", (req, res) => {
   try {
@@ -713,6 +745,7 @@ app.get("/manage_graph", adminOnly, (req, res) => {
     res.render("manage_graph", {
       files: xlsxFiles,
       yearMode: req.session.yearMode || "current",
+      yearCount: req.session.yearCount || 1,
       graphType: req.session.graphType || "bar",
       individualMode: req.session.individualMode || "interactive",
       rotateSeconds: req.session.rotateSeconds || 10

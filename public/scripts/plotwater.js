@@ -1,7 +1,12 @@
 let chart;
 
-const COLOR_PREVIOUS = "#1c11ef"; // green
-const COLOR_CURRENT  = "skyblue"; // skyblue
+const WATER_COLORS = [
+  "#0277BD", // deep blue
+  "#039BE5", // light blue
+  "#00ACC1", // cyan
+  "#26A69A", // teal
+  "#4DD0E1"  // aqua
+];
 
 const canvas  = document.getElementById("waterChart");
 const selector = document.getElementById("datasetSelector");
@@ -31,44 +36,41 @@ if (!canvas || !selector) {
     return Number.isFinite(n) ? n : NaN;
   }
 
+  function isHeaderRow(r) {
+    return String(r?.Water ?? "").toLowerCase() === "month";
+  }
+
   function parseMonthIndex(label) {
-    // supports "Jan-24" or "Jan"
     const s = String(label ?? "").trim().toLowerCase();
     const mon = s.slice(0, 3);
     const map = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
     return (mon in map) ? map[mon] : null;
   }
 
-  function yearFromLabel(label) {
-    // supports "Jan-24"
-    const m = String(label ?? "").match(/-(\d{2})$/);
-    if (!m) return null;
-    return 2000 + Number(m[1]);
+  // ✅ keep your rule: field3 must be numeric and not 0 (even if user selects field4/field5)
+  function passBaseRule(r) {
+    const v = toNum(r.field3);
+    if (!Number.isFinite(v)) return false;
+    if (v === 0) return false;
+    return true;
   }
 
-  // ✅ KEEP YOUR FILTERING RULES (based on field3)
-  function applyYourFilters(rows) {
-    return rows.filter(r => {
-      if (!r.Water || r.Water === "Month") return false;
-
-      const value = toNum(r.field3); // your rule: validate using field3
-      if (!Number.isFinite(value)) return false;
-      if (value === 0) return false;
-
-      return true;
-    });
+  // ✅ selected field must be numeric (so dropdown changes work)
+  function hasValueForField(r, field) {
+    const v = toNum(r[field]);
+    return Number.isFinite(v);
   }
 
-  async function loadWaterDetailed() {
+  async function loadWaterFromApi() {
     const res = await fetch("/api/water-detailed");
     if (!res.ok) throw new Error(`Water HTTP ${res.status}`);
-    return await res.json(); // {yearMode, latestYear, previousYear, data}
+    return await res.json(); // { yearCount, allowedYears, data }
   }
 
   async function loadGraphSettings() {
     const res = await fetch("/api/graph-settings");
     if (!res.ok) throw new Error(`Settings HTTP ${res.status}`);
-    return await res.json(); // {yearMode, graphType}
+    return await res.json(); // { yearCount, graphType, ... }
   }
 
   function styleFor(meta, color) {
@@ -84,100 +86,51 @@ if (!canvas || !selector) {
     return { backgroundColor: color };
   }
 
-  function render(meta, rows, field, titleText) {
+  function renderChart(rows, allowedYears, field, titleText, meta) {
     if (chart) chart.destroy();
 
-    const cleaned = applyYourFilters(rows);
-    if (!cleaned.length) {
-      showMsg("No valid water data after filtering.");
+    const yearsToShow = [...new Set(allowedYears)]
+      .filter(Number.isInteger)
+      .sort((a, b) => a - b);
+
+    if (!yearsToShow.length) {
+      showMsg("No water years found.");
       return;
     }
 
-    const prevArr = Array(12).fill(null);
-    const currArr = Array(12).fill(null);
+    // Build 12-month array for each year we want to show
+    const seriesByYear = new Map();
+    yearsToShow.forEach(y => seriesByYear.set(y, Array(12).fill(null)));
 
-    for (const r of cleaned) {
+    // Your file format: field1 appears only at first row of year block
+    let activeYear = null;
+
+    for (const r of rows) {
+      if (isHeaderRow(r)) continue;
+
+      if (r.field1 && /^\d{4}$/.test(String(r.field1).trim())) {
+        activeYear = Number(r.field1);
+      }
+      if (!activeYear) continue;
+      if (!seriesByYear.has(activeYear)) continue;
+
       const idx = parseMonthIndex(r.Water);
       if (idx === null) continue;
 
       const val = toNum(r[field]);
       if (!Number.isFinite(val)) continue;
 
-      // If label has year -> split into previous/current
-      const y = yearFromLabel(r.Water);
-
-      if (y != null) {
-        if (y === meta.previousYear) prevArr[idx] = val;
-        if (y === meta.latestYear)   currArr[idx] = val;
-      } else {
-        // If no year in label, API already filtered by yearMode
-        if (meta.yearMode === "previous") prevArr[idx] = val;
-        else currArr[idx] = val;
-      }
+      seriesByYear.get(activeYear)[idx] = val;
     }
 
-    // ========== single year ==========
-    if (meta.yearMode !== "both") {
-      const yearToShow = meta.yearMode === "previous" ? meta.previousYear : meta.latestYear;
-      const arr = meta.yearMode === "previous" ? prevArr : currArr;
-
-      const labels = [];
-      const data = [];
-      for (let i = 0; i < 12; i++) {
-        if (arr[i] != null) {
-          labels.push(MONTHS_FULL[i]);
-          data.push(arr[i]);
-        }
-      }
-
-      if (!labels.length) {
-        showMsg("No valid water data to display.");
-        return;
-      }
-
-      chart = new Chart(ctx, {
-        type: meta.graphType,
-        data: {
-          labels,
-          datasets: [{
-            label: String(yearToShow),
-            data,
-            ...styleFor(meta, meta.yearMode === "previous" ? COLOR_PREVIOUS : COLOR_CURRENT)
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            title: { display: true, text: titleText, font: { size: 18 } },
-            legend: { display: true, position: "top" },
-            tooltip: {
-              callbacks: {
-                label: c => `${c.dataset.label}: ${c.parsed.y?.toLocaleString() ?? "-"} m³`
-              }
-            }
-          },
-          scales: {
-            y: { beginAtZero: true, title: { display: true, text: "Water (m³)" } }
-          }
-        }
-      });
-
-      return;
-    }
-
-    // ========== BOTH mode ==========
+    // Labels: only months that have ANY data across selected years
+    const monthIndices = [];
     const labels = [];
-    const prevData = [];
-    const currData = [];
-
     for (let i = 0; i < 12; i++) {
-      const hasPrev = prevArr[i] != null;
-      const hasCurr = currArr[i] != null;
-
-      if (hasPrev || hasCurr) {
+      const anyHas = yearsToShow.some(y => seriesByYear.get(y)[i] != null);
+      if (anyHas) {
+        monthIndices.push(i);
         labels.push(MONTHS_FULL[i]);
-        prevData.push(prevArr[i]);
-        currData.push(currArr[i]);
       }
     }
 
@@ -186,15 +139,32 @@ if (!canvas || !selector) {
       return;
     }
 
+    const datasets = [];
+yearsToShow.forEach((year, idx) => {
+  const arr12 = seriesByYear.get(year);
+  const data = monthIndices.map(i => arr12[i]);
+
+  // ✅ if this year has NO valid numbers, skip it (no legend entry)
+  const hasAnyPoint = data.some(v => Number.isFinite(v));
+  if (!hasAnyPoint) return;
+
+  const color = WATER_COLORS[idx % WATER_COLORS.length];
+  datasets.push({
+    label: String(year),
+    data,
+    ...styleFor(meta, color)
+  });
+});
+
+// if everything got skipped
+if (!datasets.length) {
+  showMsg("No valid water data to display.");
+  return;
+}
+
     chart = new Chart(ctx, {
       type: meta.graphType,
-      data: {
-        labels,
-        datasets: [
-          { label: String(meta.previousYear), data: prevData, ...styleFor(meta, COLOR_PREVIOUS) },
-          { label: String(meta.latestYear),   data: currData, ...styleFor(meta, COLOR_CURRENT) }
-        ]
-      },
+      data: { labels, datasets },
       options: {
         responsive: true,
         plugins: {
@@ -202,7 +172,10 @@ if (!canvas || !selector) {
           legend: { display: true, position: "top" },
           tooltip: {
             callbacks: {
-              label: c => `${c.dataset.label}: ${c.parsed.y?.toLocaleString() ?? "-"} m³`
+              label: c => {
+                const v = c.parsed?.y;
+                return `${c.dataset.label}: ${Number.isFinite(v) ? v.toLocaleString() : "-"} m³`;
+              }
             }
           }
         },
@@ -213,12 +186,12 @@ if (!canvas || !selector) {
     });
   }
 
-  async function init() {
+  async function initWater() {
     try {
       showMsg("");
 
       const [result, settings] = await Promise.all([
-        loadWaterDetailed(),
+        loadWaterFromApi(),
         loadGraphSettings()
       ]);
 
@@ -229,10 +202,8 @@ if (!canvas || !selector) {
       }
 
       const meta = {
-        yearMode: settings?.yearMode || result.yearMode || "current",
         graphType: settings?.graphType || "bar",
-        latestYear: result.latestYear,
-        previousYear: result.previousYear
+        yearCount: Number(settings?.yearCount || result.yearCount || 1)
       };
 
       const titles = {
@@ -241,10 +212,23 @@ if (!canvas || !selector) {
         field5: "Total Water"
       };
 
+      const baseRows = result.data.filter(r => !isHeaderRow(r));
+
       const draw = () => {
         showMsg("");
         const field = selector.value;
-        render(meta, result.data, field, titles[field]);
+
+        // ✅ apply your “base rule” + selected field rule
+        const rows = baseRows
+          .filter(passBaseRule)
+          .filter(r => hasValueForField(r, field));
+
+        if (!rows.length) {
+          showMsg("No valid water data for this dataset (after filtering).");
+          return;
+        }
+
+        renderChart(rows, result.allowedYears || [], field, titles[field], meta);
       };
 
       selector.addEventListener("change", draw);
@@ -257,21 +241,19 @@ if (!canvas || !selector) {
   }
 
   window.addEventListener("water:render", () => {
-  init();
+    initWater();
   }, { once: true });
-
-
-  // ✅ auto-rotate
-  (function () {
-    const routes = ["/", "/electgraph", "/solargraph", "/watergraph", "/waste"];
-    const delay = 30000;
-
-    const path = window.location.pathname.replace(/\/+$/, "") || "/";
-    const index = routes.indexOf(path);
-    if (index === -1) return;
-
-    setTimeout(() => {
-      window.location.href = routes[(index + 1) % routes.length];
-    }, delay);
-  })();
 }
+// ✅ auto-rotate 
+(function () {
+  const routes = ["/", "/electgraph", "/solargraph", "/watergraph", "/waste"];
+  const delay = 30000;
+
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const index = routes.indexOf(path);
+  if (index === -1) return;
+
+  setTimeout(() => {
+    window.location.href = routes[(index + 1) % routes.length];
+  }, delay);
+})();
