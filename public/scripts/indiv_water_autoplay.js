@@ -95,7 +95,7 @@ async function loadGraphSettings() {
 async function loadData() {
   const res = await fetch("/api/water-individual");
   if (!res.ok) throw new Error(`water-individual HTTP ${res.status}`);
-  return await res.json(); // [headerRow, ...rows]
+  return await res.json(); 
 }
 
 // ✅ keys are field1, field2... (field1 = month)
@@ -366,26 +366,43 @@ async function init() {
 
     showMsg("");
 
-    const [settings, arr] = await Promise.all([loadGraphSettings(), loadData()]);
-    if (!Array.isArray(arr) || arr.length < 2) {
-      showMsg("No individual water data found.");
-      return;
-    }
+    const [settings, result] = await Promise.all([loadGraphSettings(), loadData()]);
 
-    const headerRow = arr[0];
-    const rows = arr.slice(1);
+// ✅ new API shape: { allowedYears, data: [...] }
+const arr = result?.data;
+
+if (!Array.isArray(arr) || arr.length < 2) {
+  showMsg("No individual water data found.");
+  return;
+}
+
+const allowedYears = Array.isArray(result?.allowedYears) ? result.allowedYears : [];
+
+const headerRow = arr[0];
+const rows = arr.slice(1);
+
 
     const { firstColKey, buildingKeys, buildingNames } = getMeta(headerRow);
     if (!firstColKey || !buildingKeys.length) {
       showMsg("No building columns found.");
       return;
     }
+let timeline = buildTimeline(rows, firstColKey);
+if (!timeline.length) {
+  showMsg("No valid months found.");
+  return;
+}
 
-    const timeline = buildTimeline(rows, firstColKey);
-    if (!timeline.length) {
-      showMsg("No valid months found.");
-      return;
-    }
+// ✅ keep only months inside allowedYears (your 1–5 years selection)
+if (allowedYears.length) {
+  timeline = timeline.filter(t => allowedYears.includes(t.year));
+}
+
+if (!timeline.length) {
+  showMsg("No months found for selected years.");
+  return;
+}
+
 
     const rotateMs = Math.max(5000, Number(settings?.rotateSeconds || 10) * 1000);
 

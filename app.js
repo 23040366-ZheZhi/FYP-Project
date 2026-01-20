@@ -573,42 +573,50 @@ app.get("/api/waste-detailed", (req, res) => {
 
 app.get("/api/water-individual", (req, res) => {
   try {
-    const yearMode = req.session.yearMode || "current";
+    const yearCount = Math.max(1, Math.min(5, Number(req.session.yearCount) || 1));
 
     delete require.cache[require.resolve("./public/output/2.1_Individual Pod.json")];
     const data = require("./public/output/2.1_Individual Pod.json");
 
-    if (!Array.isArray(data) || data.length < 2) return res.json([]);
+    if (!Array.isArray(data) || data.length < 2) {
+      return res.json({ yearCount, allowedYears: [], data: [] });
+    }
 
     const header = data[0];
     const rows = data.slice(1);
 
-    const getYear = val => {
-      const m = String(val || "").match(/^(\d{2})-/);
-      return m ? 2000 + Number(m[1]) : null;
+    const monthKey = Object.keys(header)[0]; // first column is the month label
+
+    // expects "25-Jan" (YY-Mon)
+    const parseYear = (val) => {
+      const m = String(val || "").trim().match(/^(\d{2})-/);
+      return m ? (2000 + Number(m[1])) : null;
     };
 
-    const years = rows.map(r => getYear(r[Object.keys(header)[0]])).filter(y => Number.isInteger(y));
-    if (!years.length) return res.json([header]);
+    const years = rows
+      .map(r => parseYear(r[monthKey]))
+      .filter(Number.isInteger);
 
-    const latestYear = Math.max(...years);
-    const previousYear = latestYear - 1;
+    const uniqueYears = [...new Set(years)].sort((a, b) => a - b);
+    const safeCount = Math.max(1, Math.min(yearCount, uniqueYears.length));
+    const allowedYears = uniqueYears.slice(-safeCount);
 
     const filteredRows = rows.filter(r => {
-      const year = getYear(r[Object.keys(header)[0]]);
-      if (!year) return false;
-
-      if (yearMode === "current") return year === latestYear;
-      if (yearMode === "previous") return year === previousYear;
-      return true;
+      const y = parseYear(r[monthKey]);
+      return Number.isInteger(y) && allowedYears.includes(y);
     });
 
-    res.json([header, ...filteredRows]);
+    res.json({
+      yearCount,
+      allowedYears,
+      data: [header, ...filteredRows]
+    });
   } catch (err) {
     console.error("Individual water API error:", err);
     res.status(500).json({ error: "Individual water load failed" });
   }
 });
+
 
 app.get("/api/electric-building", (req, res) => {
   const yearMode = req.session.yearMode || "current";

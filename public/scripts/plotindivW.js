@@ -2,9 +2,14 @@
 let chartA = null;
 let chartB = null;
 
-// Colors
-const COLOR_PREVIOUS = "#1c11ef";
-const COLOR_CURRENT  = "skyblue";
+const WATER_COLORS = [
+  "#1E88E5", // latest year (blue)
+  "#43A047", // green
+  "#FB8C00", // orange
+  "#8E24AA", // purple
+  "#E53935"  // red
+];
+
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -29,9 +34,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
 
   const meta = {
     graphType: "bar",
-    yearMode: "current",     // "current" | "previous" | "both"
-    latestYear: null,
-    previousYear: null
+    allowedYears: [],   
   };
 
   // ---------- helpers ----------
@@ -74,6 +77,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     const res = await fetch("/api/water-individual");
     if (!res.ok) throw new Error(`Water-individual HTTP ${res.status}`);
     return await res.json();
+
   }
 
   function fillDropdown(selectEl) {
@@ -111,54 +115,57 @@ function styleFor(color) {
 }
 
 
-  function buildDatasets(buildingKey) {
-    const prev = Array(12).fill(null);
-    const curr = Array(12).fill(null);
+function buildDatasets(buildingKey, allowedYears) {
+  // Create 12 slots per year
+  const yearsToShow = [...new Set(allowedYears)]
+    .filter(Number.isInteger)
+    .sort((a, b) => a - b);
 
-    for (const r of globalRows) {
-      const info = parseLabel(r[monthKey]);
-      if (!info) continue;
+  const seriesByYear = new Map();
+  yearsToShow.forEach(y => seriesByYear.set(y, Array(12).fill(null)));
 
-      const val = toNum(r[buildingKey]);
-      if (!Number.isFinite(val)) continue;
+  for (const r of globalRows) {
+    const info = parseLabel(r[monthKey]); // {year, idx}
+    if (!info) continue;
+    if (!seriesByYear.has(info.year)) continue;
 
-      if (info.year === meta.previousYear) prev[info.idx] = val;
-      if (info.year === meta.latestYear)   curr[info.idx] = val;
-    }
+    const val = toNum(r[buildingKey]);
+    if (!Number.isFinite(val)) continue;
 
-    // only keep months that have data (either year)
-    const labels = [];
-    const prevData = [];
-    const currData = [];
-
-    for (let i = 0; i < 12; i++) {
-      if (prev[i] != null || curr[i] != null) {
-        labels.push(MONTHS[i]);
-        prevData.push(prev[i]);
-        currData.push(curr[i]);
-      }
-    }
-
-    const datasets = [];
-
-    if (meta.yearMode !== "current") {
-      datasets.push({
-        label: String(meta.previousYear),
-        data: prevData,
-        ...styleFor(COLOR_PREVIOUS)
-      });
-    }
-
-    if (meta.yearMode !== "previous") {
-      datasets.push({
-        label: String(meta.latestYear),
-        data: currData,
-        ...styleFor(COLOR_CURRENT)
-      });
-    }
-
-    return { labels, datasets };
+    seriesByYear.get(info.year)[info.idx] = val;
   }
+
+  // only keep months that have data in ANY selected year
+  const labels = [];
+  const monthIndices = [];
+  for (let i = 0; i < 12; i++) {
+    const anyHas = yearsToShow.some(y => seriesByYear.get(y)[i] != null);
+    if (anyHas) {
+      labels.push(MONTHS[i]);
+      monthIndices.push(i);
+    }
+  }
+
+  // datasets (skip years that have no data -> no legend)
+  const datasets = [];
+
+  yearsToShow.forEach((year, idx) => {
+    const arr12 = seriesByYear.get(year);
+    const data = monthIndices.map(i => arr12[i]);
+
+    const hasAnyPoint = data.some(v => Number.isFinite(v));
+    if (!hasAnyPoint) return; // ✅ hide empty year
+
+    const color = WATER_COLORS[idx % WATER_COLORS.length];
+    datasets.push({
+      label: String(year),
+      data,
+      ...styleFor(color)
+    });
+  });
+
+  return { labels, datasets };
+}
 
   function allEmptyOrZero(datasets) {
     return datasets.every(ds => ds.data.every(v => v == null || v === 0));
@@ -166,7 +173,8 @@ function styleFor(color) {
 
   // ---------- render ----------
   function renderChart(which, ctx, building) {
-    const { labels, datasets } = buildDatasets(building.key);
+   const { labels, datasets } = buildDatasets(building.key, meta.allowedYears || []);
+
 
     // no data => show msg and destroy chart
     if (!labels.length || !datasets.length || allEmptyOrZero(datasets)) {
@@ -232,37 +240,28 @@ function styleFor(color) {
       loadGraphSettings()
     ]);
 
-    // validate
-    if (!Array.isArray(data) || data.length < 2) {
-      setMsg("A", "No data returned.");
-      setMsg("B", "No data returned.");
-      return;
-    }
+    // ✅ validate new API shape: { allowedYears, data: [...] }
+  if (!data || !Array.isArray(data.data) || data.data.length < 2) {
+    setMsg("A", "No data returned.");
+    setMsg("B", "No data returned.");
+  return;
+}
 
-    meta.graphType = settings?.graphType || "bar";
+  meta.graphType = settings?.graphType || "bar";
+  meta.allowedYears = Array.isArray(data.allowedYears) ? data.allowedYears : [];
 
-    const header = data[0];
-    const rows = data.slice(1);
+  const header = data.data[0];
+  const rows = data.data.slice(1);
+
 
     monthKey = Object.keys(header)[0];
     globalRows = rows;
 
-    // compute years
-    const years = rows
-      .map(r => parseLabel(r[monthKey])?.year)
-      .filter(Boolean);
-
-    if (!years.length) {
-      setMsg("A", "Invalid month labels (expected format like 25-Jan).");
-      setMsg("B", "Invalid month labels (expected format like 25-Jan).");
-      return;
-    }
-
-    meta.latestYear = Math.max(...years);
-    meta.previousYear = meta.latestYear - 1;
-
-    const hasPrev = years.some(y => y === meta.previousYear);
-    meta.yearMode = hasPrev ? "both" : "current";
+  if (!meta.allowedYears.length) {
+    setMsg("A", "No years available from API.");
+    setMsg("B", "No years available from API.");
+  return;
+}
 
     // building list from header
     buildings = Object.entries(header)
