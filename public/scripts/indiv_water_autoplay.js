@@ -1,11 +1,15 @@
 // /public/scripts/plotindivW_noninteractive.js
+// Water non-interactive: ✅ bar slideshow uses intervalTimer, ✅ line slideshow uses timeoutTimer (like electricity)
+
 let chart = null;
-let timer = null;
+let intervalTimer = null; // bar slideshow
+let timeoutTimer  = null; // line slideshow
 
 const canvas = document.getElementById("chart");
 const ctx = canvas?.getContext("2d");
-const msgBox = document.getElementById("msg"); // ✅ your HTML uses id="msg"
+const msgBox = document.getElementById("msg"); // HTML uses id="msg"
 
+// ===== month helpers =====
 const MONTH_ORDER = [
   "January","February","March","April","May","June",
   "July","August","September","October","November","December"
@@ -17,12 +21,36 @@ const ABBR_TO_FULL = {
   sep: "September", oct: "October", nov: "November", dec: "December"
 };
 
+// ===== UI helpers =====
 function showMsg(text) {
   if (!msgBox) return;
   msgBox.textContent = text || "";
   msgBox.style.display = text ? "block" : "none";
 }
-// ✅ summary box (will be created and inserted above the canvas)
+
+function toNum(v) {
+  const s = String(v ?? "").trim();
+  if (!s) return NaN;
+  const n = Number(s.replace(/,/g, ""));
+  return Number.isFinite(n) ? n : NaN;
+}
+
+function destroy() {
+  if (chart) { chart.destroy(); chart = null; }
+}
+
+function stopTimers() {
+  if (intervalTimer) clearInterval(intervalTimer);
+  if (timeoutTimer) clearTimeout(timeoutTimer);
+  intervalTimer = null;
+  timeoutTimer = null;
+}
+
+function fmtNum(n) {
+  return Number(n).toLocaleString();
+}
+
+// ===== Summary box (same pattern as elect) =====
 let summaryBox = document.getElementById("waterSummary");
 
 function ensureSummaryBox() {
@@ -39,9 +67,7 @@ function ensureSummaryBox() {
   summaryBox.style.fontSize = "14px";
   summaryBox.style.lineHeight = "1.35";
 
-  // Put it above the chart canvas
   if (canvas?.parentNode) canvas.parentNode.insertBefore(summaryBox, canvas);
-
   return summaryBox;
 }
 
@@ -51,15 +77,7 @@ function setSummaryHTML(html) {
   box.style.display = html ? "block" : "none";
 }
 
-
-function toNum(v) {
-  const s = String(v ?? "").trim();
-  if (!s) return NaN;
-  const n = Number(s.replace(/,/g, ""));
-  return Number.isFinite(n) ? n : NaN;
-}
-
-// "25-Jan" -> { year: 2025, month: "January", mi: 0, label: "Jan 2025" }
+// ===== parse "25-Jan" -> { year, month, mi, label } =====
 function parseMonthCell(val) {
   const s = String(val || "").trim();
   const m = s.match(/^(\d{2})-([A-Za-z]{3})$/);
@@ -74,37 +92,28 @@ function parseMonthCell(val) {
   const mi = MONTH_ORDER.indexOf(month);
   if (mi < 0) return null;
 
-  const label = `${m[2].slice(0,3)} ${year}`;
+  const label = `${m[2].slice(0, 3)} ${year}`;
   return { year, month, mi, label };
 }
 
-function destroy() {
-  if (chart) { chart.destroy(); chart = null; }
-}
-
-function stopTimer() {
-  if (timer) { clearInterval(timer); timer = null; }
-}
-
+// ===== API loaders (unchanged routes) =====
 async function loadGraphSettings() {
   const res = await fetch("/api/graph-settings");
   if (!res.ok) throw new Error(`graph-settings HTTP ${res.status}`);
-  return await res.json(); // { graphType, yearMode, individualMode }
+  return await res.json(); // { graphType, rotateSeconds, ... }
 }
 
 async function loadData() {
   const res = await fetch("/api/water-individual");
   if (!res.ok) throw new Error(`water-individual HTTP ${res.status}`);
-  return await res.json(); 
+  return await res.json(); // { allowedYears, data:[header,...rows] }
 }
 
-// ✅ keys are field1, field2... (field1 = month)
-// ✅ REAL building names are headerRow[field2], headerRow[field3]...
+// ===== meta helpers =====
 function getMeta(headerRow) {
   const keys = Object.keys(headerRow || {});
-  const firstColKey = keys[0]; // usually "field1"
+  const firstColKey = keys[0];
   const buildingKeys = keys.slice(1);
-
   const buildingNames = buildingKeys.map(k => String(headerRow[k] || k).trim());
   return { firstColKey, buildingKeys, buildingNames };
 }
@@ -137,146 +146,39 @@ function findRow(rows, firstColKey, year, month) {
   return null;
 }
 
-// ✅ distinct color per building (works for 22 buildings)
 function colorForIndex(i, total) {
   const hue = Math.round((i * 360) / Math.max(1, total));
   return `hsl(${hue}, 70%, 45%)`;
 }
 
 // =====================
-// ✅ LINE MODE (ONE CHART, ALL BUILDINGS LINES)
-// =====================
-function renderLineChart(timeline, rows, firstColKey, buildingKeys, buildingNames) {
-  destroy();
-  stopTimer();
-
-  const labels = timeline.map(t => t.label);
-
-  // ✅ scan plotted data to find global highest/lowest (non-zero)
-  let maxPoint = null; // { v, building, month }
-  let minPoint = null; // { v, building, month }
-
-  const datasets = buildingKeys.map((k, i) => {
-    const c = colorForIndex(i, buildingKeys.length);
-
-    const data = timeline.map(t => {
-      const row = findRow(rows, firstColKey, t.year, t.month);
-      const n = toNum(row?.[k]);
-
-      // skip 0 / invalid
-      const v = Number.isFinite(n) && n !== 0 ? n : null;
-
-      // ✅ update max/min from the same values used for the chart
-      if (v != null) {
-        const building = buildingNames[i] || k;
-        const month = t.label;
-
-        if (!maxPoint || v > maxPoint.v) maxPoint = { v, building, month };
-        if (!minPoint || v < minPoint.v) minPoint = { v, building, month };
-      }
-
-      return v;
-    });
-
-    return {
-      label: buildingNames[i],
-      data,
-      borderColor: c,
-      backgroundColor: c,
-      fill: false,
-      tension: 0.25,
-      pointRadius: 2,
-      pointHoverRadius: 4,
-      spanGaps: false
-    };
-  }).filter(ds => ds.data.some(v => v != null)); // remove all-null buildings
-
-  if (!datasets.length) {
-    showMsg("No valid data (all values are 0/invalid).");
-    setSummaryHTML(""); // hide summary
-    return;
-  }
-
-  showMsg("");
-
-  // ✅ show summary above the chart
-  const fmt = (n) => Number(n).toLocaleString();
-  const maxLine = maxPoint
-    ? `<b>Highest</b>: ${maxPoint.building} — ${fmt(maxPoint.v)} m³ <span style="opacity:.75">(at ${maxPoint.month})</span>`
-    : `<b>Highest</b>: N/A`;
-
-  const minLine = minPoint
-    ? `<b>Lowest</b>: ${minPoint.building} — ${fmt(minPoint.v)} m³ <span style="opacity:.75">(at ${minPoint.month})</span>`
-    : `<b>Lowest</b>: N/A`;
-
-  setSummaryHTML(`${maxLine}<br>${minLine}`);
-
-  chart = new Chart(ctx, {
-    type: "line",
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        title: {
-          display: true,
-          text: "Water — Individual Buildings (Line)",
-          font: { size: 16, weight: "bold" }
-        },
-        legend: {
-          display: true,
-          position: "bottom",
-          labels: { boxWidth: 12, boxHeight: 12 }
-        },
-        tooltip: {
-          callbacks: {
-            label: c => {
-              const v = c.parsed.y;
-              return v == null ? "" : `${c.dataset.label}: ${v.toLocaleString()} m³`;
-            }
-          }
-        }
-      },
-      scales: {
-        y: { beginAtZero: true, title: { display: true, text: "Water (m³)" } },
-        x: { ticks: { autoSkip: true, maxRotation: 0 } }
-      }
-    }
-  });
-}
-
-
-// =====================
-// ✅ BAR MODE (AUTOPLAY BY MONTH)
+// BAR MODE (slideshow by month) ✅ intervalTimer
 // =====================
 function renderBarMonth(titleLabel, buildingNames, values) {
   destroy();
 
   const hasAny = values.some(v => v != null);
   if (!hasAny) {
-    setSummaryHTML(""); // hide if no data
+    setSummaryHTML("");
     return false;
   }
 
-  // ✅ summary for THIS month (bar frame)
-  let maxPoint = null; // { v, building }
+  let maxPoint = null;
   let minPoint = null;
 
   for (let i = 0; i < values.length; i++) {
     const v = values[i];
-    if (v == null) continue; // skip 0/invalid
-    const building = buildingNames[i];
+    if (v == null) continue;
 
+    const building = buildingNames[i];
     if (!maxPoint || v > maxPoint.v) maxPoint = { v, building };
     if (!minPoint || v < minPoint.v) minPoint = { v, building };
   }
 
-  const fmt = (n) => Number(n).toLocaleString();
   if (maxPoint && minPoint) {
     setSummaryHTML(
-      `<b>Highest</b>: ${maxPoint.building} — ${fmt(maxPoint.v)} m³ <span style="opacity:.75">(at ${titleLabel})</span><br>` +
-      `<b>Lowest</b>: ${minPoint.building} — ${fmt(minPoint.v)} m³ <span style="opacity:.75">(at ${titleLabel})</span>`
+      `<b>Highest</b>: ${maxPoint.building} — ${fmtNum(maxPoint.v)} m³ <span style="opacity:.75">(at ${titleLabel})</span><br>` +
+      `<b>Lowest</b>: ${minPoint.building} — ${fmtNum(minPoint.v)} m³ <span style="opacity:.75">(at ${titleLabel})</span>`
     );
   } else {
     setSummaryHTML("");
@@ -326,9 +228,8 @@ function renderBarMonth(titleLabel, buildingNames, values) {
   return true;
 }
 
-
-function autoplayBars(timeline, rows, firstColKey, buildingKeys, buildingNames, rotateMs){
-  stopTimer();
+function autoplayBars(timeline, rows, firstColKey, buildingKeys, buildingNames, rotateMs) {
+  stopTimers();
   showMsg("");
 
   let i = 0;
@@ -354,12 +255,165 @@ function autoplayBars(timeline, rows, firstColKey, buildingKeys, buildingNames, 
     showMsg("No valid data to display.");
     return;
   }
-timer = setInterval(() => {
-  const more = showNext();
-  if (!more) stopTimer();
-}, rotateMs);
 
+  intervalTimer = setInterval(() => {
+    if (!showNext()) stopTimers();
+  }, rotateMs);
 }
+
+// =====================
+// LINE MODE (slideshow by year) ✅ timeoutTimer
+// Stops at latest year ✅
+// =====================
+function renderLineYear(year, timelineYear, rows, firstColKey, buildingKeys, buildingNames) {
+  destroy();
+
+  const labels = timelineYear.map(t => t.label);
+
+  let maxPoint = null;
+  let minPoint = null;
+
+  const datasets = buildingKeys.map((k, i) => {
+    const c = colorForIndex(i, buildingKeys.length);
+
+    const data = timelineYear.map(t => {
+      const row = findRow(rows, firstColKey, t.year, t.month);
+      const n = toNum(row?.[k]);
+      const v = Number.isFinite(n) && n !== 0 ? n : null;
+
+      if (v != null) {
+        const building = buildingNames[i] || k;
+        const month = t.label;
+        if (!maxPoint || v > maxPoint.v) maxPoint = { v, building, month };
+        if (!minPoint || v < minPoint.v) minPoint = { v, building, month };
+      }
+
+      return v;
+    });
+
+    return {
+      label: buildingNames[i] || k,
+      data,
+      borderColor: c,
+      backgroundColor: c,
+      fill: false,
+      tension: 0.25,
+      pointRadius: 2,
+      pointHoverRadius: 4,
+      spanGaps: false
+    };
+  }).filter(ds => ds.data.some(v => v != null));
+
+  if (!datasets.length) {
+    showMsg(`No valid line data for ${year}.`);
+    setSummaryHTML("");
+    return false;
+  }
+
+  showMsg("");
+
+  if (maxPoint && minPoint) {
+    setSummaryHTML(
+      `<b>Highest</b>: ${maxPoint.building} — ${fmtNum(maxPoint.v)} m³ <span style="opacity:.75">(at ${maxPoint.month})</span><br>` +
+      `<b>Lowest</b>: ${minPoint.building} — ${fmtNum(minPoint.v)} m³ <span style="opacity:.75">(at ${minPoint.month})</span>`
+    );
+  } else {
+    setSummaryHTML("");
+  }
+
+  chart = new Chart(ctx, {
+    type: "line",
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        title: {
+          display: true,
+          text: `Water — Individual Buildings (Line) — ${year}`,
+          font: { size: 16, weight: "bold" }
+        },
+        legend: {
+          display: true,
+          position: "bottom",
+          labels: {
+            usePointStyle: true,
+            pointStyle: "rect",
+            boxWidth: 12,
+            boxHeight: 12
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: c => {
+              const v = c.parsed.y;
+              return v == null ? "" : `${c.dataset.label}: ${v.toLocaleString()} m³`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: "Water (m³)" } },
+        x: { ticks: { autoSkip: true, maxRotation: 0 } }
+      }
+    }
+  });
+
+  return true;
+}
+
+function autoplayLineByYear(timeline, rows, firstColKey, buildingKeys, buildingNames, allowedYears, rotateMs) {
+  stopTimers();
+  showMsg("");
+
+  const years = [...new Set(allowedYears)]
+    .filter(Number.isInteger)
+    .sort((a, b) => a - b);
+
+  if (!years.length) {
+    showMsg("No years available.");
+    return;
+  }
+
+  let index = 0;
+
+  const showNextYear = () => {
+    // ✅ STOP at the latest year (no looping)
+    if (index >= years.length) {
+      stopTimers();
+      return false;
+    }
+
+    const year = years[index++];
+    const timelineYear = timeline.filter(t => t.year === year);
+
+    // skip empty year safely
+    if (!timelineYear.length) return showNextYear();
+
+    const ok = renderLineYear(year, timelineYear, rows, firstColKey, buildingKeys, buildingNames);
+    if (!ok) return showNextYear(); // skip years with no valid line data
+
+    return true;
+  };
+
+  if (!showNextYear()) {
+    showMsg("No valid yearly line data to display.");
+    return;
+  }
+
+  const step = () => {
+    timeoutTimer = setTimeout(() => {
+      if (showNextYear()) step();
+    }, rotateMs);
+  };
+
+  step();
+}
+
+// =====================
+// INIT (routes unchanged)
+// =====================
 async function init() {
   try {
     if (!ctx) return;
@@ -368,46 +422,44 @@ async function init() {
 
     const [settings, result] = await Promise.all([loadGraphSettings(), loadData()]);
 
-// ✅ new API shape: { allowedYears, data: [...] }
-const arr = result?.data;
+    const arr = result?.data;
+    if (!Array.isArray(arr) || arr.length < 2) {
+      showMsg("No individual water data found.");
+      return;
+    }
 
-if (!Array.isArray(arr) || arr.length < 2) {
-  showMsg("No individual water data found.");
-  return;
-}
+    const allowedYears = Array.isArray(result?.allowedYears) ? result.allowedYears : [];
+    if (!allowedYears.length) {
+      showMsg("No years available from API.");
+      return;
+    }
 
-const allowedYears = Array.isArray(result?.allowedYears) ? result.allowedYears : [];
-
-const headerRow = arr[0];
-const rows = arr.slice(1);
-
+    const headerRow = arr[0];
+    const rows = arr.slice(1);
 
     const { firstColKey, buildingKeys, buildingNames } = getMeta(headerRow);
     if (!firstColKey || !buildingKeys.length) {
       showMsg("No building columns found.");
       return;
     }
-let timeline = buildTimeline(rows, firstColKey);
-if (!timeline.length) {
-  showMsg("No valid months found.");
-  return;
-}
 
-// ✅ keep only months inside allowedYears (your 1–5 years selection)
-if (allowedYears.length) {
-  timeline = timeline.filter(t => allowedYears.includes(t.year));
-}
+    let timeline = buildTimeline(rows, firstColKey);
+    if (!timeline.length) {
+      showMsg("No valid months found.");
+      return;
+    }
 
-if (!timeline.length) {
-  showMsg("No months found for selected years.");
-  return;
-}
-
+    // keep only months inside allowedYears (1–5 year admin selection)
+    timeline = timeline.filter(t => allowedYears.includes(t.year));
+    if (!timeline.length) {
+      showMsg("No months found for selected years.");
+      return;
+    }
 
     const rotateMs = Math.max(5000, Number(settings?.rotateSeconds || 10) * 1000);
 
     if (settings?.graphType === "line") {
-      renderLineChart(timeline, rows, firstColKey, buildingKeys, buildingNames);
+      autoplayLineByYear(timeline, rows, firstColKey, buildingKeys, buildingNames, allowedYears, rotateMs);
     } else {
       autoplayBars(timeline, rows, firstColKey, buildingKeys, buildingNames, rotateMs);
     }

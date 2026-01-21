@@ -2,8 +2,13 @@
 let chartA = null;
 let chartB = null;
 
-const COLOR_CURRENT  = "yellow";
-const COLOR_PREVIOUS = "#edd60e";
+const ELECTRIC_COLORS = [
+  "#FDD835", // latest year highlight
+  "#FB8C00",
+  "#E53935",
+  "#8E24AA",
+  "#3949AB"
+];
 
 const canvasA = document.getElementById("buildingChartA");
 const canvasB = document.getElementById("buildingChartB");
@@ -20,11 +25,9 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
 
   const state = {
     graphType: "bar",
-    yearMode: "current",
-    latestYear: null,
-    previousYear: null,
     rows: [],
-    buildings: []
+    buildings: [],
+    allowedYears: []
   };
 
   function setMsg(which, text) {
@@ -44,7 +47,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
   async function loadData() {
     const res = await fetch("/api/electric-building");
     if (!res.ok) throw new Error(`Electric-building HTTP ${res.status}`);
-    return await res.json(); // expects { data, yearMode, latestYear, previousYear }
+    return await res.json(); // { yearCount, allowedYears, data }
   }
 
   async function loadGraphSettings() {
@@ -54,7 +57,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
   }
 
   function getBuildings(sampleRow) {
-    return Object.keys(sampleRow)
+    return Object.keys(sampleRow || {})
       .filter(k => !["year", "month"].includes(k))
       .map(k => ({ key: k, name: k.trim() }));
   }
@@ -69,66 +72,49 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     }
   }
 
-  // keep bars squarish like your current one:
-  // - borderRadius: 0
-  // - do NOT set huge rounding
-  // - set barThickness moderately (optional)
- function styleFor(color) {
-  if (state.graphType === "line") {
+  function styleFor(color) {
+    if (state.graphType === "line") {
+      return {
+        borderColor: color,
+        backgroundColor: color,
+        fill: false,
+        tension: 0.3,
+        pointRadius: 3
+      };
+    }
+
     return {
-      borderColor: color,
       backgroundColor: color,
-      fill: false,
-      tension: 0.3,
-      pointRadius: 3
+      borderRadius: 0,
+      barThickness: "flex",
+      maxBarThickness: 28,
+      categoryPercentage: 0.72,
+      barPercentage: 0.9
     };
   }
 
-  return {
-    backgroundColor: color,
-    borderRadius: 0,
+  function getAllMonths() {
+    // Keep your existing month ordering behavior:
+    return [...new Set(state.rows.map(r => r.month))];
+  }
 
-    // ✅ let Chart.js auto-fit bars when there are 2 datasets
-    barThickness: "flex",
-    maxBarThickness: 28,
-
-    // ✅ creates “space” between month groups + between the 2 bars
-    categoryPercentage: 0.72,
-    barPercentage: 0.9
-  };
-}
-
-
-  function buildSeries(buildingKey, year) {
-    // all months in correct order (Jan..Dec) if your data month is "January" etc.
-    // If your month is already in order, we keep your original behavior:
-    const allMonths = [...new Set(state.rows.map(r => r.month))];
-
-    const data = allMonths.map(m => {
-      const raw = state.rows.find(r => r.month === m && r.year === year)?.[buildingKey];
+  function buildDataForYear(buildingKey, year, allMonths) {
+    return allMonths.map(m => {
+      const raw = state.rows.find(r => r.month === m && Number(r.year) === Number(year))?.[buildingKey];
       const n = toNum(raw);
       return (Number.isFinite(n) && n !== 0) ? n : null; // don't plot 0
     });
-
-    return { allMonths, data };
   }
 
-  function filterEmptyMonths(months, prevArr, currArr) {
-    const labels = [];
-    const prevFiltered = [];
-    const currFiltered = [];
+  function filterEmptyMonths(months, seriesByYear) {
+    const keepIdx = months
+      .map((m, i) => ({ m, i }))
+      .filter(({ i }) => seriesByYear.some(arr => arr[i] != null));
 
-    months.forEach((m, i) => {
-      const hasPrev = prevArr[i] != null;
-      const hasCurr = currArr[i] != null;
-      if (hasPrev || hasCurr) {
-        labels.push(m);
-        prevFiltered.push(prevArr[i]);
-        currFiltered.push(currArr[i]);
-      }
-    });
+    const labels = keepIdx.map(x => x.m);
+    const filtered = seriesByYear.map(arr => keepIdx.map(x => arr[x.i]));
 
-    return { labels, prevFiltered, currFiltered };
+    return { labels, filtered };
   }
 
   function destroy(which) {
@@ -137,11 +123,22 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
   }
 
   function render(which, ctx, building) {
-    const { allMonths, data: prevData } = buildSeries(building.key, state.previousYear);
-    const { data: currData } = buildSeries(building.key, state.latestYear);
+    const allMonths = getAllMonths();
+    if (!allMonths.length || !state.allowedYears.length) {
+      setMsg(which, "No data available.");
+      destroy(which);
+      return;
+    }
 
-    const { labels, prevFiltered, currFiltered } =
-      filterEmptyMonths(allMonths, prevData, currData);
+    // build 12 values per year
+    const yearsToShow = [...new Set(state.allowedYears)]
+      .filter(Number.isInteger)
+      .sort((a, b) => a - b);
+
+    const rawSeries = yearsToShow.map(y => buildDataForYear(building.key, y, allMonths));
+
+    // remove empty months globally
+    const { labels, filtered } = filterEmptyMonths(allMonths, rawSeries);
 
     if (!labels.length) {
       setMsg(which, "No valid data found for this building.");
@@ -149,75 +146,74 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
       return;
     }
 
+    // build datasets (skip empty years => no legend entry)
+    const datasets = [];
+    const latestIndex = yearsToShow.length - 1;
+
+    yearsToShow.forEach((year, idx) => {
+      const data = filtered[idx];
+      const hasAnyPoint = data.some(v => Number.isFinite(v));
+      if (!hasAnyPoint) return;
+
+      // latest year uses first color, older years go down the palette
+      const colorIndex = latestIndex - idx;
+      const color = ELECTRIC_COLORS[colorIndex % ELECTRIC_COLORS.length];
+
+      datasets.push({
+        label: String(year),
+        data,
+        ...styleFor(color)
+      });
+    });
+
+    if (!datasets.length) {
+      setMsg(which, "No valid data to display.");
+      destroy(which);
+      return;
+    }
+
     setMsg(which, "");
     destroy(which);
-
-    const datasets = [];
-
-    if (state.yearMode !== "current") {
-      datasets.push({
-        label: String(state.previousYear),
-        data: prevFiltered,
-        ...styleFor(COLOR_PREVIOUS)
-      });
-    }
-
-    if (state.yearMode !== "previous") {
-      datasets.push({
-        label: String(state.latestYear),
-        data: currFiltered,
-        ...styleFor(COLOR_CURRENT)
-      });
-    }
 
     const chart = new Chart(ctx, {
       type: state.graphType,
       data: { labels, datasets },
       options: {
-  responsive: true,
-  maintainAspectRatio: false,
-  spanGaps: false,
-
-  // ✅ breathing space around the plot area
-  layout: {
-    padding: { top: 12, right: 18, bottom: 18, left: 18 }
-  },
-
-  plugins: {
-    title: {
-      display: true,
-      text: building.name,
-      font: { size: 16, weight: "bold" },
-      padding: { top: 6, bottom: 12 } // ✅ space between title and chart
-    },
-
-    legend: {
-      display: true,
-      position: "bottom",
-      labels: { padding: 12 } // ✅ space around legend items
-    },
-
-    tooltip: {
-      callbacks: {
-        label: c => `${c.dataset.label}: ${c.parsed.y?.toLocaleString() ?? "-"} kWh`
+        responsive: true,
+        maintainAspectRatio: false,
+        spanGaps: false,
+        layout: { padding: { top: 12, right: 18, bottom: 18, left: 18 } },
+        plugins: {
+          title: {
+            display: true,
+            text: building.name,
+            font: { size: 16, weight: "bold" },
+            padding: { top: 6, bottom: 12 }
+          },
+          legend: {
+            display: true,
+            position: "bottom",
+            labels: { padding: 12 }
+          },
+          tooltip: {
+            callbacks: {
+              label: c => `${c.dataset.label}: ${c.parsed.y?.toLocaleString() ?? "-"} kWh`
+            }
+          }
+        },
+        scales: {
+          x: {
+            offset: true,
+            grid: { offset: true },
+            ticks: { padding: 6 }
+          },
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: "Electricity (kWh)" },
+            ticks: { padding: 6 }
+          }
+        }
       }
-    }
-  },
-
-  scales: {
-    x: {
-      offset: true,          // ✅ space left/right so bars aren’t hugging edges
-      grid: { offset: true },
-      ticks: { padding: 6 }  // ✅ space between labels and axis
-    },
-    y: {
-      beginAtZero: true,
-      title: { display: true, text: "Electricity (kWh)" },
-      ticks: { padding: 6 }
-    }
-  }
-}
-
     });
 
     if (which === "A") chartA = chart;
@@ -230,15 +226,18 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
       setMsg("B", "");
 
       const [result, settings] = await Promise.all([loadData(), loadGraphSettings()]);
-      const { data, yearMode, latestYear, previousYear } = result;
 
-      state.rows = data;
-      state.yearMode = yearMode;
-      state.latestYear = latestYear;
-      state.previousYear = previousYear;
+      if (!result || !Array.isArray(result.data) || !result.data.length) {
+        setMsg("A", "No electricity building data returned.");
+        setMsg("B", "No electricity building data returned.");
+        return;
+      }
+
+      state.rows = result.data;
+      state.allowedYears = Array.isArray(result.allowedYears) ? result.allowedYears : [];
       state.graphType = settings?.graphType || "bar";
 
-      const buildings = getBuildings(data[0]);
+      const buildings = getBuildings(result.data[0]);
       state.buildings = buildings;
 
       fillDropdown(selectA, buildings);

@@ -1,12 +1,13 @@
 let chart;
 
 const ELECTRIC_COLORS = [
-  "#FDD835", // Bright Yellow (latest year)
-  "#FB8C00", // Orange
-  "#E53935", // Red
-  "#8E24AA", // Purple
-  "#3949AB"  // Indigo
+  "#FFEB3B", // bright yellow
+  "#FFB300", // warm amber
+  "#F57C00", // orange
+  "#D32F2F", // red
+  "#303F9F"  // cool indigo
 ];
+
 
 
 const canvas = document.getElementById("electricChart");

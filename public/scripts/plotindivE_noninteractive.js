@@ -99,7 +99,7 @@ async function loadGraphSettings() {
 async function loadElectricBuilding() {
   const res = await fetch("/api/electric-building");
   if (!res.ok) throw new Error(`electric-building HTTP ${res.status}`);
-  return await res.json();
+  return await res.json(); // ✅ expects { yearCount, allowedYears, data }
 }
 
 function getBuildingKeys(sampleRow) {
@@ -112,11 +112,11 @@ function colorForIndex(i, total) {
 }
 
 /* =========================
-   BAR MODE
+   BAR MODE (slideshow by month across allowed years)
    ========================= */
 
 function buildMonthFrame(rows, buildingKeys, year, month) {
-  const row = rows.find(r => r.year === year && r.month === month);
+  const row = rows.find(r => Number(r.year) === Number(year) && String(r.month).trim() === String(month).trim());
 
   const labels = [];
   const values = [];
@@ -188,35 +188,36 @@ function renderBarMonth(year, month, frame) {
   });
 }
 
-function buildTimelineBar(rows, yearMode, latestYear, previousYear) {
-  const allowed =
-    yearMode === "both" ? [previousYear, latestYear]
-    : yearMode === "previous" ? [previousYear]
-    : [latestYear];
+function buildTimelineBar(rows, allowedYears) {
+  const years = [...new Set(allowedYears)]
+    .filter(Number.isInteger)
+    .sort((a, b) => a - b);
 
   const seen = new Set();
   const points = [];
 
   for (const r of rows) {
-    if (!allowed.includes(r.year)) continue;
+    const y = Number(r.year);
+    if (!years.includes(y)) continue;
+
     const mi = monthIndex(r.month);
     if (mi < 0) continue;
 
-    const key = `${r.year}-${mi}`;
+    const key = `${y}-${mi}`;
     if (seen.has(key)) continue;
     seen.add(key);
 
-    points.push({ year: r.year, month: MONTH_ORDER[mi], mi });
+    points.push({ year: y, month: MONTH_ORDER[mi], mi });
   }
 
   return points.sort((a, b) => (a.year - b.year) || (a.mi - b.mi));
 }
 
-function autoplayBar(rows, buildingKeys, yearMode, latestYear, previousYear, rotateMs) {
+function autoplayBar(rows, buildingKeys, allowedYears, rotateMs) {
   stopTimers();
   showMsg("");
 
-  const timeline = buildTimelineBar(rows, yearMode, latestYear, previousYear);
+  const timeline = buildTimelineBar(rows, allowedYears);
   if (!timeline.length) {
     showMsg("No valid months found.");
     return;
@@ -246,7 +247,7 @@ function autoplayBar(rows, buildingKeys, yearMode, latestYear, previousYear, rot
 }
 
 /* =========================
-   LINE MODE
+   LINE MODE (slideshow by year across allowed years)
    ========================= */
 
 function buildTimelineForYear(rows, year, buildingKeys) {
@@ -254,7 +255,8 @@ function buildTimelineForYear(rows, year, buildingKeys) {
   const points = [];
 
   for (const r of rows) {
-    if (r.year !== year) continue;
+    if (Number(r.year) !== Number(year)) continue;
+
     const mi = monthIndex(r.month);
     if (mi < 0) continue;
 
@@ -288,10 +290,9 @@ function renderLineYear(title, timeline, rows, buildingKeys) {
     const c = colorForIndex(i, buildingKeys.length);
 
     const data = timeline.map(t => {
-      const row = rows.find(r => r.year === t.year && r.month === t.month);
-      const v = Number.isFinite(toNum(row?.[k])) && toNum(row?.[k]) !== 0
-        ? toNum(row[k])
-        : null;
+      const row = rows.find(r => Number(r.year) === Number(t.year) && String(r.month).trim() === String(t.month).trim());
+      const n = toNum(row?.[k]);
+      const v = Number.isFinite(n) && n !== 0 ? n : null;
 
       if (v != null) {
         if (!max || v > max.v) max = { v, building: k, month: t.label };
@@ -318,11 +319,15 @@ function renderLineYear(title, timeline, rows, buildingKeys) {
     return;
   }
 
+  showMsg("");
+
   if (max && min) {
     setSummaryHTML(
       `<b>Highest</b>: ${max.building} — ${fmtNum(max.v)} kWh <span style="opacity:.75">(at ${max.month})</span><br>` +
       `<b>Lowest</b>: ${min.building} — ${fmtNum(min.v)} kWh <span style="opacity:.75">(at ${min.month})</span>`
     );
+  } else {
+    setSummaryHTML("");
   }
 
   chart = new Chart(ctx, {
@@ -333,16 +338,15 @@ function renderLineYear(title, timeline, rows, buildingKeys) {
       maintainAspectRatio: false,
       plugins: {
         title: { display: true, text: title },
-        legend:{
-  position: "bottom",
-  labels: {
-    usePointStyle: true,
-    pointStyle: "rect",
-    boxWidth: 12,
-    boxHeight: 12
-  }
-}
-
+        legend: {
+          position: "bottom",
+          labels: {
+            usePointStyle: true,
+            pointStyle: "rect",
+            boxWidth: 12,
+            boxHeight: 12
+          }
+        }
       },
       scales: {
         y: { beginAtZero: true, title: { display: true, text: "Electricity (kWh)" } }
@@ -351,34 +355,59 @@ function renderLineYear(title, timeline, rows, buildingKeys) {
   });
 }
 
-function autoplayLine(rows, buildingKeys, yearMode, latestYear, previousYear, rotateMs) {
+/* =========================
+   LINE MODE (slideshow by year across allowed years)
+   - ✅ timeoutTimer
+   - ✅ one year at a time
+   - ✅ stops at latest year (no looping)
+   ========================= */
+
+function autoplayLine(rows, buildingKeys, allowedYears, rotateMs) {
   stopTimers();
   showMsg("");
 
-  const showYear = (year, title) => {
+  const years = [...new Set(allowedYears)]
+    .filter(Number.isInteger)
+    .sort((a, b) => a - b);
+
+  if (!years.length) {
+    showMsg("No years available.");
+    return;
+  }
+
+  let index = 0;
+
+  const showNextYear = () => {
+    // ✅ STOP at latest year (no looping)
+    if (index >= years.length) {
+      stopTimers();
+      return false;
+    }
+
+    const year = years[index++];
     const timeline = buildTimelineForYear(rows, year, buildingKeys);
-    if (!timeline.length) return false;
-    renderLineYear(title, timeline, rows, buildingKeys);
+
+    // skip years with no valid months
+    if (!timeline.length) return showNextYear();
+
+    renderLineYear(`Electricity (Line) — ${year}`, timeline, rows, buildingKeys);
     return true;
   };
 
-  if (yearMode !== "both") {
-    const year = yearMode === "previous" ? previousYear : latestYear;
-    showYear(year, `Electricity (Line) — ${year}`);
+  if (!showNextYear()) {
+    showMsg("No valid yearly data to display.");
     return;
   }
 
   const step = () => {
-    if (!showYear(previousYear, `Electricity (Line) — Previous Year (${previousYear})`)) return;
-
     timeoutTimer = setTimeout(() => {
-      showYear(latestYear, `Electricity (Line) — Current Year (${latestYear})`);
-      timeoutTimer = setTimeout(step, rotateMs);
+      if (showNextYear()) step();
     }, rotateMs);
   };
 
   step();
 }
+
 
 /* =========================
    INIT
@@ -394,8 +423,14 @@ async function init() {
     ]);
 
     const rows = meta?.data || [];
+    const allowedYears = Array.isArray(meta?.allowedYears) ? meta.allowedYears : [];
+
     if (!rows.length) {
       showMsg("No electricity data found.");
+      return;
+    }
+    if (!allowedYears.length) {
+      showMsg("No years available from API.");
       return;
     }
 
@@ -403,9 +438,9 @@ async function init() {
     const buildingKeys = getBuildingKeys(rows[0]);
 
     if (settings?.graphType === "line") {
-      autoplayLine(rows, buildingKeys, meta.yearMode, meta.latestYear, meta.previousYear, rotateMs);
+      autoplayLine(rows, buildingKeys, allowedYears, rotateMs);
     } else {
-      autoplayBar(rows, buildingKeys, meta.yearMode, meta.latestYear, meta.previousYear, rotateMs);
+      autoplayBar(rows, buildingKeys, allowedYears, rotateMs);
     }
 
   } catch (e) {

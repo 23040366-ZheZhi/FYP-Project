@@ -2,6 +2,10 @@
 let chartA = null;
 let chartB = null;
 
+// ✅ slideshow timers (same style as electricity)
+let intervalTimer = null; // bar slideshow
+let timeoutTimer = null;  // line slideshow
+
 const WATER_COLORS = [
   "#1E88E5", // latest year (blue)
   "#43A047", // green
@@ -9,7 +13,6 @@ const WATER_COLORS = [
   "#8E24AA", // purple
   "#E53935"  // red
 ];
-
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -34,10 +37,14 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
 
   const meta = {
     graphType: "bar",
-    allowedYears: [],   
+    allowedYears: [],
+    rotateMs: 10000
   };
 
-  // ---------- helpers ----------
+  /* =========================
+     Helpers
+     ========================= */
+
   function setMsg(which, text) {
     const el = which === "A" ? msgA : msgB;
     if (!el) return;
@@ -52,7 +59,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     return Number.isFinite(n) ? n : NaN;
   }
 
-  // expects "25-Jan" (your format)
+  // expects "25-Jan" (YY-Mon)
   function parseLabel(val) {
     const s = String(val ?? "").trim();
     const m = s.match(/^(\d{2})-([A-Za-z]{3})$/);
@@ -67,17 +74,28 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     return { year, idx };
   }
 
+  function destroy(which) {
+    if (which === "A" && chartA) { chartA.destroy(); chartA = null; }
+    if (which === "B" && chartB) { chartB.destroy(); chartB = null; }
+  }
+
+  function stopTimers() {
+    if (intervalTimer) clearInterval(intervalTimer);
+    if (timeoutTimer) clearTimeout(timeoutTimer);
+    intervalTimer = null;
+    timeoutTimer = null;
+  }
+
   async function loadGraphSettings() {
     const res = await fetch("/api/graph-settings");
     if (!res.ok) throw new Error(`Settings HTTP ${res.status}`);
-    return await res.json();
+    return await res.json(); // includes graphType + rotateSeconds
   }
 
   async function loadWaterData() {
     const res = await fetch("/api/water-individual");
     if (!res.ok) throw new Error(`Water-individual HTTP ${res.status}`);
-    return await res.json();
-
+    return await res.json(); // { allowedYears, data:[header,...] }
   }
 
   function fillDropdown(selectEl) {
@@ -90,139 +108,133 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     }
   }
 
-  // ---------- dataset styling ----------
-function styleFor(color) {
-  if (meta.graphType === "line") {
+  /* =========================
+     Dataset styling (match elect)
+     ========================= */
+
+  function styleFor(color) {
+    if (meta.graphType === "line") {
+      return {
+        borderColor: color,
+        backgroundColor: color,
+        fill: false,
+        tension: 0.3,
+        pointRadius: 3
+      };
+    }
+
     return {
-      borderColor: color,
       backgroundColor: color,
-      tension: 0.3,
-      fill: false,
-      pointRadius: 3,
-      pointHoverRadius: 4
+      borderRadius: 0,
+      barThickness: "flex",
+      maxBarThickness: 28,
+      categoryPercentage: 0.72,
+      barPercentage: 0.9
     };
   }
 
-  // BAR styling — make them fat and readable
-  return {
-    backgroundColor: color,
-    borderRadius: 8,        // round corners a bit more
-    barThickness: 40,       // ⬅️ THIS makes bars fat
-    maxBarThickness: 50,    // prevents insane sizes on big screens
-    categoryPercentage: 0.9,
-    barPercentage: 1.0      // use full category width
-  };
-}
+  function buildDatasets(buildingKey, allowedYears) {
+    const yearsToShow = [...new Set(allowedYears)]
+      .filter(Number.isInteger)
+      .sort((a, b) => a - b);
 
+    const seriesByYear = new Map();
+    yearsToShow.forEach(y => seriesByYear.set(y, Array(12).fill(null)));
 
-function buildDatasets(buildingKey, allowedYears) {
-  // Create 12 slots per year
-  const yearsToShow = [...new Set(allowedYears)]
-    .filter(Number.isInteger)
-    .sort((a, b) => a - b);
+    for (const r of globalRows) {
+      const info = parseLabel(r[monthKey]); // {year, idx}
+      if (!info) continue;
+      if (!seriesByYear.has(info.year)) continue;
 
-  const seriesByYear = new Map();
-  yearsToShow.forEach(y => seriesByYear.set(y, Array(12).fill(null)));
+      const val = toNum(r[buildingKey]);
+      if (!Number.isFinite(val)) continue;
 
-  for (const r of globalRows) {
-    const info = parseLabel(r[monthKey]); // {year, idx}
-    if (!info) continue;
-    if (!seriesByYear.has(info.year)) continue;
-
-    const val = toNum(r[buildingKey]);
-    if (!Number.isFinite(val)) continue;
-
-    seriesByYear.get(info.year)[info.idx] = val;
-  }
-
-  // only keep months that have data in ANY selected year
-  const labels = [];
-  const monthIndices = [];
-  for (let i = 0; i < 12; i++) {
-    const anyHas = yearsToShow.some(y => seriesByYear.get(y)[i] != null);
-    if (anyHas) {
-      labels.push(MONTHS[i]);
-      monthIndices.push(i);
+      // keep 0 as "no plot"
+      seriesByYear.get(info.year)[info.idx] = (val !== 0 ? val : null);
     }
-  }
 
-  // datasets (skip years that have no data -> no legend)
-  const datasets = [];
+    // only keep months that have ANY data in ANY selected year
+    const labels = [];
+    const monthIndices = [];
+    for (let i = 0; i < 12; i++) {
+      const anyHas = yearsToShow.some(y => seriesByYear.get(y)[i] != null);
+      if (anyHas) {
+        labels.push(MONTHS[i]);
+        monthIndices.push(i);
+      }
+    }
 
-  yearsToShow.forEach((year, idx) => {
-    const arr12 = seriesByYear.get(year);
-    const data = monthIndices.map(i => arr12[i]);
+    const datasets = [];
+    yearsToShow.forEach((year, idx) => {
+      const arr12 = seriesByYear.get(year);
+      const data = monthIndices.map(i => arr12[i]);
 
-    const hasAnyPoint = data.some(v => Number.isFinite(v));
-    if (!hasAnyPoint) return; // ✅ hide empty year
+      const hasAnyPoint = data.some(v => Number.isFinite(v));
+      if (!hasAnyPoint) return; // ✅ hide empty year
 
-    const color = WATER_COLORS[idx % WATER_COLORS.length];
-    datasets.push({
-      label: String(year),
-      data,
-      ...styleFor(color)
+      const color = WATER_COLORS[idx % WATER_COLORS.length];
+      datasets.push({
+        label: String(year),
+        data,
+        ...styleFor(color)
+      });
     });
-  });
 
-  return { labels, datasets };
-}
+    return { labels, datasets };
+  }
 
   function allEmptyOrZero(datasets) {
     return datasets.every(ds => ds.data.every(v => v == null || v === 0));
   }
 
-  // ---------- render ----------
+  /* =========================
+     Render
+     ========================= */
+
   function renderChart(which, ctx, building) {
-   const { labels, datasets } = buildDatasets(building.key, meta.allowedYears || []);
+    const { labels, datasets } = buildDatasets(building.key, meta.allowedYears || []);
 
-
-    // no data => show msg and destroy chart
     if (!labels.length || !datasets.length || allEmptyOrZero(datasets)) {
       setMsg(which, `No meaningful data for ${building.name} (all 0/empty).`);
-
-      if (which === "A" && chartA) { chartA.destroy(); chartA = null; }
-      if (which === "B" && chartB) { chartB.destroy(); chartB = null; }
-
+      destroy(which);
       return;
     }
 
     setMsg(which, "");
-
-    if (which === "A" && chartA) chartA.destroy();
-    if (which === "B" && chartB) chartB.destroy();
+    destroy(which);
 
     const chart = new Chart(ctx, {
       type: meta.graphType,
       data: { labels, datasets },
       options: {
         responsive: true,
-        maintainAspectRatio: false, // ✅ fixes skinny charts
+        maintainAspectRatio: false,
+        spanGaps: false,
+        layout: { padding: { top: 12, right: 18, bottom: 18, left: 18 } },
         plugins: {
           title: {
             display: true,
             text: building.name,
-            font: { size: 16, weight: "bold" }
+            font: { size: 16, weight: "bold" },
+            padding: { top: 6, bottom: 12 }
           },
           legend: {
             display: true,
-            labels: { boxWidth: 14, boxHeight: 14 }
+            position: "bottom",
+            labels: { padding: 12 }
           },
           tooltip: {
             callbacks: {
-              label: (c) => {
-                const v = c.parsed?.y;
-                return `${c.dataset.label}: ${Number.isFinite(v) ? v.toLocaleString() : "-"} m³`;
-              }
+              label: c => `${c.dataset.label}: ${c.parsed.y?.toLocaleString() ?? "-"} m³`
             }
           }
         },
         scales: {
-          x: {
-            ticks: { maxRotation: 0, minRotation: 0 }
-          },
+          x: { offset: true, grid: { offset: true }, ticks: { padding: 6 } },
           y: {
             beginAtZero: true,
-            title: { display: true, text: "Water Consumption (m³)" }
+            title: { display: true, text: "Water Consumption (m³)" },
+            ticks: { padding: 6 }
           }
         }
       }
@@ -232,38 +244,99 @@ function buildDatasets(buildingKey, allowedYears) {
     else chartB = chart;
   }
 
-  // ---------- init ----------
+  /* =========================
+     ✅ Slideshow (same timer style as electricity)
+     - Bar: intervalTimer
+     - Line: timeoutTimer
+     - rotates building selections (does not touch routes)
+     ========================= */
+
+  function pickNextPair(currentAKey, currentBKey) {
+    if (!buildings.length) return { a: currentAKey, b: currentBKey };
+
+    const idxA = Math.max(0, buildings.findIndex(b => b.key === currentAKey));
+    const idxB = Math.max(0, buildings.findIndex(b => b.key === currentBKey));
+
+    const nextA = buildings[(idxA + 1) % buildings.length].key;
+    const nextB = buildings[(idxB + 1) % buildings.length].key;
+
+    // avoid A == B when possible
+    if (buildings.length > 1 && nextA === nextB) {
+      const altB = buildings[(idxB + 2) % buildings.length].key;
+      return { a: nextA, b: altB };
+    }
+
+    return { a: nextA, b: nextB };
+  }
+
+  function applyPair(pair) {
+    selectA.value = pair.a;
+    selectB.value = pair.b;
+
+    const bA = buildings.find(b => b.key === selectA.value) || buildings[0];
+    const bB = buildings.find(b => b.key === selectB.value) || buildings[0];
+
+    renderChart("A", ctxA, bA);
+    renderChart("B", ctxB, bB);
+  }
+
+  function startAutoplay() {
+    stopTimers();
+
+    // if only 1 building, no point autoplay
+    if (buildings.length < 2) return;
+
+    const step = () => {
+      const pair = pickNextPair(selectA.value, selectB.value);
+      applyPair(pair);
+      return true;
+    };
+
+    // first step after delay (optional)
+    if (meta.graphType === "bar") {
+      intervalTimer = setInterval(() => {
+        step();
+      }, meta.rotateMs);
+    } else {
+      const loop = () => {
+        timeoutTimer = setTimeout(() => {
+          step();
+          loop();
+        }, meta.rotateMs);
+      };
+      loop();
+    }
+  }
+
+  /* =========================
+     Init
+     ========================= */
+
   async function init() {
-    // load both at once
-    const [data, settings] = await Promise.all([
-      loadWaterData(),
-      loadGraphSettings()
-    ]);
+    const [data, settings] = await Promise.all([loadWaterData(), loadGraphSettings()]);
 
-    // ✅ validate new API shape: { allowedYears, data: [...] }
-  if (!data || !Array.isArray(data.data) || data.data.length < 2) {
-    setMsg("A", "No data returned.");
-    setMsg("B", "No data returned.");
-  return;
-}
+    if (!data || !Array.isArray(data.data) || data.data.length < 2) {
+      setMsg("A", "No data returned.");
+      setMsg("B", "No data returned.");
+      return;
+    }
 
-  meta.graphType = settings?.graphType || "bar";
-  meta.allowedYears = Array.isArray(data.allowedYears) ? data.allowedYears : [];
+    meta.graphType = settings?.graphType || "bar";
+    meta.allowedYears = Array.isArray(data.allowedYears) ? data.allowedYears : [];
+    meta.rotateMs = Math.max(5000, Number(settings?.rotateSeconds || 10) * 1000);
 
-  const header = data.data[0];
-  const rows = data.data.slice(1);
-
+    const header = data.data[0];
+    const rows = data.data.slice(1);
 
     monthKey = Object.keys(header)[0];
     globalRows = rows;
 
-  if (!meta.allowedYears.length) {
-    setMsg("A", "No years available from API.");
-    setMsg("B", "No years available from API.");
-  return;
-}
+    if (!meta.allowedYears.length) {
+      setMsg("A", "No years available from API.");
+      setMsg("B", "No years available from API.");
+      return;
+    }
 
-    // building list from header
     buildings = Object.entries(header)
       .filter(([k]) => k !== monthKey)
       .map(([k, name]) => ({ key: k, name: String(name).trim() }))
@@ -275,7 +348,6 @@ function buildDatasets(buildingKey, allowedYears) {
       return;
     }
 
-    // dropdowns
     fillDropdown(selectA);
     fillDropdown(selectB);
 
@@ -284,19 +356,23 @@ function buildDatasets(buildingKey, allowedYears) {
     selectB.value = buildings[1]?.key || buildings[0].key;
 
     // first render
-    renderChart("A", ctxA, buildings.find(b => b.key === selectA.value) || buildings[0]);
-    renderChart("B", ctxB, buildings.find(b => b.key === selectB.value) || buildings[0]);
+    applyPair({ a: selectA.value, b: selectB.value });
 
-    // handlers
+    // manual handlers still work (and restart autoplay)
     selectA.addEventListener("change", () => {
       const b = buildings.find(x => x.key === selectA.value);
       if (b) renderChart("A", ctxA, b);
+      startAutoplay();
     });
 
     selectB.addEventListener("change", () => {
       const b = buildings.find(x => x.key === selectB.value);
       if (b) renderChart("B", ctxB, b);
+      startAutoplay();
     });
+
+    // ✅ start autoplay using intervalTimer/timeoutTimer (NO route changes)
+    startAutoplay();
   }
 
   init().catch(err => {

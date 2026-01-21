@@ -1,12 +1,13 @@
 let chart;
 
 const SOLAR_COLORS = [
-  "#FFD54F", // sun yellow
-  "#FFB300", // amber
-  "#FB8C00", // orange
-  "#F57C00", // deep orange
-  "#EF6C00"  // burnt orange
+  "#FFB300", // golden amber (bright, solar)
+  "#FB8C00", // strong orange
+  "#F4511E", // orange-red
+  "#E53935", // red
+  "#B71C1C"  // deep crimson
 ];
+
 
 
 const canvas = document.getElementById("solarChart");

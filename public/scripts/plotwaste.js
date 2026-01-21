@@ -1,13 +1,15 @@
 let chart;
 
-// ✅ high-contrast “eco” palette (easy to tell apart)
+
 const WASTE_COLORS = [
-  "#2E7D32", // deep green
-  "#00ACC1", // teal
-  "#F9A825", // amber
-  "#7E57C2", // purple
-  "#EF5350"  // red
+  "#1B5E20", // dark forest green
+  "#2E7D32", // recycle green
+  "#4CAF50", // leaf green
+  "#6D4C41", // organic brown
+  "#8D6E63"  // light brown
 ];
+
+
 
 const canvas    = document.getElementById("wasteChart");
 const selector  = document.getElementById("datasetSelector");

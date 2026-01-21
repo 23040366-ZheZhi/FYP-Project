@@ -103,6 +103,7 @@ app.post("/manage-rotation", adminOnly, (req, res) => {
 /* defaults */
 app.use((req, res, next) => {
   if (!req.session.yearCount) req.session.yearCount = 1; // default 1 year
+  if (req.session.indivYearCount == null) req.session.indivYearCount = 1;
   if (!req.session.graphType) req.session.graphType = "bar";
   if (!req.session.individualMode) req.session.individualMode = "interactive";
   if (!req.session.rotateSeconds) req.session.rotateSeconds = 10; // ✅ default 10s
@@ -200,19 +201,22 @@ app.get("/api/graph-settings", (req, res) => {
 });
 
 app.post("/set-individual-settings", adminOnly, (req, res) => {
-  const { individualMode, rotateSeconds } = req.body;
+  const { individualMode, rotateSeconds, indivYearCount } = req.body;
 
   if (!["interactive", "non-interactive"].includes(individualMode)) {
     return res.status(400).send("Invalid individual mode");
   }
 
   const sec = Math.max(5, Math.min(600, Number(rotateSeconds) || 10));
+  const yrs = Math.max(1, Math.min(5, Number(indivYearCount) || 1));
 
   req.session.individualMode = individualMode;
   req.session.rotateSeconds = sec;
+  req.session.indivYearCount = yrs; // ✅ SAVE HERE
 
-  console.log("Individual mode set to:", individualMode);
-  console.log("Rotate seconds set to:", sec);
+  console.log("Individual mode:", individualMode);
+  console.log("Rotate seconds:", sec);
+  console.log("Indiv year count:", yrs);
 
   res.redirect("/manage_graph");
 });
@@ -577,7 +581,7 @@ app.get("/api/waste-detailed", (req, res) => {
 
 app.get("/api/water-individual", (req, res) => {
   try {
-    const yearCount = Math.max(1, Math.min(5, Number(req.session.yearCount) || 1));
+    const yearCount = Math.max(1, Math.min(5, Number(req.session.indivYearCount) || 1));
 
     delete require.cache[require.resolve("./public/output/2.1_Individual Pod.json")];
     const data = require("./public/output/2.1_Individual Pod.json");
@@ -623,26 +627,33 @@ app.get("/api/water-individual", (req, res) => {
 
 
 app.get("/api/electric-building", (req, res) => {
-  const yearMode = req.session.yearMode || "current";
+  try {
+   const yearCount = Math.max(1, Math.min(5, Number(req.session.indivYearCount) || 1));
 
-  const data = require("./public/output/1.1_Individual Pod.json");
+    delete require.cache[require.resolve("./public/output/1.1_Individual Pod.json")];
+    const data = require("./public/output/1.1_Individual Pod.json");
 
-  const years = [...new Set(data.map(r => r.year))].sort();
-  const latestYear = Math.max(...years);
-  const previousYear = latestYear - 1;
+    if (!Array.isArray(data) || !data.length) {
+      return res.json({ yearCount, allowedYears: [], data: [] });
+    }
 
-  let filtered;
-  if (yearMode === "current") filtered = data.filter(r => r.year === latestYear);
-  else if (yearMode === "previous") filtered = data.filter(r => r.year === previousYear);
-  else filtered = data.filter(r => r.year === latestYear || r.year === previousYear);
+    const years = [...new Set(data.map(r => Number(r.year)).filter(Number.isInteger))].sort((a,b) => a-b);
+    const safeCount = Math.max(1, Math.min(yearCount, years.length));
+    const allowedYears = years.slice(-safeCount);
 
-  res.json({
-    yearMode,
-    latestYear,
-    previousYear,
-    data: filtered
-  });
+    const filtered = data.filter(r => allowedYears.includes(Number(r.year)));
+
+    res.json({
+      yearCount,
+      allowedYears,
+      data: filtered
+    });
+  } catch (err) {
+    console.error("Electric-building API error:", err);
+    res.status(500).json({ error: "Electric building load failed" });
+  }
 });
+
 
 app.post("/addVideo", uploadVideo.array("videos[]"), (req, res) => {
   const videoFiles = req.files || [];
@@ -758,6 +769,7 @@ app.get("/manage_graph", adminOnly, (req, res) => {
       files: xlsxFiles,
       yearMode: req.session.yearMode || "current",
       yearCount: req.session.yearCount || 1,
+      indivYearCount: req.session.indivYearCount || 1, // ✅ add
       graphType: req.session.graphType || "bar",
       individualMode: req.session.individualMode || "interactive",
       rotateSeconds: req.session.rotateSeconds || 10
@@ -778,6 +790,9 @@ app.post("/set-graph-format", adminOnly, (req, res) => {
 
   res.redirect("/manage_graph");
 });
+
+
+
 
 app.post("/media_management", adminOnly, (req, res) => {
   console.log("BODY: ", req.body);

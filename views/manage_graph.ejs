@@ -123,55 +123,63 @@
         </div>
     </div>
 
-    <!-- ✅ INDIVIDUAL SETTINGS (fixed + same style) -->
     <div class="card mt-4 mb-5">
-        <div class="card-body">
-            <h5 class="mb-3">Individual Graph Settings</h5>
+  <div class="card-body">
+    <h5 class="mb-3">Individual Graph Settings</h5>
 
-            <form action="/set-individual-settings" method="POST">
-                <div class="form-check">
-                    <input class="form-check-input"
-                           type="radio"
-                           name="individualMode"
-                           value="interactive"
-                           <%= (individualMode || 'interactive') === 'interactive' ? 'checked' : '' %>>
-                    <label class="form-check-label">
-                        Interactive
-                    </label>
-                </div>
+    <!-- ✅ ONE FORM ONLY -->
+    <form action="/set-individual-settings" method="POST">
 
-                <div class="form-check mb-2">
-                    <input class="form-check-input"
-                           type="radio"
-                           name="individualMode"
-                           value="non-interactive"
-                           <%= individualMode === 'non-interactive' ? 'checked' : '' %>>
-                    <label class="form-check-label">
-                        Non Interactive
-                    </label>
-                </div>
+      <div class="form-check">
+        <input class="form-check-input"
+               type="radio"
+               name="individualMode"
+               value="interactive"
+               <%= (individualMode || 'interactive') === 'interactive' ? 'checked' : '' %>>
+        <label class="form-check-label">Interactive</label>
+      </div>
 
-                <!-- ✅ same spacing as other sections -->
-                <div class="mt-3">
-                    <label class="form-label">Seconds before rotate (for non-interactive)</label>
-                    <input
-                        class="form-control"
-                        type="number"
-                        name="rotateSeconds"
-                        min="5"
-                        max="600"
-                        value="<%= rotateSeconds || 10 %>"
-                        required
-                    >
-                    <div class="form-text">Default: 10 seconds. Range: 5–600.</div>
-                </div>
+      <div class="form-check mb-2">
+        <input class="form-check-input"
+               type="radio"
+               name="individualMode"
+               value="non-interactive"
+               <%= individualMode === 'non-interactive' ? 'checked' : '' %>>
+        <label class="form-check-label">Non Interactive</label>
+      </div>
 
-                <button class="btn btn-success mt-3">
-                    Save Selection
-                </button>
-            </form>
-        </div>
-    </div>
+      <!-- ✅ inside same box, no extra button -->
+      <div class="mt-3">
+        <h6 class="mb-2">Individual Graph Year Range</h6>
+        <label class="form-label">Number of years to display (Indiv Water/Elect)</label>
+
+        <select class="form-select" name="indivYearCount">
+          <option value="1" <%= indivYearCount == 1 ? 'selected' : '' %>>1 Year</option>
+          <option value="2" <%= indivYearCount == 2 ? 'selected' : '' %>>2 Years</option>
+          <option value="3" <%= indivYearCount == 3 ? 'selected' : '' %>>3 Years</option>
+          <option value="4" <%= indivYearCount == 4 ? 'selected' : '' %>>4 Years</option>
+          <option value="5" <%= indivYearCount == 5 ? 'selected' : '' %>>5 Years</option>
+        </select>
+      </div>
+
+      <div class="mt-3">
+        <label class="form-label">Seconds before rotate (for non-interactive)</label>
+        <input class="form-control"
+               type="number"
+               name="rotateSeconds"
+               min="5"
+               max="600"
+               value="<%= rotateSeconds || 10 %>"
+               required>
+        <div class="form-text">Default: 10 seconds. Range: 5–600.</div>
+      </div>
+
+      <!-- ✅ only one save button -->
+      <button class="btn btn-success mt-3">Save Selection</button>
+    </form>
+  </div>
+</div>
+
 
 </div> <!-- END container -->
 
