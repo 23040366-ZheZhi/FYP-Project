@@ -77,60 +77,60 @@
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 </head>
 
-<body>
+<body class="<%= displayMode ? 'display-3x1' : 'presenter' %>">
 
   <%- include('partials/navbar.ejs') %>
 
   <div class="container mt-4 text-center">
-    <h2 class="glass glass-heading mb-4">Monthly Trend (Last 6 Months)</h2>
+    <h2 class="glass glass-heading mb-4">RP Resource Usage Summary. Last 6 Months.</h2>
 
     <div class="mini-dashboard">
 
       <div class="mini-card glass" onclick="window.location.href='/electgraph'">
-        <h5>Monthly Energy Usage</h5>
+        <h5>RP Average Monthly Electricity Consumption. kWh</h5>
         <div id="miniEnergyValue" class="mini-value">Loading...</div>
         <canvas id="miniEnergyChart"></canvas>
       </div>
 
       <div class="mini-card glass" onclick="window.location.href='/solargraph'">
-        <h5>Monthly Solar Energy Generated</h5>
+        <h5>RP Average Monthly Solar Energy Generation. kWh</h5>
         <div id="miniSolarValue" class="mini-value">Loading...</div>
         <canvas id="miniSolarChart"></canvas>
       </div>
 
       <div class="mini-card glass" onclick="window.location.href='/watergraph'">
-        <h5>Monthly Water Usage</h5>
+        <h5>RP Average Monthly Water Consumption. m³</h5>
         <div id="miniWaterValue" class="mini-value">Loading...</div>
         <canvas id="miniWaterChart"></canvas>
       </div>
 
       <div class="mini-card glass" onclick="window.location.href='/waste'">
-        <h5>Monthly Waste Disposed</h5>
+        <h5>RP Average Monthly Waste Disposed. kg</h5>
         <div id="miniWasteValue" class="mini-value">Loading...</div>
         <canvas id="miniWasteChart"></canvas>
       </div>
 
 
       <div class="mini-card glass">
-        <h5>Peak Monthly Energy (Last 6)</h5>
+        <h5>Highest Monthly Electricity Consumption. Last 6 Months.</h5>
         <div id="miniEnergyPeak" class="mini-value">Loading...</div>
         <p>Highest month in the last 6 months</p>
       </div>
 
       <div class="mini-card glass">
-        <h5>Peak Monthly Solar (Last 6)</h5>
+        <h5>Highest Monthly Solar Energy Generation. Last 6 Months.</h5>
         <div id="miniSolarPeak" class="mini-value">Loading...</div>
         <p>Highest month in the last 6 months</p>
       </div>
 
       <div class="mini-card glass">
-        <h5>Peak Monthly Water (Last 6)</h5>
+        <h5>Highest Monthly Water Consumption. Last 6 Months.</h5>
         <div id="miniWaterPeak" class="mini-value">Loading...</div>
         <p>Highest month in the last 6 months</p>
       </div>
 
       <div class="mini-card glass">
-        <h5>Peak Monthly Waste (Last 6)</h5>
+        <h5>Highest Monthly Waste Disposed. Last 6 Months.</h5>
         <div id="miniWastePeak" class="mini-value">Loading...</div>
         <p>Highest month in the last 6 months</p>
       </div>
@@ -145,15 +145,29 @@
 
     <div id="productCarousel" class="carousel slide">
       <div class="carousel-inner">
-        <% videos.forEach((video, index) => { %>
-          <div class="carousel-item <%= index === 0 ? 'active' : '' %>">
-            <video class="d-block w-100 video-video" playsinline muted controls>
-              <source src="/videos/<%= video.video %>" type="video/mp4">
-            </video>
+        <% videos.forEach((video, index) => {
+          const file = video.video || "";
+          const ext = file.split('.').pop().toLowerCase();
+          const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+        %>
+        <div class="carousel-item <%= index === 0 ? 'active' : '' %>">
+
+            <% if (isImage) { %>
+              <img class="d-block w-100"
+                   src="/videos/<%= video.video %>"
+                   alt="media">
+            <% } else { %>
+              <video class="d-block w-100 video-video" playsinline muted controls>
+                <source src="/videos/<%= video.video %>" type="video/mp4">
+              </video>
+            <% } %>
+
           </div>
+
         <% }) %>
       </div>
     </div>
+        })
   <% } else { %>
     <!-- Fallback message -->
     <div class="alert alert-warning text-center">
@@ -235,6 +249,18 @@ function maxPositive(values) {
   const arr = (values || []).map(Number).filter(n => Number.isFinite(n) && n > 0);
   if (arr.length === 0) return 0;
   return Math.max(...arr);
+}
+
+function avgAny(values) {
+const nums = (values || []).map(Number).filter(n => Number.isFinite(n));
+if (nums.length === 0) return 0;
+return nums.reduce((a, b) => a + b, 0) / nums.length;
+}
+
+function avgPositive(values) {
+const nums = (values || []).map(Number).filter(n => Number.isFinite(n) && n > 0);
+if (nums.length === 0) return 0;
+return nums.reduce((a, b) => a + b, 0) / nums.length;
 }
 
 /* =======================
@@ -355,23 +381,22 @@ document.addEventListener("DOMContentLoaded", () => {
       const waste = data.waste || [];
 
 
-      const ePick = pickLatestDisplay(labels, energy, "any");
-      const sPick = pickLatestDisplay(labels, solar, "positive"); // solar: last positive month
-      const wPick = pickLatestDisplay(labels, water, "any");
-      const waPick = pickLatestDisplay(labels, waste, "any");
-
-document.getElementById("miniWasteValue").textContent =
-  waPick.value.toLocaleString() + " kg";
-
+      const energyAvg = avgAny(energy);
+      const solarAvg = avgPositive(solar);
+      const waterAvg = avgAny(water);
+      const wasteAvg = avgAny(waste);
 
       document.getElementById("miniEnergyValue").textContent =
-        ePick.value.toLocaleString() + " kWh";
+      energyAvg.toLocaleString(undefined, { maximumFractionDigits: 1 }) + " kWh";
 
       document.getElementById("miniSolarValue").textContent =
-        sPick.value.toLocaleString() + " kWh";
+      solarAvg.toLocaleString(undefined, { maximumFractionDigits: 1 }) + " kWh";
 
       document.getElementById("miniWaterValue").textContent =
-        wPick.value.toLocaleString() + " m³";
+      waterAvg.toLocaleString(undefined, { maximumFractionDigits: 1 }) + " m³";
+
+      document.getElementById("miniWasteValue").textContent =
+      wasteAvg.toLocaleString(undefined, { maximumFractionDigits: 0 }) + " kg";
 
       document.getElementById("miniEnergyPeak").textContent =
         (energy.length ? Math.max(...energy.map(Number).filter(Number.isFinite)) : 0).toLocaleString() + " kWh";
@@ -429,52 +454,56 @@ document.getElementById("miniWasteValue").textContent =
 </script>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function () {
 
-    const carouselEl = document.getElementById("productCarousel");
+  const carouselEl = document.getElementById("productCarousel");
+  if (!carouselEl) return;
 
-    // ✅ NEW: count videos once
-    const videos = document.querySelectorAll("#productCarousel video");
-    const isSingleVideo = videos.length === 1;
-
-    if (bootstrap.Carousel.getInstance(carouselEl)) {
-      bootstrap.Carousel.getInstance(carouselEl).dispose();
-    }
-
-    const carousel = new bootstrap.Carousel(carouselEl, {
-      interval: false,
-      pause: false,
-      wrap: true
-    });
-
-    function playActiveVideo() {
-      const activeVideo = document.querySelector(".carousel-item.active video");
-      if (activeVideo) {
-        activeVideo.currentTime = 0;
-
-        // ✅ NEW: loop when only one video
-        if (isSingleVideo) {
-          activeVideo.loop = true;
-        }
-
-        activeVideo.play();
-      }
-    }
-
-    // ✅ CHANGED: only add "ended → next" if there are 2+ videos
-    if (!isSingleVideo) {
-      videos.forEach(video => {
-        video.addEventListener("ended", () => {
-          carousel.next();
-        });
-      });
-    }
-
-    carouselEl.addEventListener("slid.bs.carousel", playActiveVideo);
-
-    playActiveVideo();
+  const carousel = new bootstrap.Carousel(carouselEl, {
+    interval: false
   });
+
+  let imgTimer = null;
+
+  function handleSlide() {
+    // clear previous image timer
+    if (imgTimer) {
+      clearTimeout(imgTimer);
+      imgTimer = null;
+    }
+
+    const activeItem = carouselEl.querySelector(".carousel-item.active");
+    if (!activeItem) return;
+
+    const video = activeItem.querySelector("video");
+    const img = activeItem.querySelector("img");
+
+    // If it's a video → wait until finished
+    if (video) {
+      video.currentTime = 0;
+      video.play();
+
+      video.onended = () => {
+        carousel.next();
+      };
+    }
+
+    // If it's an image → move after 3 seconds
+    else if (img) {
+      imgTimer = setTimeout(() => {
+        carousel.next();
+      }, 3000);   // change 3000 = 3s if you want longer
+    }
+  }
+
+  // When slide changes → handle next media
+  carouselEl.addEventListener("slid.bs.carousel", handleSlide);
+
+  // Start first slide
+  handleSlide();
+});
 </script>
+
 
 <script>
   window.__ROTATE_CFG__ = <%- JSON.stringify(rotateCfg) %>;

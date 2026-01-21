@@ -224,6 +224,7 @@ app.post("/set-individual-settings", adminOnly, (req, res) => {
 /* home */
 app.get("/", (req, res) => {
   const sql = "SELECT * FROM videos ORDER BY position ASC, id ASC";
+  const displayMode = req.query.mode === "wall";
 
   connection.query(sql, (error, results) => {
     if (error) {
@@ -231,7 +232,10 @@ app.get("/", (req, res) => {
       return res.status(500).send("Error retrieving videos");
     }
 
-    res.render("dashboard", { videos: results });
+    res.render("dashboard", {
+      videos: results,
+      displayMode
+    });
   });
 });
 
@@ -711,7 +715,7 @@ app.post("/deleteVideo/:id", adminOnly, (req, res) => {
 
 app.get("/purchase", (req, res) => res.render("purchase"));
 app.get("/cardmethod", (req, res) => res.render("cardmethod"));
-app.get("/paynow", (req, res) => res.render("paynow"));
+app.get("/video", (req, res) => res.render("video"));
 
 app.get("/addVideo", adminOnly, (req, res) => res.render("addVideo"));
 

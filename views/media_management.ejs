@@ -68,6 +68,7 @@
                         required>
                     <label class="preview-label fw-bold mt-2" style="font-weight: bold; margin-top: 10px; color: white;">Preview: </label>
                     <video class="preview-video w-100 d-none d-block" style="height:250px; object-fit:cover; margin-top:0; display:block;" preload="metadata" controls ></video>
+                    <img class="preview-image w-100 d-none"style="height:250px; object-fit:cover; margin-top:0;">
                 </div>
 
             </div>
@@ -105,14 +106,16 @@
                     <input type="file"
                         class="form-control"
                         name="videos[]"
-                        accept="video/*"
+                        accept="video/*,image/*"
                         onchange="previewVideo(this)"
                         required>
 
-                    <label class="preview-label fw-bold mt-2" style="font-weight: bold; margin-top: 10px;">Preview:</label>
+                    <label class="preview-label fw-bold mt-2 d-none" style="font-weight: bold; margin-top: 10px;">Preview:</label>
                     <video class="preview-video w-100 d-none"
-                        style="height:250px; object-fit:cover; margin-top:0; display:block;"
-                        preload="metadata"controls></video>
+                        style="height:250px; object-fit:cover; margin-top:0;"
+                        preload="metadata"controls>
+                    </video>
+                    <img class="preview-image w-100 d-none" style="height:250px; object-fit:cover; margin-top:0;">
                 </div>
             </div>
 
@@ -143,19 +146,40 @@
 
         const preview = input.nextElementSibling;
         const video = preview.nextElementSibling;
+        const image = video.nextElementSibling;
         const url = URL.createObjectURL(file);
+        
+        preview.classList.remove("d-none");
+        video.classList.add("d-none");
+        image.classList.add("d-none");
 
-        const canPlay = video.canPlayType(file.type);
-        if (canPlay === "") {
-            alert("This video or codec is not supported. Please select a different video or image file.");
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+
+        if (file.type.startsWith("video/")) {
+            const canPlay = video.canPlayType(file.type);
+            if (canPLay === ""){
+                alert("Video format not supported!");
+                input.value = "";
+                return;
+            }
+
+            video.classList.remove("d-none");
+            video.src = url;
+            video.load();
+        }
+
+        else if (file.type.startsWith("image/")) {
+            image.classList.remove("d-none");
+            image.src= url;
+        }
+
+        else {
+            alert("File type not supported! Please select a video or image file.");
             input.value = "";
             return;
         }
-
-        preview.classList.remove("d-none");
-        video.classList.remove("d-none");
-        video.src = url;
-        video.load();
     }
 </script>
 

@@ -40,16 +40,18 @@
 
 /* NAVBAR FIXED TO BE SHARP EDGES */
 .navbar.glass {
-  padding: 14px 28px;
-  color: #ffffff;
-  background: linear-gradient(
-    to bottom,
-    rgba(0,0,0,0.32),
-    rgba(255,255,255,0.10)
-  );
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
+padding: 14px 28px;
+color: #ffffff;
+background: linear-gradient(
+to bottom,
+rgba(0, 0, 0, 0.55),
+rgba(0, 0, 0, 0.35)
+);
+border-radius: 0;
+border: none;
+box-shadow: none;
+backdrop-filter: blur(18px) saturate(160%);
+-webkit-backdrop-filter: blur(18px) saturate(160%);
 }
 
 .navbar.glass a {
@@ -198,4 +200,72 @@
 
 .navbar .dropdown-menu .dropdown-item.text-danger:hover {
   background: rgba(255, 92, 92, 0.2);
+}
+
+.navbar-title {
+font-weight: 600;
+font-size: 1.20rem;
+letter-spacing: 0;
+color: #ffffff;
+}
+
+.navbar-darkened {
+background: none;
+border-bottom: 1px solid rgba(255,255,255,0.18);
+}
+
+.navbar-brand {
+padding-top: 0;
+padding-bottom: 0;
+}
+
+
+/* =========================
+   PRESENTER VS WALL MODE
+========================= */
+
+/* Normal monitor / presentation */
+.presenter .mini-dashboard {
+  max-width: 1400px;
+}
+
+.presenter .mini-card h5 {
+  font-size: 1.5rem;
+}
+
+.presenter .mini-value {
+  font-size: 2.4rem;
+}
+
+/* 3m x 1m wall display */
+.display-3x1 .mini-dashboard {
+  max-width: 2800px;
+  gap: 36px;
+}
+
+.display-3x1 .mini-card {
+  min-height: 320px;
+  padding: 28px 32px;
+}
+
+.display-3x1 .mini-card h5 {
+  font-size: 1.9rem;
+}
+
+.display-3x1 .mini-value {
+  font-size: 3.4rem;
+}
+
+.display-3x1 .mini-card canvas {
+  height: 230px !important;
+}
+
+.display-3x1 .glass-heading {
+  font-size: 56px;
+  padding: 22px 60px;
+}
+
+/* Reduce clutter on wall */
+.display-3x1 .bottom-nav {
+  display: none;
 }
