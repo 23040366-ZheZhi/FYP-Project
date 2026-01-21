@@ -726,7 +726,21 @@ app.post("/deleteVideo/:id", adminOnly, (req, res) => {
 
 app.get("/purchase", (req, res) => res.render("purchase"));
 app.get("/cardmethod", (req, res) => res.render("cardmethod"));
-app.get("/video", (req, res) => res.render("video"));
+app.get("/video", (req, res) => {
+  const sql = "SELECT * FROM videos ORDER BY position ASC, id ASC";
+
+  connection.query(sql, (err, results) => {
+    if (err) {
+      console.error("Database query error:", err);
+      return res.status(500).send("Error retrieving videos");
+    }
+
+    res.render("video", {
+      videos: results
+    });
+  });
+});
+
 
 app.get("/addVideo", adminOnly, (req, res) => res.render("addVideo"));
 
