@@ -8,6 +8,9 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </head> 
 <body>
+  <%- include('partials/navbar.ejs') %>
+
+
     <div class="carousel-container container mt-4">
 
     <% if (videos && videos.length > 0) { %>
@@ -22,11 +25,9 @@
         <div class="carousel-item <%= index === 0 ? 'active' : '' %>">
 
             <% if (isImage) { %>
-              <img class="d-block w-100"
-                   src="/videos/<%= video.video %>"
-                   alt="media">
+              <img class="d-block w-100" src="/videos/<%= video.video %>"alt="media">
             <% } else { %>
-              <video class="d-block w-100 video-video" playsinline muted controls>
+              <video class="d-block w-100 video-video"  playsinline muted controls>
                 <source src="/videos/<%= video.video %>" type="video/mp4">
               </video>
             <% } %>
