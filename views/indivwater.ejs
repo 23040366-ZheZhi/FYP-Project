@@ -2,180 +2,279 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Water Usage</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Water Consumption by Building</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     :root{
-      --page-bg: #f7f7f7;
-      --card-bg: rgba(255,255,255,.86);
-      --text: #111827;
-      --sea-top: rgba(59,130,246,.55);
-      --sea-deep: rgba(37,99,235,.95);
+      --bg: #ffffff;
+      --ink: #0b1220;
+
+      --sea-top: rgba(20,145,255,.55);
+      --sea-mid: rgba(0,125,255,.75);
+      --sea-deep: rgba(0,85,200,.92);
+
+      --glass: rgba(255,255,255,.90);
+      --glassBorder: rgba(0,0,0,.10);
+      --shadow: 0 22px 60px rgba(0,0,0,.18);
+
+      --waveLine: rgba(255,255,255,.55);
+      --waveLine2: rgba(255,255,255,.30);
     }
 
-    * { box-sizing: border-box; }
-
+    *{ box-sizing:border-box; }
     body{
       margin:0;
       font-family: Arial, sans-serif;
-      background: var(--page-bg);
-      color: var(--text);
+      background: var(--bg);
+      color: var(--ink);
       overflow-x:hidden;
-      overflow-y:auto;
     }
 
-    .page{
+    /* ===== SCENE ===== */
+    .scene{
       min-height:100vh;
       position:relative;
+      padding: 18px 14px 130px;
       overflow:hidden;
-      padding:12px;
+      background: radial-gradient(1200px 700px at 50% -10%, rgba(0,140,255,.10), transparent 65%),
+                  linear-gradient(180deg, #ffffff, #f4f8ff);
     }
 
-    /* =========================
-       BIG CENTER FAUCET
-       ========================= */
-    .tap{
+    /* ===== TAP + STREAM (CENTERED TOP) ===== */
+    .tapWrap{
       position: fixed;
-      top: -10px;
+      top: 18px;
       left: 50%;
       transform: translateX(-50%);
-      border: 0;
-      background: transparent;
-      padding: 0;
-      z-index: 3000;
+      z-index: 30;
+      pointer-events:none;
       display:flex;
       flex-direction:column;
       align-items:center;
-      gap:0;
-      user-select:none;
-      pointer-events:none; /* auto mode */
+      gap: 8px;
+      opacity: 1;
+      transition: opacity 500ms ease;
     }
 
-    .tapImg{
-      width: 260px;   /* BIG faucet */
-      height: auto;
-      display:block;
-      filter: drop-shadow(0 18px 30px rgba(0,0,0,.35));
+    .tapWrap.hide{ opacity: 0; }
+
+    .tapIcon{
+      width: 86px;
+      height: 56px;
+      filter: drop-shadow(0 10px 16px rgba(0,0,0,.14));
+      opacity:.95;
     }
 
-    /* Pour stream */
-    .pour{
-      position: relative;
-      width: 26px;
-      height: 0;
-      margin-top: -20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: linear-gradient(
-        to bottom,
-        rgba(200,230,255,.95),
-        rgba(80,160,255,1)
-      );
+    /* A simple tap SVG (no external image needed) */
+    .tapIcon svg{ width:100%; height:100%; display:block; }
+
+    .stream{
+      width: 18px;
+      height: 0px;
       border-radius: 0 0 12px 12px;
+      background: linear-gradient(to bottom,
+        rgba(190,235,255,.95),
+        rgba(70,160,255,.98)
+      );
+      box-shadow: 0 0 18px rgba(80,160,255,.45);
       opacity: 0;
-      transition:
-        height 600ms cubic-bezier(.2,.9,.2,1),
-        opacity 200ms ease;
-      box-shadow: 0 0 18px rgba(120,180,255,.9);
+      transition: height 700ms cubic-bezier(.2,.9,.2,1), opacity 200ms ease;
+      position: relative;
     }
 
-    .pouring .pour{
-      height: 240px;
+    .stream::after{
+      content:"";
+      position:absolute;
+      inset:-40% -30%;
+      background: radial-gradient(circle at 50% 30%, rgba(255,255,255,.30), transparent 55%);
+      filter: blur(8px);
+      opacity:.9;
+      pointer-events:none;
+    }
+
+    .pouring .stream{
+      height: 52vh;
       opacity: 1;
     }
 
-    .tap.hide{
-      opacity: 0;
-      pointer-events:none;
-      transition: opacity 300ms ease;
-    }
-
-    /* =========================
-       CURVED GLASS BASIN (BOTTOM)
-       ========================= */
-    .basin-wrap{
+    /* ===== BIG CURVED BASIN (BOTTOM) ===== */
+    .basinWrap{
       position: fixed;
       left: 50%;
-      bottom: 70px;             /* sits above Back button */
       transform: translateX(-50%);
-      width: min(1100px, 96vw);
-      height: 220px;
-      z-index: 18;              /* above sea, below bubbles/content */
+      bottom: 78px; /* keep above back button */
+      width: min(980px, 96vw);
+      height: 190px;
+      z-index: 20;
       pointer-events:none;
-      filter: drop-shadow(0 30px 60px rgba(0,0,0,.45));
-      transition: opacity 800ms ease, transform 1200ms cubic-bezier(.2,.9,.2,1);
-    }
-
-    .page.filled .basin-wrap{
-      opacity: 0.05;           /* fades out as ocean takes over */
-      transform: translateX(-50%) translateY(30px);
+      filter: drop-shadow(0 26px 40px rgba(0,0,0,.16));
     }
 
     .basin{
-      position: relative;
-      width: 100%;
-      height: 100%;
-      border-radius: 0 0 200px 200px;
-      border: 2px solid rgba(255,255,255,.35);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.02));
-      backdrop-filter: blur(14px);
+      position:absolute;
+      left:0; right:0; bottom:0;
+      height: 190px;
+      border-radius: 0 0 80px 80px;
+      background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(240,246,255,.95));
+      border: 1px solid rgba(0,0,0,.06);
       overflow:hidden;
     }
 
+    /* lip */
     .basin::before{
       content:"";
       position:absolute;
-      inset:0;
-      background:
-        radial-gradient(circle at 30% 20%, rgba(255,255,255,.35), transparent 50%),
-        linear-gradient(90deg, rgba(255,255,255,.25), transparent 40%, transparent 60%, rgba(255,255,255,.18));
-      opacity:.7;
-      pointer-events:none;
+      left: 6%;
+      right: 6%;
+      top: 16px;
+      height: 20px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(230,240,255,.75));
+      box-shadow: inset 0 -2px 0 rgba(0,0,0,.04);
+      opacity: .95;
     }
 
-    .basin-water{
+    /* inner cavity */
+    .basinInner{
       position:absolute;
-      left:0; right:0; bottom:0;
-      height:0%;
-      background: linear-gradient(180deg, rgba(90,170,255,.55), rgba(30,120,255,.38));
-      transition: height 2600ms cubic-bezier(.2,.9,.2,1);
-    }
-
-    .basin-water::before{
-      content:"";
-      position:absolute;
-      left:-30%;
-      top:-26px;
-      width:160%;
-      height:50px;
-      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.45), rgba(255,255,255,0) 60%);
-      filter: blur(3px);
-      opacity:.9;
-      animation: basinWave 2.6s ease-in-out infinite;
-    }
-
-    @keyframes basinWave{
-      0%{ transform: translateX(-2%) }
-      50%{ transform: translateX(2%) }
-      100%{ transform: translateX(-2%) }
-    }
-
-    /* =========================
-       BUBBLES (optional but nice)
-       ========================= */
-    .bubbles{
-      position: fixed;
-      inset: 0;
-      pointer-events:none;
-      z-index: 22; /* above sea */
+      left: 7%;
+      right: 7%;
+      top: 34px;
+      bottom: 18px;
+      border-radius: 0 0 72px 72px;
+      background: rgba(0,0,0,.03);
       overflow:hidden;
     }
+
+    .basinWater{
+      position:absolute;
+      left:0; right:0; bottom:0;
+      height: 0%;
+      background: linear-gradient(180deg, rgba(120,200,255,.55), rgba(40,140,255,.65));
+      transition: height 2300ms cubic-bezier(.2,.9,.2,1);
+    }
+
+    /* water surface shimmer inside basin */
+    .basinWater::before{
+      content:"";
+      position:absolute;
+      left:-20%;
+      top:-16px;
+      width:140%;
+      height:36px;
+      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.35), rgba(255,255,255,0) 60%);
+      filter: blur(2px);
+      opacity:.85;
+      animation: basinSurface 2.2s ease-in-out infinite;
+    }
+    @keyframes basinSurface{
+      0%,100%{ transform: translateX(-2%); }
+      50%{ transform: translateX(2%); }
+    }
+
+    /* ===== OVERFLOW SEA (THE LOOK YOU SKETCHED) ===== */
+    .sea{
+      position: fixed;
+      left: 0; right:0;
+      bottom: 0;
+      height: 140vh;
+      transform: translateY(100%);
+      transition: transform 5600ms cubic-bezier(.2,.9,.2,1);
+      z-index: 10;
+      overflow:hidden;
+      background: linear-gradient(180deg, var(--sea-top), var(--sea-mid) 40%, var(--sea-deep));
+    }
+
+    /* when overflow starts */
+    .scene.flood .sea{
+      transform: translateY(34%); /* waterline sits ~ mid-screen */
+    }
+
+    /* waterline + wave */
+    .waterline{
+      position:absolute;
+      left:0;
+      top: -64px;
+      width: 200%;
+      height: 160px;
+      pointer-events:none;
+      opacity: .95;
+      background-repeat: repeat-x;
+      background-size: 800px 160px;
+      filter: blur(.3px);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='160' viewBox='0 0 800 160'%3E%3Cpath d='M0 92 C 160 40, 280 140, 420 92 C 560 44, 660 70, 800 92 L800 160 L0 160 Z' fill='rgba(255,255,255,0.55)'/%3E%3C/svg%3E");
+      animation: waveMove 4.6s linear infinite;
+    }
+
+    .waterline2{
+      position:absolute;
+      left:0;
+      top: -48px;
+      width: 200%;
+      height: 140px;
+      pointer-events:none;
+      opacity: .65;
+      background-repeat: repeat-x;
+      background-size: 700px 140px;
+      filter: blur(1px);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='140' viewBox='0 0 700 140'%3E%3Cpath d='M0 88 C 140 60, 240 120, 360 88 C 500 54, 570 74, 700 88 L700 140 L0 140 Z' fill='rgba(255,255,255,0.30)'/%3E%3C/svg%3E");
+      animation: waveMove2 7.2s linear infinite;
+    }
+
+    @keyframes waveMove{ from{ transform: translateX(0);} to{ transform: translateX(-50%);} }
+    @keyframes waveMove2{ from{ transform: translateX(0);} to{ transform: translateX(-50%);} }
+
+    /* underwater ripple lines (your “random lines” look) */
+    .ripples{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      opacity: .35;
+      background:
+        radial-gradient(900px 500px at 20% 30%, rgba(255,255,255,.16), transparent 55%),
+        radial-gradient(900px 520px at 80% 45%, rgba(255,255,255,.12), transparent 55%);
+    }
+
+    .ripples::before{
+      content:"";
+      position:absolute;
+      inset:-20%;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,.22), rgba(255,255,255,0)),
+        linear-gradient(to right, rgba(255,255,255,.16), rgba(255,255,255,0)),
+        linear-gradient(to right, rgba(255,255,255,.14), rgba(255,255,255,0));
+      background-size: 180px 2px, 220px 2px, 260px 2px;
+      background-repeat: repeat;
+      background-position: 0 0, 40px 80px, 120px 160px;
+      filter: blur(.2px);
+      opacity:.55;
+      animation: rippleDrift 10s linear infinite;
+    }
+
+    @keyframes rippleDrift{
+      from{ transform: translateX(0); }
+      to{ transform: translateX(-140px); }
+    }
+
+    /* bubbles (subtle) */
+    .bubbles{
+      position: fixed;
+      inset:0;
+      pointer-events:none;
+      z-index: 15; /* above sea, below charts */
+      overflow:hidden;
+      opacity:0;
+      transition: opacity 600ms ease;
+    }
+    .scene.flood .bubbles{ opacity: 1; }
 
     .bubble{
       position:absolute;
       bottom:-70px;
+      width: 14px;
+      height: 14px;
       border-radius:999px;
       opacity:0;
       background: radial-gradient(circle at 30% 30%,
@@ -183,407 +282,289 @@
         rgba(186,230,253,0.35),
         rgba(34,211,238,0.18)
       );
-      border:1px solid rgba(255,255,255,0.28);
-      box-shadow: inset -2px -2px 4px rgba(255,255,255,.35),
-                  0 0 10px rgba(34,211,238,.22);
-      will-change: transform, opacity;
+      border: 1px solid rgba(255,255,255,0.25);
+      box-shadow: 0 0 10px rgba(34,211,238,.18);
       animation: bubbleRise var(--dur) ease-out infinite;
       animation-delay: var(--delay);
+      will-change: transform, opacity;
     }
 
     @keyframes bubbleRise{
       0%   { transform: translate3d(0, 0, 0) scale(.7); opacity: 0; }
       10%  { opacity: .9; }
-      80%  { opacity: .9; }
+      80%  { opacity: .85; }
       100% {
-        transform: translate3d(var(--wobble), calc(-1 * var(--rise)), 0) scale(1.05);
+        transform: translate3d(var(--wobble), calc(-1 * var(--rise)), 0) scale(1.06);
         opacity: 0;
       }
     }
 
-    /* =========================
-       SEA BACKGROUND RISE
-       ========================= */
-    .sea{
-      position: fixed;
-      left:0; right:0;
-      bottom:0;
-      height: 120vh;
-      transform: translateY(100%);
-      transition: transform 9000ms cubic-bezier(.2,.9,.2,1);
-      z-index: 10;
-      background: linear-gradient(180deg, var(--sea-top), var(--sea-deep));
-      overflow:hidden;
-    }
-    .page.filled .sea{ transform: translateY(12%); }
-
-    .sea .wave{
-      position:absolute;
-      left:0;
-      top:-80px;
-      width:200%;
-      height:160px;
-      opacity:.9;
-      background-repeat:repeat-x;
-      background-size:600px 160px;
-      filter: blur(.3px);
-      pointer-events:none;
-    }
-
-    .sea .wave.wave1{
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='160' viewBox='0 0 600 160'%3E%3Cpath d='M0 90 C 120 40, 240 140, 360 90 C 480 40, 540 70, 600 90 L600 160 L0 160 Z' fill='rgba(255,255,255,0.35)'/%3E%3C/svg%3E");
-      animation: waveMove1 3.8s linear infinite;
-    }
-
-    .sea .wave.wave2{
-      top:-65px;
-      opacity:.55;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='160' viewBox='0 0 600 160'%3E%3Cpath d='M0 100 C 150 60, 250 140, 380 100 C 520 60, 560 85, 600 100 L600 160 L0 160 Z' fill='rgba(255,255,255,0.25)'/%3E%3C/svg%3E");
-      animation: waveMove2 6.2s linear infinite;
-    }
-
-    @keyframes waveMove1{ from{ transform: translateX(0); } to{ transform: translateX(-50%); } }
-    @keyframes waveMove2{ from{ transform: translateX(0); } to{ transform: translateX(-50%); } }
-
-    /* shimmer */
-    .sea::after{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:
-        radial-gradient(circle at 20% 20%, rgba(255,255,255,.12), transparent 45%),
-        radial-gradient(circle at 80% 35%, rgba(255,255,255,.10), transparent 50%);
-      opacity:.75;
-      pointer-events:none;
-      animation: shimmer 5.5s ease-in-out infinite;
-    }
-    @keyframes shimmer{
-      0%,100%{ transform: translateY(0); }
-      50%{ transform: translateY(-10px); }
-    }
-
-    /* =========================
-       CONTENT + CHART REVEAL
-       ========================= */
-    .content{
+    /* ===== CHARTS (DON’T TOUCH CHART.JS SETTINGS) ===== */
+    .compare-grid{
+      width: min(1400px, 95vw);
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
       position: relative;
       z-index: 40;
-      max-width: 1100px;
-      margin: 0 auto;
-      padding-bottom: 120px;
-      opacity: 0;
-      transform: translateY(90px) scale(.985);
-      transition: opacity 650ms ease, transform 1150ms cubic-bezier(.2,.9,.2,1);
+      margin: 90px auto 0;
     }
-    .page.filled .content{
-      opacity: 1;
-      transform: translateY(0) scale(1);
+    @media (max-width: 950px){
+      .compare-grid{ grid-template-columns: 1fr; margin-top: 90px; }
     }
 
-    h2{
-      text-align:center;
-      margin: 82px 0 18px;
-      color:#0b1220;
-      text-shadow: 0 1px 0 rgba(255,255,255,.35);
-    }
-
-    .chart-wrap{
-      max-width: 1000px;
-      margin: 0 auto;
-      background: var(--card-bg);
-      padding: 18px;
+    .screen{
+      background: var(--glass);
+      border: 1px solid var(--glassBorder);
       border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.35);
-      box-shadow: 0 18px 50px rgba(0,0,0,.12);
-      backdrop-filter: blur(10px);
-      position: relative;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      backdrop-filter: blur(12px);
       overflow:hidden;
 
       opacity: 0;
       transform: translateY(18px) scale(.985);
-      transition: opacity 900ms ease, transform 1200ms cubic-bezier(.2,.9,.2,1);
-    }
-    .page.filled .chart-wrap{
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-
-    .chart-wrap::before{
-      content:"";
-      position:absolute;
-      inset:-40px;
-      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.25), transparent 55%);
+      transition: opacity 900ms ease, transform 900ms cubic-bezier(.2,.9,.2,1);
       pointer-events:none;
     }
-
-    canvas{
-      width:100% !important;
-      height:450px !important;
-      display:block;
+    .screen.on{
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events:auto;
     }
 
-    /* dropdown footer */
-    .sr-only{
-      position:absolute;
-      width:1px; height:1px;
-      padding:0; margin:-1px;
-      overflow:hidden;
-      clip:rect(0,0,0,0);
-      border:0;
-    }
-
-    .chart-body{
+    .screen-header{
       display:flex;
-      flex-direction:column;
-      min-height:520px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .chart-header{
-      position: relative;
-      z-index: 2;
-      display:flex;
-      align-items:center;
       justify-content:space-between;
-      gap:12px;
-      padding: 6px 4px 10px;
-    }
-
-    .chart-title-main{
-      font-weight: 800;
-      font-size: 18px;
-      color: #0b1220;
-      letter-spacing: .2px;
-    }
-
-    .chart-title-sub{
-      margin-top: 2px;
+      align-items:center;
+      padding: 4px 6px 10px;
+      border-bottom: 1px solid rgba(0,0,0,.08);
+      margin-bottom: 12px;
       font-size: 12px;
-      color: rgba(17,24,39,.65);
+      font-weight: 800;
+      letter-spacing:.3px;
+      color: rgba(11,18,32,.92);
     }
-
-    .chart-divider{
-      height: 1px;
-      background: linear-gradient(to right, transparent, rgba(0,0,0,.12), transparent);
-      margin: 2px 0 12px;
-      position: relative;
-      z-index: 2;
+    .status{
+      font-size: 11px;
+      font-weight: 900;
+      color: rgba(0,150,90,.95);
     }
 
     .chart-area{
-      flex:1;
-      min-height:420px;
+      height: 360px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.92);
+      overflow:hidden;
+    }
+    canvas{
+      width:100% !important;
+      height:100% !important;
+      display:block;
     }
 
-    .chart-footer{
-      margin-top:auto;
-      padding-top:12px;
-      border-top:1px solid rgba(0,0,0,.10);
+    .screen-footer{
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(0,0,0,.08);
       display:flex;
-      align-items:center;
       justify-content:center;
-      gap:10px;
-      position: relative;
-      z-index: 2;
+      gap: 10px;
+      align-items:center;
+    }
+    .footer-label{
+      font-size: 12px;
+      font-weight: 800;
+      color: rgba(11,18,32,.80);
     }
 
-    .chart-footer select{
-      min-width:240px;
-      padding:10px 14px;
-      font-size:14px;
-      border-radius:999px;
-      border:1px solid rgba(0,0,0,.10);
-      background: rgba(255,255,255,.72);
-      backdrop-filter: blur(6px);
-      box-shadow: 0 8px 18px rgba(0,0,0,.06);
-      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-    }
-
-    .chart-footer select:hover{
-      transform: translateY(-1px);
-      box-shadow: 0 10px 22px rgba(0,0,0,.09);
-      border-color: rgba(37,99,235,.35);
-    }
-
-    .chart-footer select:focus{
+    select{
+      min-width: 240px;
+      padding: 10px 14px;
+      font-size: 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,.12);
+      background: rgba(255,255,255,.75);
+      color: rgba(11,18,32,.90);
       outline:none;
-      border-color: rgba(37,99,235,.55);
-      box-shadow: 0 0 0 4px rgba(37,99,235,.18);
     }
 
-    /* Back button */
+    /* ===== BACK BUTTON ===== */
     .graph-back-nav{
       position: fixed;
-      bottom: 20px;
+      bottom: 18px;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 3500;
-      display:flex;
-      justify-content:center;
+      z-index: 80;
     }
-
     .graph-back-btn{
-      width: 120px;
-      height: 60px;
-      background: #343a40;
-      color: white;
-      border-radius: 50px;
+      width: 150px;
+      height: 56px;
+      background: rgba(17,24,39,.85);
+      color: #fff;
+      border-radius: 999px;
       display:flex;
       align-items:center;
       justify-content:center;
       text-decoration:none;
-      font-size: 14px;
-      transition: 0.2s ease;
-      box-shadow: 0 12px 28px rgba(0,0,0,.18);
+      font-weight:800;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
     }
-    .graph-back-btn:hover{ background:#23272b; }
+
+    /* reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .waterline, .waterline2, .ripples::before, .bubble{ animation:none !important; }
+      .sea, .basinWater, .stream, .screen{ transition:none !important; }
+    }
   </style>
 </head>
 
 <body>
-  <div class="page" id="page">
+  <div class="scene" id="scene">
 
-    <!-- bubbles -->
-    <div id="bubbles" class="bubbles"></div>
-
-    <!-- BIG center tap -->
-    <button class="tap" id="tapBtn" aria-label="Turn on tap">
-      <img class="tapImg" src="/images/tap.jpg" alt="Tap">
-      <div class="pour" id="pour"></div>
-    </button>
-
-    <!-- Basin (curved glass) -->
-    <div class="basin-wrap" aria-hidden="true">
-      <div class="basin">
-        <div class="basin-water" id="basinWater"></div>
+    <!-- TAP (CENTER) -->
+    <div class="tapWrap" id="tapWrap" aria-hidden="true">
+      <div class="tapIcon">
+        <svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 40 h56 a18 18 0 0 0 18-18 v-4 h10 v10 h-8 v4 a26 26 0 0 1-26 26 H28 v10 h14 v8 H18z"
+                fill="#6b7280"/>
+          <rect x="78" y="10" width="14" height="24" rx="6" fill="#4b5563"/>
+          <rect x="52" y="0" width="26" height="10" rx="5" fill="#374151"/>
+        </svg>
       </div>
+      <div class="stream" id="stream"></div>
     </div>
 
-    <!-- ocean background (rises AFTER basin overflows) -->
+    <!-- OVERFLOW SEA (BACKGROUND WATER) -->
     <div class="sea" id="sea" aria-hidden="true">
-      <div class="wave wave1"></div>
-      <div class="wave wave2"></div>
+      <div class="waterline"></div>
+      <div class="waterline2"></div>
+      <div class="ripples"></div>
     </div>
 
-    <!-- content / chart -->
-    <div class="content" id="content">
-      <h2>Whole Campus Water Usage (m³)</h2>
+    <!-- BUBBLES -->
+    <div class="bubbles" id="bubbles" aria-hidden="true"></div>
 
-      <div class="chart-wrap" id="chartCard">
-        <div class="chart-body">
-          <div class="chart-header">
-            <div class="chart-title">
-              <div class="chart-title-main">Water Usage</div>
-              <div class="chart-title-sub">Monthly (m³)</div>
-            </div>
-          </div>
-
-          <div class="chart-divider"></div>
-
-          <div class="chart-area">
-            <canvas id="waterChart"></canvas>
-          </div>
-
-          <div class="chart-footer">
-            <label class="sr-only" for="datasetSelector">Choose data</label>
-            <select id="datasetSelector">
-              <option value="field3">Portable Water</option>
-              <option value="field4">NEWater</option>
-              <option value="field5">Total Water</option>
-            </select>
-          </div>
+    <!-- CHARTS -->
+    <div class="compare-grid">
+      <section class="screen" id="screenA">
+        <div class="screen-header">
+          <span>Graph 1</span>
+          <span class="status"> </span>
         </div>
-      </div>
 
-      <div class="msg" id="msgBox"></div>
+        <div class="chart-area">
+          <canvas id="buildingChartA"></canvas>
+        </div>
+
+        <div class="screen-footer">
+          <label class="footer-label" for="buildingSelectA">Building</label>
+          <select id="buildingSelectA"></select>
+        </div>
+      </section>
+
+      <section class="screen" id="screenB">
+        <div class="screen-header">
+          <span>Graph 2</span>
+          <span class="status"></span>
+        </div>
+
+        <div class="chart-area">
+          <canvas id="buildingChartB"></canvas>
+        </div>
+
+        <div class="screen-footer">
+          <label class="footer-label" for="buildingSelectB">Building</label>
+          <select id="buildingSelectB"></select>
+        </div>
+      </section>
     </div>
 
     <div class="graph-back-nav">
       <a href="/" class="graph-back-btn">Back</a>
     </div>
 
-    <!-- Animation controller (does NOT touch Chart.js) -->
-    <script>
-      const page = document.getElementById("page");
-      const tapBtn = document.getElementById("tapBtn");
-      const basinWater = document.getElementById("basinWater");
-
-      function makeBubbles(count = 24){
-        const host = document.getElementById("bubbles");
-        if (!host) return;
-
-        host.innerHTML = "";
-        const rise = window.innerHeight + 180;
-
-        for (let i = 0; i < count; i++){
-          const b = document.createElement("div");
-          b.className = "bubble";
-
-          const size = Math.random() * 18 + 8;   // 8 - 26px
-          const left = Math.random() * 100;      // %
-          const dur = Math.random() * 4 + 4;     // 4 - 8s
-          const delay = Math.random() * 4;       // 0 - 4s
-          const wobble = (Math.random() * 40 - 20) + "px"; // -20..20px
-
-          b.style.width = size + "px";
-          b.style.height = size + "px";
-          b.style.left = left + "%";
-          b.style.setProperty("--dur", dur + "s");
-          b.style.setProperty("--delay", delay + "s");
-          b.style.setProperty("--rise", rise + "px");
-          b.style.setProperty("--wobble", wobble);
-
-          host.appendChild(b);
-        }
-      }
-
-      function startStory(){
-        if (page.classList.contains("filled")) return;
-
-        makeBubbles(26);
-
-        // start pouring
-        tapBtn.classList.add("pouring");
-
-        // basin fills up
-        requestAnimationFrame(() => {
-          basinWater.style.height = "92%";
-        });
-
-        // after basin "fills", overflow = ocean rises + chart appears
-        setTimeout(() => {
-          page.classList.add("filled");
-          // chart render AFTER ocean starts rising
-          setTimeout(() => window.dispatchEvent(new Event("water:render")), 900);
-        }, 2600);
-
-        // stop pouring so it feels real
-        setTimeout(() => tapBtn.classList.remove("pouring"), 3100);
-
-        // hide tap slightly later
-        setTimeout(() => tapBtn.classList.add("hide"), 3600);
-      }
-
-      window.addEventListener("load", () => {
-        setTimeout(startStory, 200);
-      });
-
-      window.addEventListener("resize", () => {
-        if (page.classList.contains("filled")) makeBubbles(26);
-      });
-    </script>
-
-    <!-- ✅ DO NOT TOUCH YOUR GRAPH SCRIPT -->
-    <script type="module" src="/scripts/plotwater.js"></script>
-
-    <!-- keep your rotate cfg if you use it -->
-    <script>
-      window.__ROTATE_CFG__ = <%- JSON.stringify(rotateCfg) %>;
-      console.log(window.__ROTATE_CFG__);
-    </script>
-    <script src="/scripts/idle-rotate.js"></script>
-
+    <!-- BASIN (BIG CURVED) -->
+    <div class="basinWrap" aria-hidden="true">
+      <div class="basin">
+        <div class="basinInner">
+          <div class="basinWater" id="basinWater"></div>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- Animation controller (does NOT change your Chart.js code) -->
+  <script>
+    const scene = document.getElementById("scene");
+    const tapWrap = document.getElementById("tapWrap");
+    const basinWater = document.getElementById("basinWater");
+    const sea = document.getElementById("sea");
+    const screenA = document.getElementById("screenA");
+    const screenB = document.getElementById("screenB");
+    const bubblesHost = document.getElementById("bubbles");
+
+    function makeBubbles(count = 20){
+      bubblesHost.innerHTML = "";
+      const rise = window.innerHeight + 220;
+
+      for (let i = 0; i < count; i++){
+        const b = document.createElement("div");
+        b.className = "bubble";
+
+        const size = Math.random() * 16 + 8;      // 8..24
+        const left = Math.random() * 100;         // %
+        const dur = Math.random() * 4 + 4;        // 4..8s
+        const delay = Math.random() * 4;          // 0..4s
+        const wobble = (Math.random() * 40 - 20) + "px";
+
+        b.style.width = size + "px";
+        b.style.height = size + "px";
+        b.style.left = left + "%";
+        b.style.setProperty("--dur", dur + "s");
+        b.style.setProperty("--delay", delay + "s");
+        b.style.setProperty("--rise", rise + "px");
+        b.style.setProperty("--wobble", wobble);
+
+        bubblesHost.appendChild(b);
+      }
+    }
+
+    window.addEventListener("load", () => {
+      // 1) start faucet stream
+      tapWrap.classList.add("pouring");
+
+      // 2) fill basin (theme: usage -> basin fills)
+      setTimeout(() => {
+        basinWater.style.height = "92%";
+      }, 250);
+
+      // 3) overflow -> whole background becomes water (your sketch)
+      setTimeout(() => {
+        scene.classList.add("flood");
+        makeBubbles(22);
+      }, 2600);
+
+      // 4) hide faucet stream a bit after overflow begins
+      setTimeout(() => {
+        tapWrap.classList.remove("pouring");
+        tapWrap.classList.add("hide");
+      }, 3600);
+
+      // 5) reveal graphs (float above water)
+      setTimeout(() => screenA.classList.add("on"), 3900);
+      setTimeout(() => screenB.classList.add("on"), 4100);
+
+      // Optional: tell your chart script it can render (if you use events)
+      setTimeout(() => window.dispatchEvent(new Event("water:render")), 4200);
+    });
+
+    window.addEventListener("resize", () => {
+      if (scene.classList.contains("flood")) makeBubbles(22);
+    });
+  </script>
+
+  <!-- DO NOT TOUCH YOUR CHART SCRIPT -->
+  <script type="module" src="/scripts/plotindivW.js"></script>
 </body>
 </html>
