@@ -8,8 +8,8 @@
 
   <style>
     :root{
-      --bg: #ffffff;
-      --ink: #0b1220;
+      --bg:#ffffff;
+      --ink:#0b1220;
 
       --sea-top: rgba(20,145,255,.55);
       --sea-mid: rgba(0,125,255,.75);
@@ -19,8 +19,11 @@
       --glassBorder: rgba(0,0,0,.10);
       --shadow: 0 22px 60px rgba(0,0,0,.18);
 
-      --waveLine: rgba(255,255,255,.55);
-      --waveLine2: rgba(255,255,255,.30);
+      /* ✅ tap position */
+      --tap-x: 75vw;
+
+      /* ✅ stream alignment tweak (change this if spout not perfect) */
+      --stream-offset: 0px;
     }
 
     *{ box-sizing:border-box; }
@@ -32,7 +35,6 @@
       overflow-x:hidden;
     }
 
-    /* ===== SCENE ===== */
     .scene{
       min-height:100vh;
       position:relative;
@@ -42,108 +44,93 @@
                   linear-gradient(180deg, #ffffff, #f4f8ff);
     }
 
-    /* ===== TAP + STREAM (CENTERED TOP) ===== */
+    /* ===== TAP (BIG + at 75%) ===== */
     .tapWrap{
       position: fixed;
-      top: 18px;
-      left: 50%;
+      left: var(--tap-x);
+      top: 34px;
       transform: translateX(-50%);
-      z-index: 30;
+      z-index: 100;
       pointer-events:none;
       display:flex;
       flex-direction:column;
       align-items:center;
-      gap: 8px;
+      gap: 10px;
       opacity: 1;
-      transition: opacity 500ms ease;
+      transition: opacity 550ms ease, transform 550ms ease;
+    }
+    .tapWrap.hide{
+      opacity: 0;
+      transform: translateX(-50%) translateY(-10px);
     }
 
-    .tapWrap.hide{ opacity: 0; }
-
-    .tapIcon{
-      width: 86px;
-      height: 56px;
-      filter: drop-shadow(0 10px 16px rgba(0,0,0,.14));
-      opacity:.95;
+    .tapImg{
+      width: 520px; /* BIG */
+      height: auto;
+      display:block;
+      filter: drop-shadow(0 22px 40px rgba(0,0,0,.22));
+      opacity: .98;
     }
 
-    /* A simple tap SVG (no external image needed) */
-    .tapIcon svg{ width:100%; height:100%; display:block; }
-
+    /* Stream */
     .stream{
-      width: 18px;
+      width: 28px;
       height: 0px;
-      border-radius: 0 0 12px 12px;
+      border-radius: 0 0 18px 18px;
       background: linear-gradient(to bottom,
         rgba(190,235,255,.95),
         rgba(70,160,255,.98)
       );
-      box-shadow: 0 0 18px rgba(80,160,255,.45);
+      box-shadow: 0 0 24px rgba(80,160,255,.45);
       opacity: 0;
-      transition: height 700ms cubic-bezier(.2,.9,.2,1), opacity 200ms ease;
-      position: relative;
+      transform: translateX(var(--stream-offset));
+      transition:
+        height 700ms cubic-bezier(.2,.9,.2,1),
+        opacity 200ms ease,
+        transform 200ms ease;
     }
-
-    .stream::after{
-      content:"";
-      position:absolute;
-      inset:-40% -30%;
-      background: radial-gradient(circle at 50% 30%, rgba(255,255,255,.30), transparent 55%);
-      filter: blur(8px);
-      opacity:.9;
-      pointer-events:none;
-    }
-
     .pouring .stream{
-      height: 52vh;
+      height: 64vh;
       opacity: 1;
     }
 
-    /* ===== BIG CURVED BASIN (BOTTOM) ===== */
+    /* ===== BASIN (✅ ALWAYS CENTER) ===== */
     .basinWrap{
       position: fixed;
-      left: 50%;
+      left: 50vw;                    /* ✅ CENTER FIX */
       transform: translateX(-50%);
-      bottom: 78px; /* keep above back button */
-      width: min(980px, 96vw);
-      height: 190px;
-      z-index: 20;
+      bottom: 74px;
+      width: min(2200px, 98vw);
+      height: 340px;
+      z-index: 60;
       pointer-events:none;
-      filter: drop-shadow(0 26px 40px rgba(0,0,0,.16));
+      filter: drop-shadow(0 34px 54px rgba(0,0,0,.18));
+      opacity: 1;
+      transition: opacity 650ms ease, transform 650ms ease;
+    }
+    .basinWrap.hide{
+      opacity: 0;
+      transform: translateX(-50%) translateY(28px);
     }
 
     .basin{
       position:absolute;
       left:0; right:0; bottom:0;
-      height: 190px;
-      border-radius: 0 0 80px 80px;
-      background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(240,246,255,.95));
-      border: 1px solid rgba(0,0,0,.06);
+      height: 340px;
+      border-radius: 0 0 160px 160px;
+      background: rgba(255,255,255,.06);
+      border:none;
+      box-shadow:none;
       overflow:hidden;
     }
 
-    /* lip */
-    .basin::before{
-      content:"";
-      position:absolute;
-      left: 6%;
-      right: 6%;
-      top: 16px;
-      height: 20px;
-      border-radius: 999px;
-      background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(230,240,255,.75));
-      box-shadow: inset 0 -2px 0 rgba(0,0,0,.04);
-      opacity: .95;
-    }
-
-    /* inner cavity */
     .basinInner{
       position:absolute;
-      left: 7%;
-      right: 7%;
-      top: 34px;
-      bottom: 18px;
-      border-radius: 0 0 72px 72px;
+      left: 4.5%;
+      right: 4.5%;
+      top: 22px;
+      bottom: 22px;
+      border-radius: 0 0 140px 140px;
       background: rgba(0,0,0,.03);
       overflow:hidden;
     }
@@ -152,19 +139,18 @@
       position:absolute;
       left:0; right:0; bottom:0;
       height: 0%;
-      background: linear-gradient(180deg, rgba(120,200,255,.55), rgba(40,140,255,.65));
-      transition: height 2300ms cubic-bezier(.2,.9,.2,1);
+      background: linear-gradient(180deg, rgba(120,200,255,.65), rgba(40,140,255,.80));
+      transition: height 2400ms cubic-bezier(.2,.9,.2,1);
     }
 
-    /* water surface shimmer inside basin */
     .basinWater::before{
       content:"";
       position:absolute;
       left:-20%;
-      top:-16px;
+      top:-18px;
       width:140%;
-      height:36px;
-      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.35), rgba(255,255,255,0) 60%);
+      height:40px;
+      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.26), rgba(255,255,255,0) 60%);
       filter: blur(2px);
       opacity:.85;
       animation: basinSurface 2.2s ease-in-out infinite;
@@ -174,7 +160,7 @@
       50%{ transform: translateX(2%); }
     }
 
-    /* ===== OVERFLOW SEA (THE LOOK YOU SKETCHED) ===== */
+    /* ===== OVERFLOW SEA ===== */
     .sea{
       position: fixed;
       left: 0; right:0;
@@ -186,13 +172,8 @@
       overflow:hidden;
       background: linear-gradient(180deg, var(--sea-top), var(--sea-mid) 40%, var(--sea-deep));
     }
+    .scene.flood .sea{ transform: translateY(28%); }
 
-    /* when overflow starts */
-    .scene.flood .sea{
-      transform: translateY(34%); /* waterline sits ~ mid-screen */
-    }
-
-    /* waterline + wave */
     .waterline{
       position:absolute;
       left:0;
@@ -207,7 +188,6 @@
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='160' viewBox='0 0 800 160'%3E%3Cpath d='M0 92 C 160 40, 280 140, 420 92 C 560 44, 660 70, 800 92 L800 160 L0 160 Z' fill='rgba(255,255,255,0.55)'/%3E%3C/svg%3E");
       animation: waveMove 4.6s linear infinite;
     }
-
     .waterline2{
       position:absolute;
       left:0;
@@ -222,11 +202,9 @@
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='140' viewBox='0 0 700 140'%3E%3Cpath d='M0 88 C 140 60, 240 120, 360 88 C 500 54, 570 74, 700 88 L700 140 L0 140 Z' fill='rgba(255,255,255,0.30)'/%3E%3C/svg%3E");
       animation: waveMove2 7.2s linear infinite;
     }
-
     @keyframes waveMove{ from{ transform: translateX(0);} to{ transform: translateX(-50%);} }
     @keyframes waveMove2{ from{ transform: translateX(0);} to{ transform: translateX(-50%);} }
 
-    /* underwater ripple lines (your “random lines” look) */
     .ripples{
       position:absolute;
       inset:0;
@@ -237,33 +215,12 @@
         radial-gradient(900px 520px at 80% 45%, rgba(255,255,255,.12), transparent 55%);
     }
 
-    .ripples::before{
-      content:"";
-      position:absolute;
-      inset:-20%;
-      background-image:
-        linear-gradient(to right, rgba(255,255,255,.22), rgba(255,255,255,0)),
-        linear-gradient(to right, rgba(255,255,255,.16), rgba(255,255,255,0)),
-        linear-gradient(to right, rgba(255,255,255,.14), rgba(255,255,255,0));
-      background-size: 180px 2px, 220px 2px, 260px 2px;
-      background-repeat: repeat;
-      background-position: 0 0, 40px 80px, 120px 160px;
-      filter: blur(.2px);
-      opacity:.55;
-      animation: rippleDrift 10s linear infinite;
-    }
-
-    @keyframes rippleDrift{
-      from{ transform: translateX(0); }
-      to{ transform: translateX(-140px); }
-    }
-
-    /* bubbles (subtle) */
+    /* bubbles */
     .bubbles{
       position: fixed;
       inset:0;
       pointer-events:none;
-      z-index: 15; /* above sea, below charts */
+      z-index: 15;
       overflow:hidden;
       opacity:0;
       transition: opacity 600ms ease;
@@ -288,7 +245,6 @@
       animation-delay: var(--delay);
       will-change: transform, opacity;
     }
-
     @keyframes bubbleRise{
       0%   { transform: translate3d(0, 0, 0) scale(.7); opacity: 0; }
       10%  { opacity: .9; }
@@ -299,18 +255,19 @@
       }
     }
 
-    /* ===== CHARTS (DON’T TOUCH CHART.JS SETTINGS) ===== */
+    /* ===== CHARTS ===== */
     .compare-grid{
-      width: min(1400px, 95vw);
+      width: min(1600px, 96vw);
       display:grid;
       grid-template-columns: 1fr 1fr;
       gap: 22px;
       position: relative;
-      z-index: 40;
-      margin: 90px auto 0;
+      z-index: 80;
+      margin: 110px auto 0;
     }
     @media (max-width: 950px){
-      .compare-grid{ grid-template-columns: 1fr; margin-top: 90px; }
+      .compare-grid{ grid-template-columns: 1fr; margin-top: 110px; }
+      :root{ --tap-x: 50vw; }
     }
 
     .screen{
@@ -352,7 +309,7 @@
     }
 
     .chart-area{
-      height: 360px;
+      height: 380px;
       border-radius: 12px;
       background: rgba(255,255,255,.92);
       overflow:hidden;
@@ -379,7 +336,7 @@
     }
 
     select{
-      min-width: 240px;
+      min-width: 260px;
       padding: 10px 14px;
       font-size: 14px;
       border-radius: 999px;
@@ -389,13 +346,13 @@
       outline:none;
     }
 
-    /* ===== BACK BUTTON ===== */
+    /* back button */
     .graph-back-nav{
       position: fixed;
       bottom: 18px;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 80;
+      z-index: 120;
     }
     .graph-back-btn{
       width: 150px;
@@ -410,32 +367,18 @@
       font-weight:800;
       box-shadow: 0 12px 30px rgba(0,0,0,.35);
     }
-
-    /* reduced motion */
-    @media (prefers-reduced-motion: reduce){
-      .waterline, .waterline2, .ripples::before, .bubble{ animation:none !important; }
-      .sea, .basinWater, .stream, .screen{ transition:none !important; }
-    }
   </style>
 </head>
 
 <body>
   <div class="scene" id="scene">
-
-    <!-- TAP (CENTER) -->
+    <!-- TAP -->
     <div class="tapWrap" id="tapWrap" aria-hidden="true">
-      <div class="tapIcon">
-        <svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18 40 h56 a18 18 0 0 0 18-18 v-4 h10 v10 h-8 v4 a26 26 0 0 1-26 26 H28 v10 h14 v8 H18z"
-                fill="#6b7280"/>
-          <rect x="78" y="10" width="14" height="24" rx="6" fill="#4b5563"/>
-          <rect x="52" y="0" width="26" height="10" rx="5" fill="#374151"/>
-        </svg>
-      </div>
+      <img class="tapImg" src="/images/tap.jpg" alt="Tap">
       <div class="stream" id="stream"></div>
     </div>
 
-    <!-- OVERFLOW SEA (BACKGROUND WATER) -->
+    <!-- SEA -->
     <div class="sea" id="sea" aria-hidden="true">
       <div class="waterline"></div>
       <div class="waterline2"></div>
@@ -450,7 +393,7 @@
       <section class="screen" id="screenA">
         <div class="screen-header">
           <span>Graph 1</span>
-          <span class="status"> </span>
+          <span class="status">● LIVE</span>
         </div>
 
         <div class="chart-area">
@@ -466,7 +409,7 @@
       <section class="screen" id="screenB">
         <div class="screen-header">
           <span>Graph 2</span>
-          <span class="status"></span>
+          <span class="status">● LIVE</span>
         </div>
 
         <div class="chart-area">
@@ -484,27 +427,27 @@
       <a href="/" class="graph-back-btn">Back</a>
     </div>
 
-    <!-- BASIN (BIG CURVED) -->
-    <div class="basinWrap" aria-hidden="true">
+    <!-- BASIN -->
+    <div class="basinWrap" id="basinWrap" aria-hidden="true">
       <div class="basin">
         <div class="basinInner">
           <div class="basinWater" id="basinWater"></div>
         </div>
       </div>
     </div>
+
   </div>
 
-  <!-- Animation controller (does NOT change your Chart.js code) -->
   <script>
     const scene = document.getElementById("scene");
     const tapWrap = document.getElementById("tapWrap");
+    const basinWrap = document.getElementById("basinWrap");
     const basinWater = document.getElementById("basinWater");
-    const sea = document.getElementById("sea");
+    const bubblesHost = document.getElementById("bubbles");
     const screenA = document.getElementById("screenA");
     const screenB = document.getElementById("screenB");
-    const bubblesHost = document.getElementById("bubbles");
 
-    function makeBubbles(count = 20){
+    function makeBubbles(count = 22){
       bubblesHost.innerHTML = "";
       const rise = window.innerHeight + 220;
 
@@ -512,10 +455,10 @@
         const b = document.createElement("div");
         b.className = "bubble";
 
-        const size = Math.random() * 16 + 8;      // 8..24
-        const left = Math.random() * 100;         // %
-        const dur = Math.random() * 4 + 4;        // 4..8s
-        const delay = Math.random() * 4;          // 0..4s
+        const size = Math.random() * 16 + 8;
+        const left = Math.random() * 100;
+        const dur = Math.random() * 4 + 4;
+        const delay = Math.random() * 4;
         const wobble = (Math.random() * 40 - 20) + "px";
 
         b.style.width = size + "px";
@@ -531,32 +474,27 @@
     }
 
     window.addEventListener("load", () => {
-      // 1) start faucet stream
       tapWrap.classList.add("pouring");
 
-      // 2) fill basin (theme: usage -> basin fills)
       setTimeout(() => {
-        basinWater.style.height = "92%";
-      }, 250);
+        basinWater.style.height = "95%";
+      }, 220);
 
-      // 3) overflow -> whole background becomes water (your sketch)
       setTimeout(() => {
+        basinWrap.classList.add("hide");
         scene.classList.add("flood");
         makeBubbles(22);
-      }, 2600);
+      }, 2650);
 
-      // 4) hide faucet stream a bit after overflow begins
       setTimeout(() => {
         tapWrap.classList.remove("pouring");
         tapWrap.classList.add("hide");
-      }, 3600);
+      }, 3500);
 
-      // 5) reveal graphs (float above water)
-      setTimeout(() => screenA.classList.add("on"), 3900);
-      setTimeout(() => screenB.classList.add("on"), 4100);
+      setTimeout(() => screenA.classList.add("on"), 3800);
+      setTimeout(() => screenB.classList.add("on"), 4000);
 
-      // Optional: tell your chart script it can render (if you use events)
-      setTimeout(() => window.dispatchEvent(new Event("water:render")), 4200);
+      setTimeout(() => window.dispatchEvent(new Event("water:render")), 4100);
     });
 
     window.addEventListener("resize", () => {
