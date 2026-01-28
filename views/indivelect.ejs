@@ -1,192 +1,170 @@
-<!-- /views/compareElectric.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Electricity Consumption by Building (Comparison)</title>
+  <title>Electricity Consumption Comparison</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    :root{
-      --bg:#f3f4f6;
-      --card:#ffffff;
-      --text:#111827;
-      --muted:#6b7280;
-      --border:rgba(0,0,0,.10);
-      --shadow:0 8px 20px rgba(0,0,0,.08);
-      --focus:rgba(59,130,246,.15);
+    :root {
+      --sky: #87ceeb;
+      --grass: #22c55e;
+      --card-bg: rgba(255, 255, 255, 0.9);
+      --text: #111827;
+      --turbine-body: #f8fafc;
     }
 
-    body{
-      margin:0;
-      font-family:Arial, sans-serif;
-      background:var(--bg);
-      color:var(--text);
-      padding:10px;
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, #29abe2, var(--sky));
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    h2{
-      text-align:center;
-      margin:10px 0 18px;
-      font-size:20px;
-      font-weight:800;
+    /* ===== BACKGROUND ANIMATIONS ===== */
+    .sun {
+      position: fixed; top: 30px; left: 40px;
+      width: 70px; height: 70px;
+      background: #fff176; border-radius: 50%;
+      box-shadow: 0 0 40px #fff176; z-index: 1;
     }
 
-    .compare-grid{
-      max-width:1800px;
-      width:95%;
-      margin:0 auto;
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:24px;
-      align-items:stretch;
-    }
-    @media (max-width:950px){
-      .compare-grid{ grid-template-columns:1fr; }
+    .horizon {
+      position: fixed; bottom: 0; width: 100%; height: 30px;
+      background: var(--grass); z-index: 5;
+      border-top: 4px solid #16a34a;
     }
 
-    .chart-card{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:14px;
-      box-shadow:var(--shadow);
-      padding:10px;
-      display:flex;
-      flex-direction:column;
-      min-height:520px;
+    .turbine-farm {
+      position: fixed; bottom: 30px; width: 100%;
+      display: flex; justify-content: space-between; 
+      padding: 0 5%; z-index: 2; pointer-events: none;
     }
 
-    .chart-header{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      margin-bottom:8px;
+    .turbine { display: flex; flex-direction: column; align-items: center; position: relative; }
+    .tower {
+      width: 6px; height: 140px;
+      background: linear-gradient(90deg, #e2e8f0, #cbd5e1);
+      clip-path: polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%);
     }
-    .chart-title{
-      font-size:14px;
-      font-weight:800;
-      letter-spacing:.2px;
+    .blades {
+      position: absolute; top: -50px; width: 100px; height: 100px;
+      animation: spin var(--speed) linear infinite;
+    }
+    .blade {
+      position: absolute; top: 50%; left: 50%;
+      width: 6px; height: 50px; background: var(--turbine-body);
+      transform-origin: top center; border-radius: 0 0 5px 5px;
+    }
+    .blade:nth-child(1) { transform: translate(-50%, 0) rotate(0deg); }
+    .blade:nth-child(2) { transform: translate(-50%, 0) rotate(120deg); }
+    .blade:nth-child(3) { transform: translate(-50%, 0) rotate(240deg); }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* ===== CONTENT LAYOUT ===== */
+    .main-container {
+      position: relative; z-index: 20;
+      padding: 20px;
+      opacity: 0; transform: translateY(30px);
+      transition: all 1s ease-out;
+    }
+    body.ready .main-container { opacity: 1; transform: translateY(0); }
+
+    h2 {
+      text-align: center; color: white;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      margin: 10px 0 20px; font-size: 24px;
     }
 
-    .chart-area{
-      position:relative;
-      flex:1;
-      min-height:420px;
+    .compare-grid {
+      max-width: 1600px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
     }
-    canvas{
-      width:100% !important;
-      height:100% !important;
-      display:block;
+    @media (max-width: 950px) { .compare-grid { grid-template-columns: 1fr; } }
+
+    .chart-card {
+      background: var(--card-bg);
+      border-radius: 14px; padding: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      backdrop-filter: blur(8px);
+      display: flex; flex-direction: column; min-height: 500px;
     }
 
-    .chart-footer{
-      margin-top:12px;
-      padding-top:10px;
-      border-top:1px solid var(--border);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:10px;
+    .chart-header { font-size: 14px; font-weight: 800; margin-bottom: 10px; }
+    .chart-area { position: relative; flex: 1; min-height: 380px; }
+    canvas { width: 100% !important; height: 100% !important; }
+
+    .chart-footer {
+      margin-top: 15px; padding-top: 10px;
+      border-top: 1px solid rgba(0,0,0,0.05);
+      display: flex; align-items: center; justify-content: center; gap: 10px;
     }
-    .footer-label{
-      font-size:13px;
-      font-weight:700;
-      color:var(--muted);
-    }
-    select{
-      min-width:240px;
-      padding:10px 14px;
-      font-size:14px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      background:#fff;
-      outline:none;
-    }
-    select:focus{
-      border-color:rgba(59,130,246,.6);
-      box-shadow:0 0 0 3px var(--focus);
+    select {
+      min-width: 200px; padding: 8px 14px;
+      border-radius: 20px; border: 1px solid #ddd;
     }
 
-    .note{
-      margin-top:10px;
-      text-align:center;
-      font-weight:700;
-      color:#b00020;
-      display:none;
-      font-size:13px;
+    .graph-back-nav { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); z-index: 2000; }
+    .graph-back-btn {
+      width: 120px; height: 50px; background: #343a40; color: white;
+      border-radius: 25px; display: flex; align-items: center; justify-content: center;
+      font-weight: 700; text-decoration: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
-
-    .graph-back-nav{
-      position:fixed;
-      bottom:18px;
-      left:50%;
-      transform:translateX(-50%);
-      z-index:2000;
-    }
-    .graph-back-btn{
-      width:130px;
-      height:56px;
-      background:#343a40;
-      color:white;
-      border-radius:50px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-weight:700;
-      text-decoration:none;
-      transition:.2s ease;
-      box-shadow:0 8px 20px rgba(0,0,0,.18);
-    }
-    .graph-back-btn:hover{ background:#23272b; }
   </style>
 </head>
 
 <body>
-  <h2>Electricity Consumption by Building (Comparison)</h2>
+  <div class="sun"></div>
+  
+  <div class="turbine-farm">
+    <div class="turbine" style="--speed: 3s;"><div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div><div class="tower"></div></div>
+    <div class="turbine" style="--speed: 4s;"><div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div><div class="tower"></div></div>
+    <div class="turbine" style="--speed: 2.5s;"><div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div><div class="tower"></div></div>
+  </div>
 
-  <div class="compare-grid">
-    <!-- LEFT -->
-    <div class="chart-card">
-      <div class="chart-header">
-        <div class="chart-title">Compare A</div>
+  <div class="horizon"></div>
+
+  <div class="main-container">
+    <h2>Electricity Consumption by Building</h2>
+
+    <div class="compare-grid">
+      <div class="chart-card">
+        <div class="chart-header">Compare A</div>
+        <div class="chart-area"><canvas id="buildingChartA"></canvas></div>
+        <div class="chart-footer">
+          <label for="buildingSelectA">Building</label>
+          <select id="buildingSelectA"></select>
+        </div>
+        <div class="note" id="msgA"></div>
       </div>
 
-      <div class="chart-area">
-        <canvas id="buildingChartA"></canvas>
+      <div class="chart-card">
+        <div class="chart-header">Compare B</div>
+        <div class="chart-area"><canvas id="buildingChartB"></canvas></div>
+        <div class="chart-footer">
+          <label for="buildingSelectB">Building</label>
+          <select id="buildingSelectB"></select>
+        </div>
+        <div class="note" id="msgB"></div>
       </div>
-
-      <div class="chart-footer">
-        <label class="footer-label" for="buildingSelectA">Building</label>
-        <select id="buildingSelectA"></select>
-      </div>
-
-      <div class="note" id="msgA"></div>
-    </div>
-
-    <!-- RIGHT -->
-    <div class="chart-card">
-      <div class="chart-header">
-        <div class="chart-title">Compare B</div>
-      </div>
-
-      <div class="chart-area">
-        <canvas id="buildingChartB"></canvas>
-      </div>
-
-      <div class="chart-footer">
-        <label class="footer-label" for="buildingSelectB">Building</label>
-        <select id="buildingSelectB"></select>
-      </div>
-
-      <div class="note" id="msgB"></div>
     </div>
   </div>
 
   <div class="graph-back-nav">
     <a href="/" class="graph-back-btn">Back</a>
   </div>
+
+  <script>
+    window.addEventListener('load', () => {
+      // Small delay to let the turbine animation start before showing the charts
+      setTimeout(() => {
+        document.body.classList.add('ready');
+      }, 500);
+    });
+  </script>
 
   <script type="module" src="/scripts/plotindividual.js"></script>
 </body>

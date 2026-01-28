@@ -3,7 +3,7 @@ let chartA = null;
 let chartB = null;
 
 const ELECTRIC_COLORS = [
-  "#FDD835", // latest year highlight
+  "#cfab0a", // latest year highlight
   "#FB8C00",
   "#E53935",
   "#8E24AA",
