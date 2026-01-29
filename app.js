@@ -304,39 +304,6 @@ app.delete("/delete-xlsx/:filename", adminOnly, (req, res) => {
   });
 });
 
-app.get("/updateGame/:id", (req, res) => {
-  const id = req.params.id;
-  const sql = "SELECT * FROM videos where id = ?";
-
-  connection.query(sql, [id], (error, results) => {
-    if (error) {
-      console.error("Database query error:", error.message);
-      return res.status(500).send("Error retrieving game ID");
-    }
-    if (results.length > 0) res.render("updateGame", { video: results[0] });
-    else res.status(404).send("Game not found");
-  });
-});
-
-app.post("/updateGame/:id", upload.single("image"), (req, res) => {
-  const id = req.params.id;
-
-  const { name, price, description, age } = req.body;
-  let image = req.body.currentImage;
-  if (req.file) image = req.file.filename;
-
-  const sql = "UPDATE videos SET name = ? , description = ? , image = ? WHERE id = ?";
-
-  connection.query(sql, [name, description, image, id], error => {
-    if (error) {
-      console.error("Error updating game:", error);
-      return res.status(500).send("Error updating game");
-    }
-    res.redirect("/");
-  });
-});
-
-
 /* summary api */
 app.get("/api/summary", (req, res) => {
   try {
@@ -740,6 +707,7 @@ app.get("/video", (req, res) => {
     });
   });
 });
+app.get("/interactivemap", (req, res) => res.render("interactivemap"));
 
 
 app.get("/addVideo", adminOnly, (req, res) => res.render("addVideo"));
