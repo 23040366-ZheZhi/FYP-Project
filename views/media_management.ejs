@@ -59,7 +59,7 @@
             <div class="video-block mb-3">
                 <div class="row mt-3">
                     <div class="col-md-3">
-                        <label class="d-block" style="font-weight: bold;">Video:</label>
+                        <label class="d-block" style="font-weight: bold;">Video/Image:</label>
                         <input type="file"
                         class="form-control"
                         name="videos[]"
@@ -67,8 +67,8 @@
                         onchange="previewVideo(this)"
                         required>
                     <label class="preview-label fw-bold mt-2" style="font-weight: bold; margin-top: 10px;">Preview: </label>
-                    <video class="preview-video d-none d-block" style="height:400px; aspect-ratio: 21/9; object-fit:cover; margin-top:0; display:block;" preload="metadata" controls></video>
-                    <img class="preview-image w-100 d-none"style="height:250px; object-fit:cover; margin-top:0;">
+                    <video class="preview-video d-none d-block" style="height:400px; aspect-ratio: 3/1; object-fit:cover; margin-top:0; display:block;" preload="metadata" controls></video>
+                    <img class="preview-image w-100 d-none"style="height:250px; aspect-ratio: 3/1; object-fit:cover; margin-top:0;">
                 </div>
 
             </div>
@@ -77,9 +77,9 @@
             </div>
         </div>
             <!-- SUBMIT + BACK -->
-            <button class="btn btn-primary mt-3" type="submit">Add Video</button>
+            <button class="btn btn-primary mt-3" type="submit">Add Video/Image</button>
             <!-- ADD BUTTON -->
-            <button type="button" class="btn btn-success mt-3" onclick="addMore()">+ Add More Videos</button>
+            <button type="button" class="btn btn-success mt-3" onclick="addMore()">+ Add More Videos/Images</button>
     </form>
 </div>
 

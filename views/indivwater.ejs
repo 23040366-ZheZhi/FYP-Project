@@ -19,11 +19,16 @@
       --glassBorder: rgba(0,0,0,.10);
       --shadow: 0 22px 60px rgba(0,0,0,.18);
 
-      /* ✅ tap position */
-      --tap-x: 75vw;
+      /* ✅ tap position (UNCHANGED) */
+      --tap-x: 93vw;
 
-      /* ✅ stream alignment tweak (change this if spout not perfect) */
-      --stream-offset: 0px;
+      /* ✅ stream alignment tuning (adjust if needed) */
+      --stream-x: -55px;     /* negative = move LEFT */
+      --stream-y: -160px;     /* negative = move UP */
+      --stream-w: 26px;
+
+      /* ✅ stream should stop at basin rim (small gap) */
+      --stream-stop-gap: 4px;
     }
 
     *{ box-sizing:border-box; }
@@ -44,7 +49,7 @@
                   linear-gradient(180deg, #ffffff, #f4f8ff);
     }
 
-    /* ===== TAP (BIG + at 75%) ===== */
+    /* ===== TAP ===== */
     .tapWrap{
       position: fixed;
       left: var(--tap-x);
@@ -58,6 +63,7 @@
       gap: 10px;
       opacity: 1;
       transition: opacity 550ms ease, transform 550ms ease;
+      width: 520px;
     }
     .tapWrap.hide{
       opacity: 0;
@@ -65,39 +71,70 @@
     }
 
     .tapImg{
-      width: 520px; /* BIG */
+      width: 520px;
       height: auto;
       display:block;
       filter: drop-shadow(0 22px 40px rgba(0,0,0,.22));
       opacity: .98;
+      position: relative;
+      z-index: 2; /* ✅ tap ABOVE stream */
     }
 
-    /* Stream */
+    /* ✅ Stream: behind tap, aligned to spout, stops at basin rim */
     .stream{
-      width: 28px;
+      position: absolute;
+
+      top: calc(100% - 6px + var(--stream-y));
+      left: calc(50% + var(--stream-x));
+      transform: translateX(-50%);
+
+      width: var(--stream-w);
       height: 0px;
       border-radius: 0 0 18px 18px;
-      background: linear-gradient(to bottom,
-        rgba(190,235,255,.95),
-        rgba(70,160,255,.98)
-      );
-      box-shadow: 0 0 24px rgba(80,160,255,.45);
       opacity: 0;
-      transform: translateX(var(--stream-offset));
-      transition:
-        height 700ms cubic-bezier(.2,.9,.2,1),
-        opacity 200ms ease,
-        transform 200ms ease;
-    }
-    .pouring .stream{
-      height: 64vh;
-      opacity: 1;
+
+      background: linear-gradient(to bottom,
+        rgba(210,245,255,.98),
+        rgba(90,175,255,.95),
+        rgba(50,140,255,.98)
+      );
+
+      box-shadow: 0 0 24px rgba(80,160,255,.40);
+      transition: height 700ms cubic-bezier(.2,.9,.2,1), opacity 200ms ease;
+      overflow: hidden;
+
+      z-index: 1; /* ✅ behind tap */
     }
 
-    /* ===== BASIN (✅ ALWAYS CENTER) ===== */
+    /* subtle flowing texture inside stream */
+    .stream::after{
+      content:"";
+      position:absolute;
+      inset:-30% 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.35) 0px,
+        rgba(255,255,255,.35) 10px,
+        rgba(255,255,255,0) 22px,
+        rgba(255,255,255,0) 46px
+      );
+      opacity:.35;
+      animation: streamFlow 0.9s linear infinite;
+    }
+    @keyframes streamFlow{
+      from{ transform: translateY(-20%); }
+      to{ transform: translateY(20%); }
+    }
+
+    .pouring .stream{
+      opacity: 1;
+      height: 60vh; /* ✅ JS will set exact height to basin rim */
+    }
+
+    /* ===== BASIN (center) ===== */
     .basinWrap{
       position: fixed;
-      left: 50vw;                    /* ✅ CENTER FIX */
+      left: 50vw;
       transform: translateX(-50%);
       bottom: 74px;
       width: min(2200px, 98vw);
@@ -135,6 +172,7 @@
       overflow:hidden;
     }
 
+    /* ✅ “more flowing” fill: use keyframes instead of only height transition */
     .basinWater{
       position:absolute;
       left:0; right:0; bottom:0;
@@ -149,15 +187,26 @@
       left:-20%;
       top:-18px;
       width:140%;
-      height:40px;
-      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.26), rgba(255,255,255,0) 60%);
+      height:44px;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,.30), rgba(255,255,255,0) 62%),
+        linear-gradient(90deg, rgba(255,255,255,.18), rgba(255,255,255,0));
       filter: blur(2px);
-      opacity:.85;
+      opacity:.9;
       animation: basinSurface 2.2s ease-in-out infinite;
     }
     @keyframes basinSurface{
       0%,100%{ transform: translateX(-2%); }
       50%{ transform: translateX(2%); }
+    }
+
+    /* ✅ small “turbulence” when filling */
+    .scene.filling .basinWater{
+      animation: fillWobble 0.55s ease-in-out infinite;
+    }
+    @keyframes fillWobble{
+      0%,100%{ filter: saturate(1) brightness(1); }
+      50%{ filter: saturate(1.06) brightness(1.03); }
     }
 
     /* ===== OVERFLOW SEA ===== */
@@ -302,11 +351,6 @@
       letter-spacing:.3px;
       color: rgba(11,18,32,.92);
     }
-    .status{
-      font-size: 11px;
-      font-weight: 900;
-      color: rgba(0,150,90,.95);
-    }
 
     .chart-area{
       height: 380px;
@@ -393,7 +437,6 @@
       <section class="screen" id="screenA">
         <div class="screen-header">
           <span>Graph 1</span>
-          <span class="status">● LIVE</span>
         </div>
 
         <div class="chart-area">
@@ -409,7 +452,6 @@
       <section class="screen" id="screenB">
         <div class="screen-header">
           <span>Graph 2</span>
-          <span class="status">● LIVE</span>
         </div>
 
         <div class="chart-area">
@@ -435,12 +477,12 @@
         </div>
       </div>
     </div>
-
   </div>
 
   <script>
     const scene = document.getElementById("scene");
     const tapWrap = document.getElementById("tapWrap");
+    const stream = document.getElementById("stream");
     const basinWrap = document.getElementById("basinWrap");
     const basinWater = document.getElementById("basinWater");
     const bubblesHost = document.getElementById("bubbles");
@@ -473,31 +515,63 @@
       }
     }
 
+    // ✅ Make stream stop exactly at basin rim (not through the basin)
+    function setStreamToBasinRim(){
+      const streamRect = stream.getBoundingClientRect();
+      const basinRect = basinWrap.getBoundingClientRect();
+
+      // rim y = top of basinWrap + top offset of basinInner (22px) + small gap
+      const rimY = basinRect.top + 22 + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--stream-stop-gap') || 0);
+
+      const topY = streamRect.top; // stream top (after CSS offsets)
+      const targetH = Math.max(0, rimY - topY);
+
+      stream.style.height = targetH + "px";
+    }
+
     window.addEventListener("load", () => {
+      // start pouring
       tapWrap.classList.add("pouring");
 
+      // set stream length after layout
+      requestAnimationFrame(() => {
+        setStreamToBasinRim();
+      });
+
+      // keep adjusting while pouring (in case fonts/viewport settle)
+      const raf1 = requestAnimationFrame(() => setStreamToBasinRim());
+      const raf2 = requestAnimationFrame(() => setStreamToBasinRim());
+
+      // start “filling” effect
       setTimeout(() => {
+        scene.classList.add("filling");
         basinWater.style.height = "95%";
       }, 220);
 
+      // then flood sequence
       setTimeout(() => {
+        scene.classList.remove("filling");
         basinWrap.classList.add("hide");
         scene.classList.add("flood");
         makeBubbles(22);
       }, 2650);
 
+      // stop pouring + hide tap
       setTimeout(() => {
         tapWrap.classList.remove("pouring");
         tapWrap.classList.add("hide");
       }, 3500);
 
+      // show charts
       setTimeout(() => screenA.classList.add("on"), 3800);
       setTimeout(() => screenB.classList.add("on"), 4000);
 
+      // render charts
       setTimeout(() => window.dispatchEvent(new Event("water:render")), 4100);
     });
 
     window.addEventListener("resize", () => {
+      if (!tapWrap.classList.contains("hide")) setStreamToBasinRim();
       if (scene.classList.contains("flood")) makeBubbles(22);
     });
   </script>

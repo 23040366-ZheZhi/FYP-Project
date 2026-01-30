@@ -56,7 +56,7 @@
       transform: translateY(0);
     }
 
-    /* ===== RAYS (few, fixed slanted, glow flowing downward) ===== */
+/* ===== RAYS (12 thin slanted rays + glow flowing TOP -> BOTTOM) ===== */
     .ray-layer{
       position:fixed;
       inset:0;
@@ -67,49 +67,68 @@
     }
     .page.filled .ray-layer{ opacity:1; }
 
-    .ray{
-      position:absolute;
-      top:-35vh;
-      height:190vh;
-      width:130px;
-      transform: rotate(115deg);
-      border-radius:999px;
-      opacity:.65;
-      overflow:hidden;
-      background: linear-gradient(
-        to bottom,
-        rgba(255, 235, 185, .10),
-        rgba(255, 215, 120, .20),
-        rgba(255, 235, 185, .08)
-      );
-      filter: blur(.3px);
-    }
-
-    .ray::after{
+    /* Static thin slanted rays */
+    .ray-layer::before{
       content:"";
       position:absolute;
-      left:-35%;
-      top:-60%;
-      width:170%;
-      height:55%;
-      background: linear-gradient(
-        to bottom,
-        transparent,
-        rgba(255,240,190,0),
-        rgba(255,240,190,.60),
-        rgba(120,230,255,.18),
-        rgba(255,240,190,0),
-        transparent
+      inset:-20%;
+      background: repeating-linear-gradient(
+        115deg,
+        rgba(255, 234, 180, .26) 0px,
+        rgba(255, 234, 180, .26) 8px,
+        transparent 8px,
+        transparent 120px   /* big gap = fewer rays */
       );
-      filter: blur(1.2px);
+      filter: blur(.3px);
       opacity:.75;
-      animation: rayFlow 6s linear infinite;
+      transform: translateX(-10%) translateY(-10%);
     }
 
-    @keyframes rayFlow{
-      from { transform: translateY(-20%); }
-      to   { transform: translateY(240%); }
+    /* Moving glow travelling down the rays */
+    .ray-layer::after{
+      content:"";
+      position:absolute;
+      inset:-20%;
+      background: repeating-linear-gradient(
+        115deg,
+        rgba(255,240,190,0) 0px,
+        rgba(255,240,190,0) 8px,
+        transparent 8px,
+        transparent 120px
+      );
+
+      /* vertical glow band */
+      mask-image: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0) 0%,
+        rgba(0,0,0,0) 35%,
+        rgba(0,0,0,1) 50%,
+        rgba(0,0,0,0) 65%,
+        rgba(0,0,0,0) 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0) 0%,
+        rgba(0,0,0,0) 35%,
+        rgba(0,0,0,1) 50%,
+        rgba(0,0,0,0) 65%,
+        rgba(0,0,0,0) 100%
+      );
+
+      box-shadow: inset 0 0 0 9999px rgba(255,230,160,.45);
+      mix-blend-mode: screen;
+      filter: blur(1.2px);
+      opacity:.55;
+
+      transform: translateX(-10%) translateY(-60%);
+      animation: rayGlowDown 6s linear infinite;
     }
+
+    @keyframes rayGlowDown{
+      from { transform: translateX(-10%) translateY(-60%); }
+      to   { transform: translateX(-10%) translateY(60%); }
+    }
+
 
     /* 6 fixed rays */
     .r1{ left: 6%;  width:110px; opacity:.45; }

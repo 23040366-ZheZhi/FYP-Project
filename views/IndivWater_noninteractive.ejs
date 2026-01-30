@@ -6,215 +6,136 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    body { font-family: Arial; padding: 12px; background: #f7f7f7; margin:0; overflow-x:hidden; }
-    h2 { text-align: center; margin-bottom: 20px; position: relative; z-index: 20; }
+    :root{
+      --bg:#ffffff;
+      --ink:#0b1220;
 
-    .chart-wrap {
-      max-width: 1400px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 18px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      --sea-top: rgba(20,145,255,.55);
+      --sea-mid: rgba(0,125,255,.75);
+      --sea-deep: rgba(0,85,200,.92);
+
+      /* keep same tap feel */
+      --tap-x: 75vw;
+
+      /* ✅ keep these (you asked) */
+      --stream-x: -55px;
+      --stream-y: -160px;    /* ✅ keep this */
+      --stream-w: 26px;
+
+      --glass: rgba(255,255,255,.90);
+      --glassBorder: rgba(0,0,0,.10);
+      --shadow: 0 22px 60px rgba(0,0,0,.18);
+
+      --stream-stop-gap: 4px;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 50% -10%, rgba(0,140,255,.10), transparent 65%),
+                  linear-gradient(180deg, #ffffff, #f4f8ff);
+      color: var(--ink);
+      overflow-x:hidden;
+      padding: 12px;
+    }
+
+    /* Title and chart wrapper (same fade-in idea as your noninteractive) */
+    h2{
+      text-align:center;
+      margin: 12px 0 20px;
       position: relative;
-      z-index: 20; /* keep chart above water */
-    }
-
-    .chart-area { height: 520px; }
-    canvas { width: 100% !important; height: 100% !important; }
-
-    .msg {
-      text-align: center;
-      margin-top: 10px;
-      color: #b00020;
-      font-weight: bold;
-      position: relative;
-      z-index: 20;
-    }
-
-    .graph-back-nav {
-      position: fixed;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 2000;
-    }
-
-    .graph-back-btn {
-      width: 130px;
-      height: 56px;
-      background: #343a40;
-      color: white;
-      border-radius: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      text-decoration: none;
-      transition: 0.2s ease;
-      box-shadow: 0 8px 20px rgba(0,0,0,.18);
-    }
-    .graph-back-btn:hover { background: #23272b; }
-
-    /* ===============================
-       ✅ FADE-IN (like previous code)
-       (Only visual; chart JS untouched)
-       =============================== */
-    h2, .chart-wrap, #msgBox{
+      z-index: 80;
       opacity: 0;
       transform: translateY(18px) scale(.99);
-      transition:
-        opacity 900ms ease,
-        transform 1100ms cubic-bezier(.2,.9,.2,1);
+      transition: opacity 900ms ease, transform 1100ms cubic-bezier(.2,.9,.2,1);
     }
-    body.revealCharts h2,
-    body.revealCharts .chart-wrap,
-    body.revealCharts #msgBox{
+    body.revealCharts h2{
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .chart-wrap{
+      max-width: 1400px;
+      margin: 0 auto;
+      background: var(--glass);
+      border: 1px solid var(--glassBorder);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+      position: relative;
+      z-index: 80;
+      backdrop-filter: blur(12px);
+
+      opacity: 0;
+      transform: translateY(18px) scale(.985);
+      transition: opacity 900ms ease, transform 1100ms cubic-bezier(.2,.9,.2,1);
+    }
+    body.revealCharts .chart-wrap{
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .chart-area{ height: 520px; }
+    canvas{ width:100% !important; height:100% !important; display:block; }
+
+    .msg{
+      text-align:center;
+      margin-top: 10px;
+      color:#b00020;
+      font-weight:bold;
+      position: relative;
+      z-index: 80;
+
+      opacity: 0;
+      transform: translateY(18px) scale(.99);
+      transition: opacity 900ms ease, transform 1100ms cubic-bezier(.2,.9,.2,1);
+    }
+    body.revealCharts .msg{
       opacity: 1;
       transform: translateY(0) scale(1);
     }
 
     /* ===============================
-       ✅ SAME ANIMATION AS OTHER PAGE
-       tap -> basin fill -> flood -> bubbles
+       ✅ SAME BACK BUTTON AS indivwater.ejs
        =============================== */
-
-    :root{
-      --tap-x: 75vw;         /* tap position */
-      --stream-offset: 0px;  /* adjust if stream not exactly under spout */
-      --sea-top: rgba(20,145,255,.55);
-      --sea-mid: rgba(0,125,255,.75);
-      --sea-deep: rgba(0,85,200,.92);
-    }
-
-    /* TAP */
-    .tapWrap{
+    .graph-back-nav{
       position: fixed;
-      left: var(--tap-x);
-      top: 34px;
+      bottom: 18px;
+      left: 50%;
       transform: translateX(-50%);
-      z-index: 12;           /* above sea, below chart */
-      pointer-events:none;
+      z-index: 120;
+    }
+    .graph-back-btn{
+      width: 150px;
+      height: 56px;
+      background: rgba(17,24,39,.85);
+      color: #fff;
+      border-radius: 999px;
       display:flex;
-      flex-direction:column;
       align-items:center;
-      gap: 10px;
-      opacity: 1;
-      transition: opacity 550ms ease, transform 550ms ease;
-    }
-    .tapWrap.hide{
-      opacity: 0;
-      transform: translateX(-50%) translateY(-10px);
+      justify-content:center;
+      text-decoration:none;
+      font-weight:800;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
     }
 
-    .tapImg{
-      width: 520px; /* BIG */
-      height: auto;
-      display:block;
-      filter: drop-shadow(0 22px 40px rgba(0,0,0,.22));
-      opacity: .98;
-    }
-
-    .stream{
-      width: 28px;
-      height: 0px;
-      border-radius: 0 0 18px 18px;
-      background: linear-gradient(to bottom,
-        rgba(190,235,255,.95),
-        rgba(70,160,255,.98)
-      );
-      box-shadow: 0 0 24px rgba(80,160,255,.45);
-      opacity: 0;
-      transform: translateX(var(--stream-offset));
-      transition:
-        height 700ms cubic-bezier(.2,.9,.2,1),
-        opacity 200ms ease,
-        transform 200ms ease;
-    }
-    .pouring .stream{
-      height: 64vh;
-      opacity: 1;
-    }
-
-    /* BASIN (center bottom) */
-    .basinWrap{
-      position: fixed;
-      left: 50vw;
-      transform: translateX(-50%);
-      bottom: 74px;
-      width: min(2200px, 98vw);
-      height: 340px;
-      z-index: 11;
-      pointer-events:none;
-      filter: drop-shadow(0 34px 54px rgba(0,0,0,.18));
-      opacity: 1;
-      transition: opacity 650ms ease, transform 650ms ease;
-    }
-    .basinWrap.hide{
-      opacity: 0;
-      transform: translateX(-50%) translateY(28px);
-    }
-
-    .basin{
-      position:absolute;
-      left:0; right:0; bottom:0;
-      height: 340px;
-      border-radius: 0 0 160px 160px;
-      background: rgba(255,255,255,.06);
-      border:none;
-      box-shadow:none;
-      overflow:hidden;
-    }
-
-    .basinInner{
-      position:absolute;
-      left: 4.5%;
-      right: 4.5%;
-      top: 22px;
-      bottom: 22px;
-      border-radius: 0 0 140px 140px;
-      background: rgba(0,0,0,.03);
-      overflow:hidden;
-    }
-
-    .basinWater{
-      position:absolute;
-      left:0; right:0; bottom:0;
-      height: 0%;
-      background: linear-gradient(180deg, rgba(120,200,255,.65), rgba(40,140,255,.80));
-      transition: height 2400ms cubic-bezier(.2,.9,.2,1);
-    }
-    .basinWater::before{
-      content:"";
-      position:absolute;
-      left:-20%;
-      top:-18px;
-      width:140%;
-      height:40px;
-      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.26), rgba(255,255,255,0) 60%);
-      filter: blur(2px);
-      opacity:.85;
-      animation: basinSurface 2.2s ease-in-out infinite;
-    }
-    @keyframes basinSurface{
-      0%,100%{ transform: translateX(-2%); }
-      50%{ transform: translateX(2%); }
-    }
-
-    /* SEA (floods to the TOP and stays) */
+    /* ===============================
+       ✅ SAME SEA WAVES AS indivwater.ejs
+       =============================== */
     .sea{
       position: fixed;
       left: 0; right:0;
       bottom: 0;
-      height: 160vh;
+      height: 140vh;
       transform: translateY(100%);
       transition: transform 5600ms cubic-bezier(.2,.9,.2,1);
-      z-index: 1;
+      z-index: 10;
       overflow:hidden;
       pointer-events:none;
       background: linear-gradient(180deg, var(--sea-top), var(--sea-mid) 40%, var(--sea-deep));
     }
-    body.flood .sea{ transform: translateY(0%); } /* ✅ fill to top */
+    body.flood .sea{ transform: translateY(28%); }
 
     .waterline{
       position:absolute;
@@ -257,12 +178,14 @@
         radial-gradient(900px 520px at 80% 45%, rgba(255,255,255,.12), transparent 55%);
     }
 
-    /* BUBBLES */
+    /* ===============================
+       ✅ SAME BUBBLES AS indivwater.ejs
+       =============================== */
     .bubbles{
       position: fixed;
       inset:0;
       pointer-events:none;
-      z-index: 2;
+      z-index: 15;
       overflow:hidden;
       opacity:0;
       transition: opacity 600ms ease;
@@ -272,6 +195,8 @@
     .bubble{
       position:absolute;
       bottom:-70px;
+      width: 14px;
+      height: 14px;
       border-radius:999px;
       opacity:0;
       background: radial-gradient(circle at 30% 30%,
@@ -294,113 +219,293 @@
         opacity: 0;
       }
     }
+
+    /* ===============================
+       TAP + STREAM (same style/logic as indivwater.ejs)
+       =============================== */
+    .tapWrap{
+      position: fixed;
+      left: var(--tap-x);
+      top: 34px;
+      transform: translateX(-50%);
+      z-index: 100;
+      pointer-events:none;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap: 10px;
+      opacity: 1;
+      transition: opacity 550ms ease, transform 550ms ease;
+      width: 520px;
+    }
+    .tapWrap.hide{
+      opacity: 0;
+      transform: translateX(-50%) translateY(-10px);
+    }
+
+    .tapImg{
+      width: 520px;
+      height: auto;
+      display:block;
+      filter: drop-shadow(0 22px 40px rgba(0,0,0,.22));
+      opacity: .98;
+      position: relative;
+      z-index: 2;
+    }
+
+    .stream{
+      position: absolute;
+      top: calc(100% - 6px + var(--stream-y));
+      left: calc(50% + var(--stream-x));
+      transform: translateX(-50%);
+      width: var(--stream-w);
+      height: 0px;
+      border-radius: 0 0 18px 18px;
+      opacity: 0;
+      background: linear-gradient(to bottom,
+        rgba(210,245,255,.98),
+        rgba(90,175,255,.95),
+        rgba(50,140,255,.98)
+      );
+      box-shadow: 0 0 24px rgba(80,160,255,.40);
+      transition: height 700ms cubic-bezier(.2,.9,.2,1), opacity 200ms ease;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .stream::after{
+      content:"";
+      position:absolute;
+      inset:-30% 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.35) 0px,
+        rgba(255,255,255,.35) 10px,
+        rgba(255,255,255,0) 22px,
+        rgba(255,255,255,0) 46px
+      );
+      opacity:.35;
+      animation: streamFlow 0.9s linear infinite;
+    }
+    @keyframes streamFlow{
+      from{ transform: translateY(-20%); }
+      to{ transform: translateY(20%); }
+    }
+
+    .pouring .stream{
+      opacity: 1;
+      height: 60vh; /* JS will set exact to rim */
+    }
+
+    /* ===============================
+       BASIN (same as indivwater.ejs)
+       =============================== */
+    .basinWrap{
+      position: fixed;
+      left: 50vw;
+      transform: translateX(-50%);
+      bottom: 74px;
+      width: min(2200px, 98vw);
+      height: 340px;
+      z-index: 60;
+      pointer-events:none;
+      filter: drop-shadow(0 34px 54px rgba(0,0,0,.18));
+      opacity: 1;
+      transition: opacity 650ms ease, transform 650ms ease;
+    }
+    .basinWrap.hide{
+      opacity: 0;
+      transform: translateX(-50%) translateY(28px);
+    }
+
+    .basin{
+      position:absolute;
+      left:0; right:0; bottom:0;
+      height: 340px;
+      border-radius: 0 0 160px 160px;
+      background: rgba(255,255,255,.06);
+      border:none;
+      box-shadow:none;
+      overflow:hidden;
+    }
+
+    .basinInner{
+      position:absolute;
+      left: 4.5%;
+      right: 4.5%;
+      top: 22px;
+      bottom: 22px;
+      border-radius: 0 0 140px 140px;
+      background: rgba(0,0,0,.03);
+      overflow:hidden;
+    }
+
+    .basinWater{
+      position:absolute;
+      left:0; right:0; bottom:0;
+      height: 0%;
+      background: linear-gradient(180deg, rgba(120,200,255,.65), rgba(40,140,255,.80));
+      transition: height 2400ms cubic-bezier(.2,.9,.2,1);
+    }
+
+    .basinWater::before{
+      content:"";
+      position:absolute;
+      left:-20%;
+      top:-18px;
+      width:140%;
+      height:44px;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,.30), rgba(255,255,255,0) 62%),
+        linear-gradient(90deg, rgba(255,255,255,.18), rgba(255,255,255,0));
+      filter: blur(2px);
+      opacity:.9;
+      animation: basinSurface 2.2s ease-in-out infinite;
+    }
+    @keyframes basinSurface{
+      0%,100%{ transform: translateX(-2%); }
+      50%{ transform: translateX(2%); }
+    }
+
+    /* optional small turbulence while filling (same idea as indivwater) */
+    body.filling .basinWater{
+      animation: fillWobble 0.55s ease-in-out infinite;
+    }
+    @keyframes fillWobble{
+      0%,100%{ filter: saturate(1) brightness(1); }
+      50%{ filter: saturate(1.06) brightness(1.03); }
+    }
   </style>
 </head>
 
 <body>
 
-<h2>Individual Water</h2>
+  <h2>Individual Water</h2>
 
-<div class="chart-wrap">
-  <div class="chart-area">
-    <canvas id="chart"></canvas>
-  </div>
-</div>
-
-<div class="msg" id="msgBox"></div>
-
-<div class="graph-back-nav">
-  <a href="/" class="graph-back-btn">Back</a>
-</div>
-
-<!-- ✅ Animation layers (overlay only) -->
-<div class="sea" id="sea" aria-hidden="true">
-  <div class="waterline"></div>
-  <div class="waterline2"></div>
-  <div class="ripples"></div>
-</div>
-<div class="bubbles" id="bubbles" aria-hidden="true"></div>
-
-<div class="tapWrap" id="tapWrap" aria-hidden="true">
-  <img class="tapImg" src="/images/tap.jpg" alt="Tap">
-  <div class="stream" id="stream"></div>
-</div>
-
-<div class="basinWrap" id="basinWrap" aria-hidden="true">
-  <div class="basin">
-    <div class="basinInner">
-      <div class="basinWater" id="basinWater"></div>
+  <div class="chart-wrap">
+    <div class="chart-area">
+      <canvas id="chart"></canvas>
     </div>
   </div>
-</div>
 
-<script>
-  const body = document.body;
-  const tapWrap = document.getElementById("tapWrap");
-  const basinWrap = document.getElementById("basinWrap");
-  const basinWater = document.getElementById("basinWater");
-  const bubblesHost = document.getElementById("bubbles");
+  <div class="msg" id="msgBox"></div>
 
-  function makeBubbles(count = 22){
-    bubblesHost.innerHTML = "";
-    const rise = window.innerHeight + 220;
+  <!-- ✅ SAME BACK BUTTON -->
+  <div class="graph-back-nav">
+    <a href="/" class="graph-back-btn">Back</a>
+  </div>
 
-    for (let i = 0; i < count; i++){
-      const b = document.createElement("div");
-      b.className = "bubble";
+  <!-- ✅ SAME SEA WAVES -->
+  <div class="sea" id="sea" aria-hidden="true">
+    <div class="waterline"></div>
+    <div class="waterline2"></div>
+    <div class="ripples"></div>
+  </div>
 
-      const size = Math.random() * 16 + 8;
-      const left = Math.random() * 100;
-      const dur = Math.random() * 4 + 4;
-      const delay = Math.random() * 4;
-      const wobble = (Math.random() * 40 - 20) + "px";
+  <!-- ✅ SAME BUBBLES -->
+  <div class="bubbles" id="bubbles" aria-hidden="true"></div>
 
-      b.style.width = size + "px";
-      b.style.height = size + "px";
-      b.style.left = left + "%";
-      b.style.setProperty("--dur", dur + "s");
-      b.style.setProperty("--delay", delay + "s");
-      b.style.setProperty("--rise", rise + "px");
-      b.style.setProperty("--wobble", wobble);
+  <!-- TAP -->
+  <div class="tapWrap" id="tapWrap" aria-hidden="true">
+    <img class="tapImg" src="/images/tap.jpg" alt="Tap">
+    <div class="stream" id="stream"></div>
+  </div>
 
-      bubblesHost.appendChild(b);
+  <!-- BASIN -->
+  <div class="basinWrap" id="basinWrap" aria-hidden="true">
+    <div class="basin">
+      <div class="basinInner">
+        <div class="basinWater" id="basinWater"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tapWrap = document.getElementById("tapWrap");
+    const stream = document.getElementById("stream");
+    const basinWrap = document.getElementById("basinWrap");
+    const basinWater = document.getElementById("basinWater");
+    const bubblesHost = document.getElementById("bubbles");
+
+    function makeBubbles(count = 22){
+      bubblesHost.innerHTML = "";
+      const rise = window.innerHeight + 220;
+
+      for (let i = 0; i < count; i++){
+        const b = document.createElement("div");
+        b.className = "bubble";
+
+        const size = Math.random() * 16 + 8;
+        const left = Math.random() * 100;
+        const dur = Math.random() * 4 + 4;
+        const delay = Math.random() * 4;
+        const wobble = (Math.random() * 40 - 20) + "px";
+
+        b.style.width = size + "px";
+        b.style.height = size + "px";
+        b.style.left = left + "%";
+        b.style.setProperty("--dur", dur + "s");
+        b.style.setProperty("--delay", delay + "s");
+        b.style.setProperty("--rise", rise + "px");
+        b.style.setProperty("--wobble", wobble);
+
+        bubblesHost.appendChild(b);
+      }
     }
-  }
 
-  window.addEventListener("load", () => {
-    // start pouring
-    tapWrap.classList.add("pouring");
+    // ✅ stop stream exactly at basin rim (same logic as indivwater.ejs)
+    function setStreamToBasinRim(){
+      const streamRect = stream.getBoundingClientRect();
+      const basinRect = basinWrap.getBoundingClientRect();
 
-    // fill basin
-    setTimeout(() => {
-      basinWater.style.height = "95%";
-    }, 220);
+      const gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--stream-stop-gap')) || 0;
 
-    // overflow -> hide basin -> flood
-    setTimeout(() => {
-      basinWrap.classList.add("hide");
-      body.classList.add("flood");
-      makeBubbles(22);
-    }, 2650);
+      // rimY = basin top + basinInner top padding (22px) + gap
+      const rimY = basinRect.top + 22 + gap;
+      const topY = streamRect.top;
 
-    // hide tap
-    setTimeout(() => {
-      tapWrap.classList.remove("pouring");
-      tapWrap.classList.add("hide");
-    }, 3500);
+      const targetH = Math.max(0, rimY - topY);
+      stream.style.height = targetH + "px";
+    }
 
-    // ✅ fade in title + chart like previous code
-    setTimeout(() => {
-      body.classList.add("revealCharts");
-    }, 3800);
-  });
+    window.addEventListener("load", () => {
+      // start pouring
+      tapWrap.classList.add("pouring");
+      requestAnimationFrame(() => setStreamToBasinRim());
 
-  window.addEventListener("resize", () => {
-    if (body.classList.contains("flood")) makeBubbles(22);
-  });
-</script>
+      // fill basin
+      setTimeout(() => {
+        document.body.classList.add("filling");
+        basinWater.style.height = "95%";
+      }, 220);
 
-<script type="module" src="/scripts/indiv_water_autoplay.js"></script>
+      // hide basin + start flood + bubbles (same timing)
+      setTimeout(() => {
+        document.body.classList.remove("filling");
+        basinWrap.classList.add("hide");
+        document.body.classList.add("flood");
+        makeBubbles(22);
+      }, 2650);
 
+      // stop pouring + hide tap (same timing)
+      setTimeout(() => {
+        tapWrap.classList.remove("pouring");
+        tapWrap.classList.add("hide");
+      }, 3500);
+
+      // reveal title + chart
+      setTimeout(() => {
+        document.body.classList.add("revealCharts");
+      }, 3800);
+    });
+
+    window.addEventListener("resize", () => {
+      if (!tapWrap.classList.contains("hide")) setStreamToBasinRim();
+      if (document.body.classList.contains("flood")) makeBubbles(22);
+    });
+  </script>
+
+  <!-- DO NOT TOUCH YOUR CHART SCRIPT -->
+  <script type="module" src="/scripts/indiv_water_autoplay.js"></script>
 </body>
 </html>

@@ -166,27 +166,70 @@ function renderBarMonth(year, month, frame) {
         barPercentage: 0.95
       }]
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        title: {
-          display: true,
-          text: `Electricity — ${month} ${year}`,
-          font: { size: 16, weight: "bold" }
+  options: {
+  responsive: true,
+  maintainAspectRatio: false,
+
+  layout: {
+    padding: {
+      bottom: 70
+    }
+  },
+
+  plugins: {
+    title: {
+      display: true,
+      text: `Electricity — ${month} ${year}`,
+      font: {
+        size: 16,
+        weight: "900"
+      }
+    },
+    legend: {
+      display: false
+    }
+  },
+
+  scales: {
+    x: {
+      ticks: {
+        autoSkip: false,
+        maxRotation: 0,
+        minRotation: 0,
+        font: {
+          size: 10
         },
-        legend: { display: false }
-      },
-      scales: {
-        x: { ticks: { maxRotation: 60, minRotation: 60 } },
-        y: {
-          beginAtZero: true,
-          title: { display: true, text: "Electricity (kWh)" }
+        padding: 8,
+        callback: function (value) {
+          const label = this.getLabelForValue(value);
+          const words = String(label).split(" ");
+          const lines = [];
+
+          for (let i = 0; i < words.length; i += 2) {
+            lines.push(words.slice(i, i + 2).join(" "));
+          }
+          return lines;
+        }
+      }
+    },
+
+    y: {
+      beginAtZero: true,
+      title: {
+        display: true,
+        text: "Electricity (kWh)",
+        font: {
+          size: 14,
+          weight: "800"
         }
       }
     }
-  });
+  }
 }
+}); 
+}
+
+ 
 
 function buildTimelineBar(rows, allowedYears) {
   const years = [...new Set(allowedYears)]

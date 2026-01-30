@@ -184,7 +184,7 @@ function renderBarMonth(titleLabel, buildingNames, values) {
     setSummaryHTML("");
   }
 
-  chart = new Chart(ctx, {
+    chart = new Chart(ctx, {
     type: "bar",
     data: {
       labels: buildingNames,
@@ -202,11 +202,16 @@ function renderBarMonth(titleLabel, buildingNames, values) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+
+      layout: {
+        padding: { bottom: 70 }
+      },
+
       plugins: {
         title: {
           display: true,
           text: `Water — ${titleLabel}`,
-          font: { size: 16, weight: "bold" }
+          font: { size: 16, weight: "900" }
         },
         legend: { display: false },
         tooltip: {
@@ -218,15 +223,45 @@ function renderBarMonth(titleLabel, buildingNames, values) {
           }
         }
       },
+
       scales: {
-        x: { ticks: { maxRotation: 60, minRotation: 60 } },
-        y: { beginAtZero: true, title: { display: true, text: "Water (m³)" } }
+        x: {
+          ticks: {
+            autoSkip: false,
+            maxRotation: 0,
+            minRotation: 0,
+            font: { size: 10 },
+            padding: 14,
+            callback: function (value) {
+              const label = String(this.getLabelForValue(value) ?? "");
+              const words = label.split(" ").filter(Boolean);
+
+              if (words.length <= 2) return label;
+
+              const lines = [];
+              for (let i = 0; i < words.length; i += 2) {
+                lines.push(words.slice(i, i + 2).join(" "));
+              }
+              return lines;
+            }
+          }
+        },
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: "Water (m³)",
+            font: { size: 14, weight: "900" }
+          }
+        }
       }
     }
   });
+    return true;
+}  // ✅ close renderBarMonth
 
-  return true;
-}
+
+
 
 function autoplayBars(timeline, rows, firstColKey, buildingKeys, buildingNames, rotateMs) {
   stopTimers();
@@ -362,6 +397,7 @@ function renderLineYear(year, timelineYear, rows, firstColKey, buildingKeys, bui
 
   return true;
 }
+
 
 function autoplayLineByYear(timeline, rows, firstColKey, buildingKeys, buildingNames, allowedYears, rotateMs) {
   stopTimers();

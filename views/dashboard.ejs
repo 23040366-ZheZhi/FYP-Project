@@ -449,11 +449,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 <script>
-  window.__ROTATE_CFG__ = JSON.stringify(rotateCfg);
-  console.log(window.__ROTATE_CFG__);
+  window.__ROTATE_CFG__ = <%- JSON.stringify(rotateCfg || {}) %>;
 </script>
-
 <script src="/scripts/idle-rotate.js"></script>
+
 
 
 </body>
