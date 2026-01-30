@@ -228,8 +228,8 @@ function renderBarMonth(titleLabel, buildingNames, values) {
         x: {
           ticks: {
             autoSkip: false,
-            maxRotation: 0,
-            minRotation: 0,
+            maxRotation: 45,
+            minRotation: 45,
             font: { size: 10 },
             padding: 14,
             callback: function (value) {
@@ -362,12 +362,15 @@ function renderLineYear(year, timelineYear, rows, firstColKey, buildingKeys, bui
     options: {
       responsive: true,
       maintainAspectRatio: false,
+       layout: {
+          padding: { bottom: 60 }   // ✅ gives space for months
+      },
       interaction: { mode: "index", intersect: false },
       plugins: {
         title: {
           display: true,
           text: `Water — Individual Buildings (Line) — ${year}`,
-          font: { size: 16, weight: "bold" }
+          font: { size: 16, weight: "900" }
         },
         legend: {
           display: true,
@@ -389,7 +392,7 @@ function renderLineYear(year, timelineYear, rows, firstColKey, buildingKeys, bui
         }
       },
       scales: {
-        y: { beginAtZero: true, title: { display: true, text: "Water (m³)" } },
+        y: { beginAtZero: true, title: { display: true, text: "Water (m³)",weight:"800" } },
         x: { ticks: { autoSkip: true, maxRotation: 0 } }
       }
     }

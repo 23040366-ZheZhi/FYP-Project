@@ -379,6 +379,9 @@ function renderLineYear(title, timeline, rows, buildingKeys) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+       layout: {
+          padding: { bottom: 60 }   
+        },
       plugins: {
         title: { display: true, text: title },
         legend: {
