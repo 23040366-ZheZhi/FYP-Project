@@ -13,6 +13,7 @@
       --card-bg: rgba(255, 255, 255, 0.9);
       --text: #111827;
       --turbine-body: #f8fafc;
+      --electric-gold: #fbbf24;
     }
 
     body {
@@ -24,105 +25,258 @@
       overflow-x: hidden;
     }
 
-    /* ===== BACKGROUND ANIMATIONS ===== */
+    /* ===== SUN ===== */
     .sun {
-      position: fixed; top: 30px; left: 40px;
-      width: 70px; height: 70px;
-      background: #fff176; border-radius: 50%;
-      box-shadow: 0 0 40px #fff176; z-index: 1;
+      position: fixed;
+      top: 30px;
+      left: 40px;
+      width: 70px;
+      height: 70px;
+      background: #fff176;
+      border-radius: 50%;
+      box-shadow: 0 0 40px #fff176;
+      z-index: 1;
+      pointer-events: none;
     }
 
+    /* ===== GREEN GROUND (same as energy graph) ===== */
     .horizon {
-      position: fixed; bottom: 0; width: 100%; height: 30px;
-      background: var(--grass); z-index: 5;
-      border-top: 4px solid #16a34a;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      height: 100px;                 /* ✅ thicker ground like energy graph */
+      background: var(--grass);
+      z-index: 5;
+      border-top: 5px solid #16a34a;
+      pointer-events: none;
     }
 
+    /* ===== TURBINE FARM (4 turbines + generators) ===== */
     .turbine-farm {
-      position: fixed; bottom: 30px; width: 100%;
-      display: flex; justify-content: space-between; 
-      padding: 0 5%; z-index: 2; pointer-events: none;
+      position: fixed;
+      bottom: 100px;                 /* ✅ sits on top of horizon */
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+      z-index: 6;
+      pointer-events: none;
     }
 
-    .turbine { display: flex; flex-direction: column; align-items: center; position: relative; }
+    .turbine {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
     .tower {
-      width: 6px; height: 140px;
+      width: 8px;
+      height: 180px;
       background: linear-gradient(90deg, #e2e8f0, #cbd5e1);
       clip-path: polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%);
     }
+
     .blades {
-      position: absolute; top: -50px; width: 100px; height: 100px;
+      position: absolute;
+      top: -70px;
+      width: 140px;
+      height: 140px;
       animation: spin var(--speed) linear infinite;
     }
+
     .blade {
-      position: absolute; top: 50%; left: 50%;
-      width: 6px; height: 50px; background: var(--turbine-body);
-      transform-origin: top center; border-radius: 0 0 5px 5px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 8px;
+      height: 70px;
+      background: var(--turbine-body);
+      transform-origin: top center;
+      border-radius: 0 0 10px 10px;
+      box-shadow: inset 2px 0 5px rgba(0,0,0,0.05);
     }
+
     .blade:nth-child(1) { transform: translate(-50%, 0) rotate(0deg); }
     .blade:nth-child(2) { transform: translate(-50%, 0) rotate(120deg); }
     .blade:nth-child(3) { transform: translate(-50%, 0) rotate(240deg); }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-    /* ===== CONTENT LAYOUT ===== */
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* ===== GENERATOR BOX ===== */
+    .generator {
+      position: absolute;
+      bottom: -65px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 50px;
+      background: #334155;
+      border-radius: 6px;
+      z-index: 20;
+      border: 3px solid #1e293b;
+      transition: all 0.8s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .charged {
+      background: var(--electric-gold);
+      box-shadow: 0 0 30px var(--electric-gold);
+      border-color: #d97706;
+    }
+
+    .bolt {
+      font-size: 20px;
+      color: white;
+      opacity: 0;
+    }
+
+    .charged .bolt {
+      opacity: 1;
+      animation: flicker 0.5s infinite;
+    }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ===== CONTENT FADE IN (charts appear later) ===== */
     .main-container {
-      position: relative; z-index: 20;
+      position: relative;
+      z-index: 20;
       padding: 20px;
-      opacity: 0; transform: translateY(30px);
+      opacity: 0;
+      transform: translateY(30px);
       transition: all 1s ease-out;
     }
-    body.ready .main-container { opacity: 1; transform: translateY(0); }
+    body.ready .main-container {
+      opacity: 1;
+      transform: translateY(0);
+    }
 
     h2 {
-      text-align: center; color: white;
+      text-align: center;
+      color: white;
       text-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      margin: 10px 0 20px; font-size: 24px;
+      margin: 10px 0 20px;
+      font-size: 24px;
+      font-weight: 800;
     }
 
     .compare-grid {
-      max-width: 1600px; margin: 0 auto;
-      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+      max-width: 1600px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
     }
-    @media (max-width: 950px) { .compare-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 950px) {
+      .compare-grid { grid-template-columns: 1fr; }
+    }
 
     .chart-card {
       background: var(--card-bg);
-      border-radius: 14px; padding: 15px;
+      border-radius: 14px;
+      padding: 15px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.1);
       backdrop-filter: blur(8px);
-      display: flex; flex-direction: column; min-height: 500px;
+      display: flex;
+      flex-direction: column;
+      min-height: 500px;
     }
 
-    .chart-header { font-size: 14px; font-weight: 800; margin-bottom: 10px; }
-    .chart-area { position: relative; flex: 1; min-height: 380px; }
-    canvas { width: 100% !important; height: 100% !important; }
+    .chart-header {
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .chart-area {
+      position: relative;
+      flex: 1;
+      min-height: 380px;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
 
     .chart-footer {
-      margin-top: 15px; padding-top: 10px;
+      margin-top: 15px;
+      padding-top: 10px;
       border-top: 1px solid rgba(0,0,0,0.05);
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-    }
-    select {
-      min-width: 200px; padding: 8px 14px;
-      border-radius: 20px; border: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
     }
 
-    .graph-back-nav { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); z-index: 2000; }
+    select {
+      min-width: 200px;
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: 1px solid #ddd;
+    }
+
+    /* Back button */
+    .graph-back-nav {
+      position: fixed;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+    }
     .graph-back-btn {
-      width: 120px; height: 50px; background: #343a40; color: white;
-      border-radius: 25px; display: flex; align-items: center; justify-content: center;
-      font-weight: 700; text-decoration: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      width: 130px;
+      height: 56px;
+      background: rgba(17,24,39,.85);
+      color: #fff;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-weight: 800;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
     }
   </style>
 </head>
 
 <body>
   <div class="sun"></div>
-  
+
+  <!-- ✅ 4 turbines + generators -->
   <div class="turbine-farm">
-    <div class="turbine" style="--speed: 3s;"><div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div><div class="tower"></div></div>
-    <div class="turbine" style="--speed: 4s;"><div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div><div class="tower"></div></div>
-    <div class="turbine" style="--speed: 2.5s;"><div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div><div class="tower"></div></div>
+    <div class="turbine" style="--speed: 3s;">
+      <div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div>
+      <div class="tower"></div>
+      <div class="generator gen1"><span class="bolt">⚡</span></div>
+    </div>
+
+    <div class="turbine" style="--speed: 2.6s;">
+      <div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div>
+      <div class="tower"></div>
+      <div class="generator gen2"><span class="bolt">⚡</span></div>
+    </div>
+
+    <div class="turbine" style="--speed: 3.6s;">
+      <div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div>
+      <div class="tower"></div>
+      <div class="generator gen3"><span class="bolt">⚡</span></div>
+    </div>
+
+    <div class="turbine" style="--speed: 2.9s;">
+      <div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div>
+      <div class="tower"></div>
+      <div class="generator gen4"><span class="bolt">⚡</span></div>
+    </div>
   </div>
 
   <div class="horizon"></div>
@@ -158,14 +312,24 @@
   </div>
 
   <script>
-    window.addEventListener('load', () => {
-      // Small delay to let the turbine animation start before showing the charts
+    // ✅ Same sequence vibe as the energy graph:
+    // 1) charge generators
+    // 2) then reveal charts
+    window.addEventListener("load", () => {
       setTimeout(() => {
-        document.body.classList.add('ready');
-      }, 500);
+        document.querySelector(".gen1").classList.add("charged");
+        document.querySelector(".gen2").classList.add("charged");
+        document.querySelector(".gen3").classList.add("charged");
+        document.querySelector(".gen4").classList.add("charged");
+      }, 900);
+
+      setTimeout(() => {
+        document.body.classList.add("ready");
+      }, 1800);
     });
   </script>
 
+  <!-- DO NOT TOUCH: your chart logic -->
   <script type="module" src="/scripts/plotindividual.js"></script>
 </body>
 </html>

@@ -24,104 +24,215 @@
 
     /* ===== BACKGROUND ELEMENTS ===== */
     .sun {
-      position: absolute; top: 30px; left: 50px;
+      position: fixed;
+      top: 30px; left: 50px;
       width: 80px; height: 80px;
-      background: #fff176; border-radius: 50%;
-      box-shadow: 0 0 50px #fff176; z-index: 1;
-    }
-
-    .horizon {
-      position: fixed; bottom: 0; width: 100%; height: 40px;
-      background: var(--grass); z-index: 5;
-      border-top: 5px solid #16a34a;
-    }
-
-    /* ===== THE TURBINE FARM (Added 4 to ensure none are "missing") ===== */
-    .turbine-farm {
-      position: fixed; bottom: 40px; width: 100%;
-      display: flex; justify-content: space-around; 
-      align-items: flex-end; z-index: 2;
+      background: #fff176;
+      border-radius: 50%;
+      box-shadow: 0 0 50px #fff176;
+      z-index: 1;
       pointer-events: none;
     }
 
-    .turbine { display: flex; flex-direction: column; align-items: center; position: relative; }
+    .horizon {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      height: 100px;                 /* ✅ match energy graph */
+      background: var(--grass);
+      z-index: 5;
+      border-top: 5px solid #16a34a;
+      pointer-events: none;
+    }
+
+    /* ===== TURBINE FARM (4 turbines + generators) ===== */
+    .turbine-farm {
+      position: fixed;
+      bottom: 100px;                 /* ✅ sits on top of horizon */
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    .turbine {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
     .tower {
-      width: 8px; height: 160px;
+      width: 8px;
+      height: 160px;
       background: linear-gradient(90deg, #e2e8f0, #cbd5e1);
       clip-path: polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%);
     }
+
     .blades {
-      position: absolute; top: -60px; width: 120px; height: 120px;
+      position: absolute;
+      top: -60px;
+      width: 120px;
+      height: 120px;
       animation: spin var(--speed) linear infinite;
     }
+
     .blade {
-      position: absolute; top: 50%; left: 50%;
-      width: 8px; height: 60px; background: var(--turbine-body);
-      transform-origin: top center; border-radius: 0 0 10px 10px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 8px;
+      height: 60px;
+      background: var(--turbine-body);
+      transform-origin: top center;
+      border-radius: 0 0 10px 10px;
     }
 
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    /* ✅ FIX: rotate blades so you see all 3 */
+    .blade:nth-child(1) { transform: translate(-50%, 0) rotate(0deg); }
+    .blade:nth-child(2) { transform: translate(-50%, 0) rotate(120deg); }
+    .blade:nth-child(3) { transform: translate(-50%, 0) rotate(240deg); }
 
-    /* ===== GENERATOR HUB ===== */
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* ===== GENERATORS (under each turbine) ===== */
     .generator {
-      position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%);
-      width: 90px; height: 55px; background: #334155;
-      border-radius: 8px; z-index: 10; border: 3px solid #1e293b;
-      transition: all 0.8s ease; display: flex; align-items: center; justify-content: center;
+      position: absolute;            /* ✅ attach to turbine */
+      bottom: -65px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 50px;
+      background: #334155;
+      border-radius: 6px;
+      z-index: 20;
+      border: 3px solid #1e293b;
+      transition: all 0.8s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .charged { background: var(--electric-gold); box-shadow: 0 0 30px var(--electric-gold); border-color: #d97706; }
-    .bolt { font-size: 22px; color: white; opacity: 0; }
+
+    .charged {
+      background: var(--electric-gold);
+      box-shadow: 0 0 30px var(--electric-gold);
+      border-color: #d97706;
+    }
+
+    .bolt { font-size: 20px; color: white; opacity: 0; }
     .charged .bolt { opacity: 1; animation: flicker 0.5s infinite; }
-    @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
 
     /* ===== MAIN WRAPPER ===== */
     .main-reveal {
-      position: relative; z-index: 20;
-      opacity: 0; transform: translateY(40px);
+      position: relative;
+      z-index: 20;
+      opacity: 0;
+      transform: translateY(40px);
       transition: all 1s ease-out;
+      padding-top: 20px;
     }
-    body.ready .main-reveal { opacity: 1; transform: translateY(0); }
+    body.ready .main-reveal {
+      opacity: 1;
+      transform: translateY(0);
+    }
 
-    h2 { text-align: center; margin: 20px 0; color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    h2 {
+      text-align: center;
+      margin: 20px 0;
+      color: white;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      font-weight: 800;
+    }
 
     .wrap {
-      max-width: 1400px; width: 92%; margin: 0 auto;
+      max-width: 1400px;
+      width: 92%;
+      margin: 0 auto;
       background: rgba(255, 255, 255, 0.95);
-      border-radius: 14px; padding: 14px;
+      border-radius: 14px;
+      padding: 14px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-      display: flex; flex-direction: column;
+      display: flex;
+      flex-direction: column;
     }
 
-    .chart-area { position: relative; height: 520px; width: 100%; }
+    .chart-area {
+      position: relative;
+      height: 520px;
+      width: 100%;
+    }
     canvas { width: 100% !important; height: 100% !important; display: block; }
 
-    .graph-back-nav { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 2000; }
+    /* Back button (same style as your other graphs) */
+    .graph-back-nav {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+    }
     .graph-back-btn {
-      width: 130px; height: 56px; background: #343a40; color: white;
-      border-radius: 50px; display: flex; align-items: center; justify-content: center;
-      font-weight: 700; text-decoration: none; box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+      width: 130px;
+      height: 56px;
+      background: rgba(17,24,39,.85);
+      color: #fff;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-weight: 800;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
     }
 
-    /* Responsive Heights */
-    @media (max-width: 600px) { .chart-area { height: 320px; } }
+    @media (max-width: 600px) {
+      .chart-area { height: 320px; }
+      .turbine-farm { bottom: 100px; }
+    }
   </style>
 </head>
 
 <body>
   <div class="sun"></div>
-  
+
+  <!-- ✅ Fixed farm (proper closing tag) + generators under each turbine -->
   <div class="turbine-farm">
-    <div class="turbine" style="--speed: 3.5s;"><div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div><div class="tower"></div></div>
-    <div class="turbine" style="--speed: 2.5s; transform: scale(1.1);"><div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div><div class="tower"></div></div>
-    <div class="turbine" style="--speed: 4.5s; transform: scale(0.9);"><div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div><div class="tower"></div></div>
-    <div class="turbine" style="--speed: 3s; transform: scale(1.2);"><div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div><div class="tower"></div></div>
+    <div class="turbine" style="--speed: 3.5s;">
+      <div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div>
+      <div class="tower"></div>
+      <div class="generator gen1"><span class="bolt">⚡</span></div>
+    </div>
+
+    <div class="turbine" style="--speed: 2.5s;">
+      <div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div>
+      <div class="tower"></div>
+      <div class="generator gen2"><span class="bolt">⚡</span></div>
+    </div>
+
+    <div class="turbine" style="--speed: 4.5s;">
+      <div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div>
+      <div class="tower"></div>
+      <div class="generator gen3"><span class="bolt">⚡</span></div>
+    </div>
+
+    <div class="turbine" style="--speed: 3s;">
+      <div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div>
+      <div class="tower"></div>
+      <div class="generator gen4"><span class="bolt">⚡</span></div>
+    </div>
   </div>
 
   <div class="horizon"></div>
-
-  <div class="generator" id="gen">
-    <span class="bolt">⚡</span>
-  </div>
 
   <div class="main-reveal">
     <h2>Electricity Consumption (Individual Buildings)</h2>
@@ -139,12 +250,20 @@
 
   <script>
     window.addEventListener('load', () => {
-      // Sequence: Charge then Reveal
-      setTimeout(() => document.getElementById('gen').classList.add('charged'), 800);
+      // 1) charge generators
+      setTimeout(() => {
+        document.querySelector('.gen1').classList.add('charged');
+        document.querySelector('.gen2').classList.add('charged');
+        document.querySelector('.gen3').classList.add('charged');
+        document.querySelector('.gen4').classList.add('charged');
+      }, 800);
+
+      // 2) reveal chart
       setTimeout(() => document.body.classList.add('ready'), 1800);
     });
   </script>
 
+  <!-- ✅ DO NOT TOUCH: your chart logic -->
   <script type="module" src="/scripts/plotindivE_noninteractive.js"></script>
 </body>
 </html>

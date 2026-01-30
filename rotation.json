@@ -6,6 +6,7 @@
     "/electgraph",
     "/solargraph",
     "/watergraph",
-    "/waste"
+    "/waste",
+    "/video"
   ]
 }

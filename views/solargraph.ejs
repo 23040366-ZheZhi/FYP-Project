@@ -16,20 +16,12 @@
       --sky-mid:#12306b;
       --sky-bot:#fef3c7;
 
-      --rayA: rgba(255, 234, 180, .30);
-      --rayB: rgba(255, 208, 120, .18);
-
       --panelFrame1:#2b3444;
       --panelFrame2:#141a24;
       --panelGlass1: rgba(255,255,255,.16);
       --panelGlass2: rgba(255,255,255,0);
 
-      --cellA:#0b2340;
-      --cellB:#103b6a;
       --cellLine: rgba(255,255,255,.07);
-
-      --charge1: rgba(255,230,160,.55);
-      --charge2: rgba(90,220,255,.40);
     }
 
     *{ box-sizing: border-box; }
@@ -64,7 +56,7 @@
       transform: translateY(0);
     }
 
-    /* ===== RAYS (sweep) ===== */
+    /* ===== RAYS (few, fixed slanted, glow flowing downward) ===== */
     .ray-layer{
       position:fixed;
       inset:0;
@@ -75,47 +67,62 @@
     }
     .page.filled .ray-layer{ opacity:1; }
 
-    .ray-layer::before{
-      content:"";
+    .ray{
       position:absolute;
-      inset:-20%;
-      background: repeating-linear-gradient(115deg,
-        var(--rayA) 0px,
-        var(--rayA) 14px,
-        transparent 14px,
-        transparent 58px
+      top:-35vh;
+      height:190vh;
+      width:130px;
+      transform: rotate(115deg);
+      border-radius:999px;
+      opacity:.65;
+      overflow:hidden;
+      background: linear-gradient(
+        to bottom,
+        rgba(255, 235, 185, .10),
+        rgba(255, 215, 120, .20),
+        rgba(255, 235, 185, .08)
       );
-      filter: blur(.4px);
-      transform: translateX(-10%) translateY(-10%);
-      animation: raySweep 3.2s ease-in-out infinite;
-      opacity:.85;
-    }
-    .ray-layer::after{
-      content:"";
-      position:absolute;
-      inset:-20%;
-      background: repeating-linear-gradient(115deg,
-        var(--rayB) 0px,
-        var(--rayB) 10px,
-        transparent 10px,
-        transparent 72px
-      );
-      filter: blur(1.1px);
-      transform: translateX(8%) translateY(8%);
-      animation: raySweep2 4.6s ease-in-out infinite;
-      opacity:.55;
+      filter: blur(.3px);
     }
 
-    @keyframes raySweep{
-      0%{ transform: translateX(-12%) translateY(-6%); }
-      50%{ transform: translateX(6%) translateY(5%); }
-      100%{ transform: translateX(-12%) translateY(-6%); }
+    .ray::after{
+      content:"";
+      position:absolute;
+      left:-35%;
+      top:-60%;
+      width:170%;
+      height:55%;
+      background: linear-gradient(
+        to bottom,
+        transparent,
+        rgba(255,240,190,0),
+        rgba(255,240,190,.60),
+        rgba(120,230,255,.18),
+        rgba(255,240,190,0),
+        transparent
+      );
+      filter: blur(1.2px);
+      opacity:.75;
+      animation: rayFlow 6s linear infinite;
     }
-    @keyframes raySweep2{
-      0%{ transform: translateX(10%) translateY(8%); }
-      50%{ transform: translateX(-6%) translateY(-4%); }
-      100%{ transform: translateX(10%) translateY(8%); }
+
+    @keyframes rayFlow{
+      from { transform: translateY(-20%); }
+      to   { transform: translateY(240%); }
     }
+
+    /* 6 fixed rays */
+    .r1{ left: 6%;  width:110px; opacity:.45; }
+    .r2{ left: 20%; width:145px; opacity:.60; }
+    .r3{ left: 38%; width:120px; opacity:.50; }
+    .r4{ left: 56%; width:150px; opacity:.62; }
+    .r5{ left: 74%; width:125px; opacity:.52; }
+    .r6{ left: 88%; width:110px; opacity:.45; }
+
+    /* slight variation */
+    .r2::after{ animation-duration: 7.5s; opacity:.70; }
+    .r4::after{ animation-duration: 8.2s; opacity:.80; }
+    .r6::after{ animation-duration: 6.8s; opacity:.65; }
 
     /* ===== PANEL STAGE ===== */
     .panel-stage{
@@ -124,7 +131,7 @@
       bottom:-14px;
       transform: translateX(-50%);
       width: min(1300px, 112vw);
-      height: 48vh;           /* bigger */
+      height: 48vh;
       z-index:7;
       pointer-events:none;
       opacity:0;
@@ -267,7 +274,7 @@
       font-weight:800;
     }
 
-    /* ===== CARD layout (same as your water card) ===== */
+    /* ===== CARD layout ===== */
     .chart-wrap{
       max-width:1000px;
       margin:0 auto;
@@ -387,7 +394,7 @@
     .graph-back-btn:hover{ background:#23272b; }
 
     @media (prefers-reduced-motion: reduce){
-      .ray-layer::before, .ray-layer::after, .panel-scan::before{ animation:none !important; }
+      .ray::after, .panel-scan::before{ animation:none !important; }
       .solar-sky, .content, .meter, .fill { transition:none !important; }
     }
   </style>
@@ -396,7 +403,16 @@
 <body>
   <div class="page" id="page">
     <div class="solar-sky"></div>
-    <div class="ray-layer"></div>
+
+    <!-- ✅ NEW: fewer rays, fixed, glow flows down -->
+    <div class="ray-layer" aria-hidden="true">
+      <div class="ray r1"></div>
+      <div class="ray r2"></div>
+      <div class="ray r3"></div>
+      <div class="ray r4"></div>
+      <div class="ray r5"></div>
+      <div class="ray r6"></div>
+    </div>
 
     <!-- PANEL (more realistic) -->
     <div class="panel-stage" aria-hidden="true">
@@ -414,7 +430,6 @@
             <stop offset="1" stop-color="var(--panelGlass2)"/>
           </linearGradient>
 
-          <!-- cells with subtle texture -->
           <pattern id="cellPattern" width="78" height="58" patternUnits="userSpaceOnUse">
             <rect width="78" height="58" fill="rgba(8, 22, 43, .20)"/>
             <rect x="7" y="7" width="64" height="44" rx="7" fill="rgba(16,59,106,.55)"/>
@@ -438,17 +453,12 @@
           </filter>
         </defs>
 
-        <!-- Perspective group -->
         <g transform="translate(120,65) skewX(-14) rotate(-2 600 290)" filter="url(#shadow)">
-          <!-- Panel frame -->
           <rect x="0" y="0" width="1160" height="450" rx="26" fill="url(#frameGrad)"/>
-          <!-- Rubber gasket -->
           <rect x="16" y="16" width="1128" height="418" rx="20" fill="rgba(0,0,0,.35)"/>
-          <!-- Panel base -->
           <rect x="28" y="28" width="1104" height="394" rx="18" fill="rgba(9,22,44,.92)"/>
-          <!-- Cells -->
           <rect x="28" y="28" width="1104" height="394" rx="18" fill="url(#cellPattern)" opacity="1"/>
-          <!-- Busbars (vertical lines) -->
+
           <g opacity=".55">
             <path d="M180 40 V410" stroke="rgba(255,255,255,.07)" stroke-width="2"/>
             <path d="M390 40 V410" stroke="rgba(255,255,255,.07)" stroke-width="2"/>
@@ -456,17 +466,15 @@
             <path d="M810 40 V410" stroke="rgba(255,255,255,.07)" stroke-width="2"/>
             <path d="M1020 40 V410" stroke="rgba(255,255,255,.07)" stroke-width="2"/>
           </g>
-          <!-- Glass shine -->
+
           <path d="M28 68 C 260 10, 620 32, 1132 28 L1132 160 C 780 210, 430 180, 28 250 Z"
                 fill="url(#glassGrad)" opacity=".9"/>
 
-          <!-- Tiny screws on frame -->
           <g fill="rgba(255,255,255,.18)">
             <circle cx="60" cy="60" r="5"/><circle cx="1100" cy="60" r="5"/>
             <circle cx="60" cy="390" r="5"/><circle cx="1100" cy="390" r="5"/>
           </g>
 
-          <!-- Simple mount/stand -->
           <path d="M210 455 H950 L1010 540 H150 L210 455 Z" fill="rgba(0,0,0,.22)"/>
           <path d="M250 455 H910 L950 540 H210 L250 455 Z" fill="rgba(255,255,255,.06)"/>
         </g>
@@ -524,13 +532,9 @@
       const page = document.getElementById("page");
 
       window.addEventListener("load", () => {
-        // 1) sky + rays + panel appear
         setTimeout(() => page.classList.add("filled"), 150);
-
-        // 2) charging starts (scan + glow + meter)
         setTimeout(() => page.classList.add("charging"), 420);
 
-        // 3) chart fades in after charge completes + render event
         setTimeout(() => {
           page.classList.add("ready");
           window.dispatchEvent(new Event("solar:render"));
