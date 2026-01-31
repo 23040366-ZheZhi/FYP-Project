@@ -1,4 +1,4 @@
-# Interactive ESG Dashboard – System Documentation
+# Interactive ESG Dashboard
 
 ## 1. Project Overview
 This project is a **web-based Interactive ESG (Environmental, Social, Governance) Dashboard** designed to visualise sustainability-related data such as **electricity, water, solar energy, and waste metrics**, alongside interactive media and a 3D campus map. The system is built using **Node.js, Express.js, EJS templating**, and standard web technologies, and is intended to be handed over for further development and testing by a future team.
