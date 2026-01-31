@@ -1,7 +1,7 @@
 let chart;
 
 const ELECTRIC_COLORS = [
-  "#b3a20c", // bright yellow
+  "#f0d908", // bright yellow
   "#FFB300", // warm amber
   "#F57C00", // orange
   "#D32F2F", // red

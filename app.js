@@ -127,11 +127,11 @@ runExcelConversion()
   .catch(err => console.error("Excel conversion failed:", err));
 
 /* nodemailer */
-let transporter = nodemailer.createTransport({
+const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "aarvalanmathiyazhagan@gmail.com",
-    pass: "REPLACE_WITH_GMAIL_APP_PASSWORD"
+    pass: "hejj okuf usvm xnaf"
   }
 });
 
@@ -795,7 +795,7 @@ app.post("/login", (req, res) => {
   const { username, password, email } = req.body;
 
   const sql = "SELECT * FROM admins WHERE username = ? AND password = ?";
-  connection.query(sql, [username, password], (err, results) => {
+  connection.query(sql, [username, password], async (err, results) => {
     if (err) {
       console.error(err);
       return res.render("login", { error: "Server error" });
@@ -816,20 +816,26 @@ app.post("/login", (req, res) => {
       return res.redirect("/");
     }
 
-    const code = Math.floor(100000 + Math.random() * 900000);
-
+    // generate code as STRING
+    const code = String(Math.floor(100000 + Math.random() * 900000));
     req.session.tempAdmin = { id: admin.id, email: admin.email, code };
 
-    transporter.sendMail({
-      from: "usec0750@gmail.com",
-      to: admin.email,
-      subject: "Your Admin Login Code",
-      text: `Your verification code is: ${code}`
-    });
+    try {
+      await transporter.sendMail({
+        from: "aarvalanmathiyazhagan@gmail.com",   // MUST match transporter user
+        to: admin.email,
+        subject: "Your Admin Login Code",
+        text: `Your verification code is: ${code}`
+      });
 
-    res.redirect("/verify");
+      return res.redirect("/verify");
+    } catch (e) {
+      console.error("Email send failed:", e);
+      return res.render("login", { error: "Failed to send verification code. Please try again." });
+    }
   });
 });
+
 
 app.get("/verify", (req, res) => {
   if (!req.session.tempAdmin) return res.redirect("/login");
@@ -841,7 +847,7 @@ app.post("/verify", (req, res) => {
 
   if (!req.session.tempAdmin) return res.redirect("/login");
 
-  if (parseInt(code) === req.session.tempAdmin.code) {
+  if (String(code).trim() === String(req.session.tempAdmin.code)) {
     req.session.isAdmin = true;
     delete req.session.tempAdmin;
     return res.redirect("/");
