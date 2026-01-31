@@ -1,209 +1,179 @@
-# ESG Centre Dashboard
+# Interactive ESG Dashboard – System Documentation
 
-## 1. Project Overview
-This project is a **web-based Interactive ESG (Environmental, Social, Governance) Dashboard** designed to visualise sustainability-related data such as **electricity, water, solar energy, and waste metrics**, alongside interactive media and a 3D campus map. The system is built using **Node.js, Express.js, EJS templating**, and standard web technologies, and is intended to be handed over for further development and testing by a future team.
+## 1. Introduction
+The Interactive ESG Dashboard is a web-based system developed to support the visualisation and presentation of Environmental, Social, and Governance (ESG) information. The system focuses primarily on environmental indicators, including electricity consumption, water usage, solar energy generation, and waste-related data. In addition, the platform integrates multimedia content and a 3D campus map to enhance user engagement and contextual understanding.
 
-The application supports:
-- Public dashboard viewing
-- Interactive and non-interactive data visualisations
-- Media management (images/videos)
-- Admin authentication and management
-- A modular UI with reusable navigation components
+This document serves as the **official system documentation** for the project. It describes the system architecture, major components, technologies used, functional modules, and known limitations. The documentation is intended to support system understanding, maintenance, and future enhancement by subsequent development teams.
 
 ---
 
-## 2. System Architecture
-
-### 2.1 High-Level Architecture
-The system follows a **Model–View–Controller (MVC)-style structure**:
-
-- **Server-side logic**: Node.js + Express.js
-- **Views**: EJS templates
-- **Static assets**: CSS, images, videos
-- **Client-side logic**: JavaScript (charts, interactions)
-
-```
-Client (Browser)
-   ↓
-Express Server (app.js)
-   ↓
-EJS Views (Dashboard, Graphs, Admin Pages)
-   ↓
-Static Assets / Media Files
-```
+## 2. System Objectives
+The main objectives of the system are as follows:
+- To provide a centralised dashboard for viewing ESG-related information
+- To present sustainability data using clear and structured visualisations
+- To support both interactive and non-interactive data views for different use cases
+- To allow administrators to manage media and system content
+- To provide a foundation that can be extended with real-time data and additional features
 
 ---
 
-## 3. Technology Stack
+## 3. System Architecture
+
+### 3.1 Architectural Overview
+The system adopts a server-rendered web architecture using Node.js and Express. Dynamic pages are generated using EJS templates, while static resources such as stylesheets, images, videos, and 3D models are served directly by the server.
+
+The architecture can be summarised as follows:
+
+```
+User (Web Browser)
+   ↓
+Express Application (Node.js)
+   ↓
+EJS View Templates
+   ↓
+Static Assets and Media Resources
+```
+
+This approach was selected to keep the system modular, maintainable, and suitable for an academic project environment.
+
+---
+
+## 4. Technology Stack
+
+The technologies used in the development of this system are outlined below:
 
 | Layer | Technology |
 |------|-----------|
 | Backend | Node.js, Express.js |
-| Frontend | EJS, HTML5, CSS3, Bootstrap |
-| Charts & Visualisation | Chart.js (via EJS pages) |
-| 3D Visualisation | `<model-viewer>` (GLB model) |
-| Media Handling | HTML5 Video & Image elements |
-| Authentication | Custom admin login & verification |
+| View Engine | EJS (Embedded JavaScript Templates) |
+| Frontend | HTML5, CSS3, Bootstrap |
+| Data Visualisation | Chart.js |
+| 3D Visualisation | `<model-viewer>` with GLB models |
+| Media Support | HTML5 Image and Video Elements |
+| Authentication | Custom admin login and verification flow |
 
 ---
 
-## 4. Project Structure
+## 5. Project Structure
+
+The project follows a clear and modular directory structure:
 
 ```
 project-root/
 │
-├── app.js                      # Main Express application entry
+├── app.js                      # Main application entry point
 │
-├── views/
+├── views/                      # EJS templates
 │   ├── dashboard.ejs           # Main ESG dashboard
 │   ├── login.ejs               # Admin login page
 │   ├── verify.ejs              # Login verification page
 │   │
-│   ├── graphs/
-│   │   ├── electgraph.ejs      # Electricity overview graph
-│   │   ├── watergraph.ejs      # Water overview graph
-│   │   ├── solargraph.ejs      # Solar overview graph
-│   │   ├── waste.ejs           # Waste metrics graph
-│   │
-│   ├── individual/
-│   │   ├── indivelect.ejs
-│   │   ├── indivwater.ejs
-│   │   ├── Indivelect_noninteractive.ejs
-│   │   ├── IndivWater_noninteractive.ejs
-│   │
-│   ├── media/
-│   │   ├── media_management.ejs
-│   │   ├── addVideo.ejs
-│   │   ├── video.ejs
-│   │
-│   ├── admin/
-│   │   ├── admins.ejs
-│   │   ├── createAdmin.ejs
-│   │   ├── editAdmin.ejs
-│   │
-│   ├── map/
-│   │   └── interactivemap.ejs  # 3D campus map
-│   │
-│   ├── partials/
-│   │   ├── navbar.ejs          # Top navigation bar
-│   │   └── bottomnav.ejs       # Bottom navigation bar
+│   ├── graphs/                 # ESG overview graphs
+│   ├── individual/             # Individual and non-interactive views
+│   ├── media/                  # Media management pages
+│   ├── admin/                  # Admin management pages
+│   ├── map/                    # Interactive 3D map
+│   └── partials/               # Reusable UI components
 │
-├── public/
+├── public/                     # Static assets
 │   ├── stylesheets/
 │   ├── images/
 │   ├── videos/
 │   └── models/
 │
-└── README.md
+└── README.md                   # System documentation
 ```
 
 ---
 
-## 5. Core Functional Modules
+## 6. Functional Modules
 
-### 5.1 Dashboard Module
-- Acts as the **central landing page** for ESG information
-- Displays summary metrics and navigation to detailed views
-- Integrates reusable navigation components
+### 6.1 Dashboard Module
+The dashboard acts as the primary entry point for users. It provides high-level access to ESG data, graphs, media content, and the interactive 3D map. Navigation components are reused across pages to maintain a consistent user experience.
 
-### 5.2 Graph & Data Visualisation Module
-- Supports **Electricity, Water, Solar, and Waste** data
-- Two modes:
-  - **Interactive**: User-controlled charts
-  - **Non-interactive**: Static data presentation for reporting
-- Each ESG metric has both overview and individual breakdown pages
+### 6.2 ESG Data Visualisation Module
+This module presents ESG data across multiple categories:
+- Electricity
+- Water
+- Solar Energy
+- Waste
 
-### 5.3 Interactive 3D Map Module
-- Uses a GLB 3D model rendered via `<model-viewer>`
-- Allows users to visually explore the campus layout
-- Prepared for future enhancement (clickable buildings, overlays)
+Each category includes overview graphs, with selected datasets also offering non-interactive versions for static presentation or reporting purposes.
 
-### 5.4 Media Management Module
-- Allows admins to manage images and videos
-- Supports:
-  - Media preview
-  - Video carousel display
-  - Media ordering and rotation management
+### 6.3 Interactive 3D Map Module
+The system includes a 3D campus map rendered using a GLB model and `<model-viewer>`. Users can rotate and zoom the model to explore the environment. The module is designed to be extensible, allowing future implementation of clickable buildings or data overlays.
 
-### 5.5 Admin & Authentication Module
-- Admin login and verification flow
-- Admin management features:
-  - Create admin
-  - Edit admin
-  - View admin list
-- Access control for management-related pages
+### 6.4 Media Management Module
+The media management module allows administrators to manage visual content within the system. Key functions include:
+- Uploading and previewing images and videos
+- Displaying videos in a carousel format
+- Managing media ordering and rotation
+
+### 6.5 Admin and Authentication Module
+Administrative functionality is protected through a login and verification process. Administrators are able to:
+- Access restricted management pages
+- Create and edit administrator accounts
+- Manage system-related content
 
 ---
 
-## 6. Navigation & UI Design
+## 7. Application Entry Point
 
-### 6.1 Reusable Partials
-- **navbar.ejs**: Top navigation across pages
-- **bottomnav.ejs**: Bottom navigation for quick access
-
-### 6.2 Design Principles
-- Modular and reusable layout
-- Clear separation between public and admin views
-- Responsive design using Bootstrap
-
----
-
-## 7. Application Entry Point (app.js)
-
-- Configures Express server
-- Registers routes for:
-  - Dashboard
-  - Graphs
-  - Media management
-  - Admin authentication
-- Serves static assets
-- Connects view engine (EJS)
+The `app.js` file serves as the main entry point of the application. Its responsibilities include:
+- Initialising the Express server
+- Configuring middleware and view engine settings
+- Defining routes for dashboard, graphs, media, and admin functions
+- Serving static files from the public directory
 
 ---
 
 ## 8. Security Considerations
 
-- Admin-only access to management pages
-- Login verification before sensitive operations
-- Server-side routing prevents direct page access without authentication
+The system implements basic security measures appropriate for its scope:
+- Restricted access to administrative pages
+- Login verification prior to sensitive operations
+- Server-side routing to prevent unauthorised page access
+
+Further security enhancements are recommended for future development.
 
 ---
 
-## 9. Deployment Notes
+## 9. Deployment Requirements
 
-- Designed to run on a standard Node.js environment
-- Requires:
-  - Node.js (LTS recommended)
-  - npm dependencies installed
-- Static assets must be correctly served via Express
+To deploy and run the system, the following are required:
+- Node.js (Long-Term Support version recommended)
+- npm for dependency management
+- A compatible web browser for client access
+
+The system is designed to run in a standard Node.js hosting environment.
 
 ---
 
-## 10. Limitations & Known Gaps
+## 10. Limitations
 
-- Dashboard **has not been fully implemented or tested**
-- No automated testing implemented
-- Data sources currently static or placeholder-based
-- Advanced interactions (e.g., clickable 3D buildings) not implemented
+The following limitations were identified at the time of documentation:
+- The dashboard has not been fully implemented or tested
+- ESG data is currently static or placeholder-based
+- No automated testing framework has been implemented
+- Advanced 3D map interactions are not available
 
 ---
 
 ## 11. Future Enhancements
 
-- Integration with real-time data sources
-- Database-backed ESG metrics
-- Role-based access control (RBAC)
-- Enhanced 3D map interactions
-- Automated testing and logging
-- Performance and security hardening
+Potential areas for future improvement include:
+- Integration with live or real-time data sources
+- Database-backed storage for ESG metrics
+- Role-based access control
+- Enhanced interactivity within the 3D map
+- Implementation of automated testing and logging
 
 ---
 
-## 12. Handover Notes
+## 12. Handover Information
 
-This project is structured and documented to support **handover to another development team**. The modular design allows individual components (graphs, media, admin, 3D map) to be extended independently without major refactoring.
+This system has been documented to support handover to a future development team. The modular design allows individual components to be extended or replaced with minimal impact on the overall system.
 
 ---
 
-**End of System Documentation**
-
+**End of Document**
