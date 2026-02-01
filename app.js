@@ -163,7 +163,7 @@ const videoStorage = multer.diskStorage({
 
 const uploadVideo = multer({
   storage: videoStorage,
-  limits: { fileSize: 100 * 1024 * 1024 },
+  limits: { fileSize: 2000 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith("video/") || file.mimetype.startsWith("image/")) cb(null, true);
     else cb(new Error("Only video and image files are allowed"));
@@ -645,7 +645,7 @@ app.post("/addVideo", uploadVideo.array("videos[]"), (req, res) => {
 app.use((err, req, res, next) => {
   if (err && err.code === "LIMIT_FILE_SIZE") {
     return res.status(400).send(`<script>
-      alert("Upload failed: Video file size exceeds 100MB.")
+      alert("Upload failed: Media content file size exceeds 2GB.")
       window.history.back();
     </script>`);
   }
