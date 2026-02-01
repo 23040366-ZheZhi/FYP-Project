@@ -34,7 +34,7 @@ EJS View Templates
 Static Assets and Media Resources
 ```
 
-This approach was selected to keep the system modular, maintainable, and suitable for an academic project environment.
+This approach was selected to keep the system modular and maintainable
 
 ---
 
