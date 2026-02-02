@@ -33,7 +33,7 @@
       padding: 12px;
     }
 
-    /* ===== Tap button (image) ===== */
+    /* ===== Tap ===== */
     .tap{
       position: fixed;
       top: 14px;
@@ -64,7 +64,7 @@
       width: 22px;
       height: 0;
       margin-top: -10px;
-      left: 22px; /* tweak alignment if your tap image changes */
+      left: 22px; 
       background: linear-gradient(
         to bottom,
         rgba(180,220,255,.9),
@@ -94,7 +94,7 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
-      z-index: 15; /* above sea, below content */
+      z-index: 15; 
       overflow: hidden;
     }
 
@@ -133,7 +133,7 @@
       bottom: 0;
       height: 220px;
       pointer-events: none;
-      z-index: 12; /* above sea bg, below bubbles */
+      z-index: 12; 
     }
 
     .seaweed{
@@ -174,13 +174,13 @@
       50%     { transform: rotate(6deg); }
     }
 
-    .s1{ left: 4%;  height: 180px; --swayDur: 3.3s; --swayDelay: 0s; }
-    .s2{ left: 12%; height: 220px; --swayDur: 3.8s; --swayDelay: .2s; }
-    .s3{ left: 72%; height: 200px; --swayDur: 3.5s; --swayDelay: .1s; }
-    .s4{ left: 82%; height: 240px; --swayDur: 4.1s; --swayDelay: .3s; }
-    .s5{ left: 92%; height: 190px; --swayDur: 3.6s; --swayDelay: .15s; }
+    .s1{ left: 4%;  height: 280px; --swayDur: 3.3s; --swayDelay: 0s; }
+    .s2{ left: 12%; height: 300px; --swayDur: 3.8s; --swayDelay: .2s; }
+    .s3{ left: 72%; height: 280px; --swayDur: 3.5s; --swayDelay: .1s; }
+    .s4{ left: 82%; height: 260px; --swayDur: 4.1s; --swayDelay: .3s; }
+    .s5{ left: 92%; height: 310px; --swayDur: 3.6s; --swayDelay: .15s; }
 
-    /* ===== SEA container rises ===== */
+    
     .sea{
       position: fixed;
       left: 0; right: 0;
@@ -194,7 +194,7 @@
     }
     .page.filled .sea{ transform: translateY(15%); }
 
-    /* moving wave surface (2 layers) */
+    /* moving wave surface */
     .sea .wave{
       position: absolute;
       left: 0;
@@ -223,7 +223,7 @@
     @keyframes waveMove1 { from { transform: translateX(0); } to { transform: translateX(-50%); } }
     @keyframes waveMove2 { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-    /* shimmer */
+    
     .sea::after{
       content:"";
       position:absolute;
@@ -239,7 +239,7 @@
       50%     { transform: translateY(-10px); }
     }
 
-    /* Content */
+    
     .content{
       position: relative;
       z-index: 30;
@@ -262,7 +262,7 @@
       text-shadow: 0 1px 0 rgba(255,255,255,.35);
     }
 
-    /* chart card entrance */
+    
     .chart-wrap{
       max-width: 1000px;
       margin: 0 auto;
@@ -344,7 +344,7 @@
     }
     .graph-back-btn:hover{ background: #23272b; }
 
-    /* Integrated header inside chart card */
+   
     .sr-only{
       position:absolute;
       width:1px; height:1px;
@@ -408,7 +408,7 @@
       z-index: 2;
     }
 
-    /* ===== NEW: dropdown footer pinned at bottom (doesn't touch animation) ===== */
+    
     .chart-body{
       display:flex;
       flex-direction:column;
@@ -493,7 +493,7 @@
       transform: scaleX(-1);
     }
 
-    /* green fish swims L -> R (separate lane) */
+    /* green fish swims L -> R */
     .fish-c{
       top: 78%;
       left: -160px;
@@ -531,7 +531,7 @@
       <div class="wave wave1"></div>
       <div class="wave wave2"></div>
 
-      <!-- ✅ ADDED: fish layer (YOUR images) -->
+      <!-- fish  -->
       <div class="fish-layer" aria-hidden="true">
         <img src="/images/yellow-fish.png" class="fish fish-a" alt="">
         <img src="/images/blue-fish.png" class="fish fish-b" alt="">
@@ -552,7 +552,7 @@
       <h2>Whole Campus Water Usage (m³)</h2>
 
       <div class="chart-wrap floaty" id="chartCard">
-        <!-- ONLY moved dropdown into footer, animation untouched -->
+     
         <div class="chart-body">
 
           <div class="chart-header">
@@ -606,7 +606,7 @@
           const left = Math.random() * 100;      // %
           const dur = Math.random() * 4 + 4;     // 4 - 8s
           const delay = Math.random() * 4;       // 0 - 4s
-          const wobble = (Math.random() * 40 - 20) + "px"; // -20..20px
+          const wobble = (Math.random() * 40 - 20) + "px"; 
 
           b.style.width = size + "px";
           b.style.height = size + "px";
@@ -631,13 +631,13 @@
         // start sea rising
         requestAnimationFrame(() => page.classList.add("filled"));
 
-        // stop pour later (so user can see it)
+      
         setTimeout(() => tapBtn.classList.remove("pouring"), 1600);
 
-        // hide tap
+       
         setTimeout(() => tapBtn.classList.add("hide"), 1850);
 
-        // chart render AFTER water starts rising
+       
         setTimeout(() => window.dispatchEvent(new Event("water:render")), 950);
       }
 
@@ -646,7 +646,7 @@
         setTimeout(startWater, 200);
       });
 
-      // optional: rebuild bubbles after resize
+      
       window.addEventListener("resize", () => {
         if (page.classList.contains("filled")) makeBubbles(26);
       });

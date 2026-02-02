@@ -76,9 +76,9 @@
                 <input type="text" class="form-control" name="descriptions[]" placeholder="Enter description">
             </div>
         </div>
-            <!-- SUBMIT + BACK -->
+            
             <button class="btn btn-primary mt-3" type="submit">Add Video/Image</button>
-            <!-- ADD BUTTON -->
+           
             <button type="button" class="btn btn-success mt-3" onclick="addMore()">+ Add More Videos/Images</button>
     </form>
 </div>
@@ -94,7 +94,7 @@
         }
     });
 
-    // Add more upload blocks
+    // Add more
     function addMore() {
         const container = document.getElementById("video-container");
         const block = document.createElement("div");
@@ -129,17 +129,17 @@
         container.appendChild(block);
     }
 
-    // Delete function for each additional block
+    
     function removeBlock(btn) {
         const container = document.getElementById("video-container");
         const blocks = container.getElementsByClassName("video-block");
 
-        // prevent deleting the last remaining block
+        
         if (blocks.length <= 1) return;
         btn.closest(".video-block").remove();
     }
 
-    // shows preview of video before adding
+   
     function previewVideo(input) {
         const file = input.files[0];
         if (!file) return;

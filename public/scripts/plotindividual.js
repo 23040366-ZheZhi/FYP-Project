@@ -1,9 +1,9 @@
-// /public/scripts/plotindivE_compare.js
+
 let chartA = null;
 let chartB = null;
 
 const ELECTRIC_COLORS = [
-  "#cfab0a", // latest year highlight
+  "#cfab0a", 
   "#FB8C00",
   "#E53935",
   "#8E24AA",
@@ -47,7 +47,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
   async function loadData() {
     const res = await fetch("/api/electric-building");
     if (!res.ok) throw new Error(`Electric-building HTTP ${res.status}`);
-    return await res.json(); // { yearCount, allowedYears, data }
+    return await res.json();
   }
 
   async function loadGraphSettings() {
@@ -94,7 +94,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
   }
 
   function getAllMonths() {
-    // Keep your existing month ordering behavior:
+    
     return [...new Set(state.rows.map(r => r.month))];
   }
 
@@ -102,7 +102,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     return allMonths.map(m => {
       const raw = state.rows.find(r => r.month === m && Number(r.year) === Number(year))?.[buildingKey];
       const n = toNum(raw);
-      return (Number.isFinite(n) && n !== 0) ? n : null; // don't plot 0
+      return (Number.isFinite(n) && n !== 0) ? n : null; 
     });
   }
 
@@ -130,14 +130,14 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
       return;
     }
 
-    // build 12 values per year
+    
     const yearsToShow = [...new Set(state.allowedYears)]
       .filter(Number.isInteger)
       .sort((a, b) => a - b);
 
     const rawSeries = yearsToShow.map(y => buildDataForYear(building.key, y, allMonths));
 
-    // remove empty months globally
+    
     const { labels, filtered } = filterEmptyMonths(allMonths, rawSeries);
 
     if (!labels.length) {
@@ -146,7 +146,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
       return;
     }
 
-    // build datasets (skip empty years => no legend entry)
+    
     const datasets = [];
     const latestIndex = yearsToShow.length - 1;
 
@@ -155,7 +155,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
       const hasAnyPoint = data.some(v => Number.isFinite(v));
       if (!hasAnyPoint) return;
 
-      // latest year uses first color, older years go down the palette
+     
       const colorIndex = latestIndex - idx;
       const color = ELECTRIC_COLORS[colorIndex % ELECTRIC_COLORS.length];
 

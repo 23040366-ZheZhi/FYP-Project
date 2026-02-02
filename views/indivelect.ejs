@@ -39,22 +39,22 @@
       pointer-events: none;
     }
 
-    /* ===== GREEN GROUND (same as energy graph) ===== */
+    /* ===== GROUND ===== */
     .horizon {
       position: fixed;
       bottom: 0;
       width: 100%;
-      height: 100px;                 /* ✅ thicker ground like energy graph */
+      height: 100px;                 
       background: var(--grass);
       z-index: 5;
       border-top: 5px solid #16a34a;
       pointer-events: none;
     }
 
-    /* ===== TURBINE FARM (4 turbines + generators) ===== */
+    /* ===== TURBINES GENERATORS ===== */
     .turbine-farm {
       position: fixed;
-      bottom: 100px;                 /* ✅ sits on top of horizon */
+      bottom: 100px;                 
       width: 100%;
       display: flex;
       justify-content: space-around;
@@ -146,7 +146,7 @@
       50% { opacity: 0.4; }
     }
 
-    /* ===== CONTENT FADE IN (charts appear later) ===== */
+    /* ===== CONTENT ===== */
     .main-container {
       position: relative;
       z-index: 20;
@@ -252,7 +252,7 @@
 <body>
   <div class="sun"></div>
 
-  <!-- ✅ 4 turbines + generators -->
+  <!-- 4 turbines + generators -->
   <div class="turbine-farm">
     <div class="turbine" style="--speed: 3s;">
       <div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div>
@@ -312,9 +312,7 @@
   </div>
 
   <script>
-    // ✅ Same sequence vibe as the energy graph:
-    // 1) charge generators
-    // 2) then reveal charts
+    
     window.addEventListener("load", () => {
       setTimeout(() => {
         document.querySelector(".gen1").classList.add("charged");
@@ -329,7 +327,7 @@
     });
   </script>
 
-  <!-- DO NOT TOUCH: your chart logic -->
+
   <script type="module" src="/scripts/plotindividual.js"></script>
 </body>
 </html>

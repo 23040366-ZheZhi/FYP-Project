@@ -1,15 +1,14 @@
-// /public/scripts/plotindivW_noninteractive.js
-// Water non-interactive: ✅ bar slideshow uses intervalTimer, ✅ line slideshow uses timeoutTimer (like electricity)
+
 
 let chart = null;
-let intervalTimer = null; // bar slideshow
-let timeoutTimer  = null; // line slideshow
+let intervalTimer = null; 
+let timeoutTimer  = null; 
 
 const canvas = document.getElementById("chart");
 const ctx = canvas?.getContext("2d");
-const msgBox = document.getElementById("msg"); // HTML uses id="msg"
+const msgBox = document.getElementById("msg"); 
 
-// ===== month helpers =====
+
 const MONTH_ORDER = [
   "January","February","March","April","May","June",
   "July","August","September","October","November","December"
@@ -21,7 +20,7 @@ const ABBR_TO_FULL = {
   sep: "September", oct: "October", nov: "November", dec: "December"
 };
 
-// ===== UI helpers =====
+
 function showMsg(text) {
   if (!msgBox) return;
   msgBox.textContent = text || "";
@@ -50,7 +49,7 @@ function fmtNum(n) {
   return Number(n).toLocaleString();
 }
 
-// ===== Summary box (same pattern as elect) =====
+
 let summaryBox = document.getElementById("waterSummary");
 
 function ensureSummaryBox() {
@@ -77,7 +76,7 @@ function setSummaryHTML(html) {
   box.style.display = html ? "block" : "none";
 }
 
-// ===== parse "25-Jan" -> { year, month, mi, label } =====
+
 function parseMonthCell(val) {
   const s = String(val || "").trim();
   const m = s.match(/^(\d{2})-([A-Za-z]{3})$/);
@@ -96,20 +95,20 @@ function parseMonthCell(val) {
   return { year, month, mi, label };
 }
 
-// ===== API loaders (unchanged routes) =====
+
 async function loadGraphSettings() {
   const res = await fetch("/api/graph-settings");
   if (!res.ok) throw new Error(`graph-settings HTTP ${res.status}`);
-  return await res.json(); // { graphType, rotateSeconds, ... }
+  return await res.json(); 
 }
 
 async function loadData() {
   const res = await fetch("/api/water-individual");
   if (!res.ok) throw new Error(`water-individual HTTP ${res.status}`);
-  return await res.json(); // { allowedYears, data:[header,...rows] }
+  return await res.json(); 
 }
 
-// ===== meta helpers =====
+
 function getMeta(headerRow) {
   const keys = Object.keys(headerRow || {});
   const firstColKey = keys[0];
@@ -151,9 +150,7 @@ function colorForIndex(i, total) {
   return `hsl(${hue}, 70%, 45%)`;
 }
 
-// =====================
-// BAR MODE (slideshow by month) ✅ intervalTimer
-// =====================
+
 function renderBarMonth(titleLabel, buildingNames, values) {
   destroy();
 
@@ -258,8 +255,7 @@ function renderBarMonth(titleLabel, buildingNames, values) {
     }
   });
     return true;
-}  // ✅ close renderBarMonth
-
+}  
 
 
 
@@ -296,10 +292,7 @@ function autoplayBars(timeline, rows, firstColKey, buildingKeys, buildingNames, 
   }, rotateMs);
 }
 
-// =====================
-// LINE MODE (slideshow by year) ✅ timeoutTimer
-// Stops at latest year ✅
-// =====================
+
 function renderLineYear(year, timelineYear, rows, firstColKey, buildingKeys, buildingNames) {
   destroy();
 
@@ -363,7 +356,7 @@ function renderLineYear(year, timelineYear, rows, firstColKey, buildingKeys, bui
       responsive: true,
       maintainAspectRatio: false,
        layout: {
-          padding: { bottom: 60 }   // ✅ gives space for months
+          padding: { bottom: 60 }   
       },
       interaction: { mode: "index", intersect: false },
       plugins: {
@@ -418,7 +411,7 @@ function autoplayLineByYear(timeline, rows, firstColKey, buildingKeys, buildingN
   let index = 0;
 
   const showNextYear = () => {
-    // ✅ STOP at the latest year (no looping)
+    
     if (index >= years.length) {
       stopTimers();
       return false;
@@ -427,11 +420,11 @@ function autoplayLineByYear(timeline, rows, firstColKey, buildingKeys, buildingN
     const year = years[index++];
     const timelineYear = timeline.filter(t => t.year === year);
 
-    // skip empty year safely
+    
     if (!timelineYear.length) return showNextYear();
 
     const ok = renderLineYear(year, timelineYear, rows, firstColKey, buildingKeys, buildingNames);
-    if (!ok) return showNextYear(); // skip years with no valid line data
+    if (!ok) return showNextYear(); 
 
     return true;
   };
@@ -450,9 +443,7 @@ function autoplayLineByYear(timeline, rows, firstColKey, buildingKeys, buildingN
   step();
 }
 
-// =====================
-// INIT (routes unchanged)
-// =====================
+
 async function init() {
   try {
     if (!ctx) return;
@@ -488,7 +479,7 @@ async function init() {
       return;
     }
 
-    // keep only months inside allowedYears (1–5 year admin selection)
+    
     timeline = timeline.filter(t => allowedYears.includes(t.year));
     if (!timeline.length) {
       showMsg("No months found for selected years.");

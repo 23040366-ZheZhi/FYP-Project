@@ -77,10 +77,10 @@
       filter: drop-shadow(0 22px 40px rgba(0,0,0,.22));
       opacity: .98;
       position: relative;
-      z-index: 2; /* ✅ tap ABOVE stream */
+      z-index: 2; 
     }
 
-    /* ✅ Stream: behind tap, aligned to spout, stops at basin rim */
+   
     .stream{
       position: absolute;
 
@@ -103,10 +103,10 @@
       transition: height 700ms cubic-bezier(.2,.9,.2,1), opacity 200ms ease;
       overflow: hidden;
 
-      z-index: 1; /* ✅ behind tap */
+      z-index: 1; 
     }
 
-    /* subtle flowing texture inside stream */
+   
     .stream::after{
       content:"";
       position:absolute;
@@ -128,10 +128,10 @@
 
     .pouring .stream{
       opacity: 1;
-      height: 60vh; /* ✅ JS will set exact height to basin rim */
+      height: 60vh; 
     }
 
-    /* ===== BASIN (center) ===== */
+    /* ===== BASIN  ===== */
     .basinWrap{
       position: fixed;
       left: 50vw;
@@ -172,7 +172,7 @@
       overflow:hidden;
     }
 
-    /* ✅ “more flowing” fill: use keyframes instead of only height transition */
+  
     .basinWater{
       position:absolute;
       left:0; right:0; bottom:0;
@@ -200,7 +200,7 @@
       50%{ transform: translateX(2%); }
     }
 
-    /* ✅ small “turbulence” when filling */
+    
     .scene.filling .basinWater{
       animation: fillWobble 0.55s ease-in-out infinite;
     }
@@ -209,7 +209,7 @@
       50%{ filter: saturate(1.06) brightness(1.03); }
     }
 
-    /* ===== OVERFLOW SEA ===== */
+    /* ===== Water ===== */
     .sea{
       position: fixed;
       left: 0; right:0;
@@ -515,15 +515,15 @@
       }
     }
 
-    // ✅ Make stream stop exactly at basin rim (not through the basin)
+    
     function setStreamToBasinRim(){
       const streamRect = stream.getBoundingClientRect();
       const basinRect = basinWrap.getBoundingClientRect();
 
-      // rim y = top of basinWrap + top offset of basinInner (22px) + small gap
+     
       const rimY = basinRect.top + 22 + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--stream-stop-gap') || 0);
 
-      const topY = streamRect.top; // stream top (after CSS offsets)
+      const topY = streamRect.top; // stream top
       const targetH = Math.max(0, rimY - topY);
 
       stream.style.height = targetH + "px";
@@ -533,16 +533,16 @@
       // start pouring
       tapWrap.classList.add("pouring");
 
-      // set stream length after layout
+      
       requestAnimationFrame(() => {
         setStreamToBasinRim();
       });
 
-      // keep adjusting while pouring (in case fonts/viewport settle)
+      
       const raf1 = requestAnimationFrame(() => setStreamToBasinRim());
       const raf2 = requestAnimationFrame(() => setStreamToBasinRim());
 
-      // start “filling” effect
+      
       setTimeout(() => {
         scene.classList.add("filling");
         basinWater.style.height = "95%";
@@ -576,7 +576,7 @@
     });
   </script>
 
-  <!-- DO NOT TOUCH YOUR CHART SCRIPT -->
+ 
   <script type="module" src="/scripts/plotindivW.js"></script>
 </body>
 </html>

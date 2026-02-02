@@ -1,11 +1,11 @@
 let chart;
 
 const ELECTRIC_COLORS = [
-  "#f0d908", // bright yellow
-  "#FFB300", // warm amber
-  "#F57C00", // orange
-  "#D32F2F", // red
-  "#303F9F"  // cool indigo
+  "#f0d908", 
+  "#FFB300", 
+  "#F57C00", 
+  "#D32F2F", 
+  "#303F9F"  
 ];
 
 
@@ -50,13 +50,13 @@ if (!canvas) {
   async function loadElectricFromApi() {
     const res = await fetch("/api/electric-detailed");
     if (!res.ok) throw new Error(`Electric HTTP ${res.status}`);
-    return await res.json(); // { yearCount, allowedYears, data }
+    return await res.json(); 
   }
 
   async function loadGraphSettings() {
     const res = await fetch("/api/graph-settings");
     if (!res.ok) throw new Error(`Settings HTTP ${res.status}`);
-    return await res.json(); // { yearCount, graphType, ... }
+    return await res.json(); 
   }
 
   function styleFor(meta, color) {
@@ -88,7 +88,7 @@ if (!canvas) {
     const seriesByYear = new Map();
     yearsToShow.forEach(y => seriesByYear.set(y, Array(12).fill(null)));
 
-    // track year blocks (field1 only on first row)
+    // track year blocks 
     let activeYear = null;
 
     for (const r of rows) {
@@ -109,7 +109,7 @@ if (!canvas) {
       seriesByYear.get(activeYear)[idx] = val;
     }
 
-    // Labels: only months that have ANY data across selected years
+    
     const monthIndices = [];
     const labels = [];
     for (let i = 0; i < 12; i++) {
@@ -130,7 +130,7 @@ yearsToShow.forEach((year, idx) => {
   const arr12 = seriesByYear.get(year);
   const data = monthIndices.map(i => arr12[i]);
 
-  // ✅ if this year has NO valid numbers, skip it (no legend entry)
+  
   const hasAnyPoint = data.some(v => Number.isFinite(v));
   if (!hasAnyPoint) return;
 
@@ -142,7 +142,7 @@ yearsToShow.forEach((year, idx) => {
   });
 });
 
-// if everything got skipped
+
 if (!datasets.length) {
   showMsg("No valid electricity data to display.");
   return;
@@ -193,7 +193,7 @@ if (!datasets.length) {
         yearCount: Number(settings?.yearCount || result.yearCount || 1)
       };
 
-      // rows already filtered by API (allowedYears + numeric field3)
+      
       renderChart(result.data, result.allowedYears || [], meta);
 
     } catch (err) {

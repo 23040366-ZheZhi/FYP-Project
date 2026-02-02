@@ -212,7 +212,7 @@ app.post("/set-individual-settings", adminOnly, (req, res) => {
 
   req.session.individualMode = individualMode;
   req.session.rotateSeconds = sec;
-  req.session.indivYearCount = yrs; // ✅ SAVE HERE
+  req.session.indivYearCount = yrs; 
 
   console.log("Individual mode:", individualMode);
   console.log("Rotate seconds:", sec);
@@ -223,7 +223,7 @@ app.post("/set-individual-settings", adminOnly, (req, res) => {
 
 
 
-/* disableInteractive toggle locals already handled above */
+
 
 /* home */
 app.get("/", (req, res) => {
@@ -286,9 +286,9 @@ app.post("/upload-xlsx", adminOnly, uploadXlsx.single("xlsx"), async (req, res) 
 
 app.post("/set-graph-years", adminOnly, (req, res) => {
   const yearCount = Math.max(1, Math.min(5, Number(req.body.yearCount) || 1));
-  req.session.yearCount = yearCount;          // ✅ store here (top-level)
+  req.session.yearCount = yearCount;         
   console.log("Year count set to:", yearCount);
-  res.redirect("/manage_graph");              // ✅ correct route
+  res.redirect("/manage_graph");              
 });
 
 
@@ -435,7 +435,7 @@ app.get("/api/water-detailed", (req, res) => {
 
       if (!allowedYears.includes(activeYear)) return false;
 
-      // Keep your old rule: field3 must be numeric and not 0
+      
       const value = Number(String(row.field3 || "").replace(/,/g, "").trim());
       if (!Number.isFinite(value)) return false;
       if (value === 0) return false;
@@ -480,7 +480,7 @@ app.get("/api/electric-detailed", (req, res) => {
 
       if (!allowedYears.includes(activeYear)) return false;
 
-      // keep old rule: field3 must be numeric
+      
       const value = Number(String(row.field3 || "").replace(/,/g, "").trim());
       if (!Number.isFinite(value)) return false;
 
@@ -502,7 +502,7 @@ app.get("/api/waste-detailed", (req, res) => {
     delete require.cache[require.resolve("./public/output/4_Waste and Recycled (Pivot).json")];
     const waste = require("./public/output/4_Waste and Recycled (Pivot).json");
 
-    // ----- get years from monthly labels like "Jan-2024" -----
+    
     const years = waste
       .map(r => {
         const label = String(r["General & Recyclable Waste"] || "");
@@ -515,7 +515,7 @@ app.get("/api/waste-detailed", (req, res) => {
     const safeCount = Math.max(1, Math.min(yearCount, uniqueYears.length));
     const allowedYears = uniqueYears.slice(-safeCount);
 
-    // ----- monthly rows (only allowedYears) -----
+    
     const monthlyRows = waste.filter(row => {
       const label = String(row["General & Recyclable Waste"] || "").trim();
       if (!/^[A-Za-z]{3}-\d{4}$/.test(label)) return false;
@@ -524,9 +524,9 @@ app.get("/api/waste-detailed", (req, res) => {
       return allowedYears.includes(year);
     });
 
-    // ----- FY totals (only allowedYears) -----
+    
     const fyTotals = waste.filter(row => {
-      const label = String(row["General & Recyclable Waste"] || "").trim(); // "FY2024"
+      const label = String(row["General & Recyclable Waste"] || "").trim(); 
       const m = label.match(/^FY(\d{4})$/);
       if (!m) return false;
       const year = Number(m[1]);
@@ -562,7 +562,7 @@ app.get("/api/water-individual", (req, res) => {
 
     const monthKey = Object.keys(header)[0]; // first column is the month label
 
-    // expects "25-Jan" (YY-Mon)
+    
     const parseYear = (val) => {
       const m = String(val || "").trim().match(/^(\d{2})-/);
       return m ? (2000 + Number(m[1])) : null;
@@ -751,7 +751,7 @@ app.get("/manage_graph", adminOnly, (req, res) => {
       files: xlsxFiles,
       yearMode: req.session.yearMode || "current",
       yearCount: req.session.yearCount || 1,
-      indivYearCount: req.session.indivYearCount || 1, // ✅ add
+      indivYearCount: req.session.indivYearCount || 1, 
       graphType: req.session.graphType || "bar",
       individualMode: req.session.individualMode || "interactive",
       rotateSeconds: req.session.rotateSeconds || 10
@@ -816,13 +816,13 @@ app.post("/login", (req, res) => {
       return res.redirect("/");
     }
 
-    // generate code as STRING
+   
     const code = String(Math.floor(100000 + Math.random() * 900000));
     req.session.tempAdmin = { id: admin.id, email: admin.email, code };
 
     try {
       await transporter.sendMail({
-        from: "aarvalanmathiyazhagan@gmail.com",   // MUST match transporter user
+        from: "aarvalanmathiyazhagan@gmail.com",  
         to: admin.email,
         subject: "Your Admin Login Code",
         text: `Your verification code is: ${code}`

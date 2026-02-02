@@ -294,12 +294,10 @@
 
     .pouring .stream{
       opacity: 1;
-      height: 60vh; /* JS will set exact to rim */
+      height: 60vh; 
     }
 
-    /* ===============================
-       BASIN (same as indivwater.ejs)
-       =============================== */
+    
     .basinWrap{
       position: fixed;
       left: 50vw;
@@ -367,7 +365,7 @@
       50%{ transform: translateX(2%); }
     }
 
-    /* optional small turbulence while filling (same idea as indivwater) */
+   
     body.filling .basinWater{
       animation: fillWobble 0.55s ease-in-out infinite;
     }
@@ -390,19 +388,19 @@
 
   <div class="msg" id="msgBox"></div>
 
-  <!-- ✅ SAME BACK BUTTON -->
+  <!-- BACK BUTTON -->
   <div class="graph-back-nav">
     <a href="/" class="graph-back-btn">Back</a>
   </div>
 
-  <!-- ✅ SAME SEA WAVES -->
+  <!-- SEA WAVES -->
   <div class="sea" id="sea" aria-hidden="true">
     <div class="waterline"></div>
     <div class="waterline2"></div>
     <div class="ripples"></div>
   </div>
 
-  <!-- ✅ SAME BUBBLES -->
+  <!-- BUBBLES -->
   <div class="bubbles" id="bubbles" aria-hidden="true"></div>
 
   <!-- TAP -->
@@ -453,14 +451,14 @@
       }
     }
 
-    // ✅ stop stream exactly at basin rim (same logic as indivwater.ejs)
+    
     function setStreamToBasinRim(){
       const streamRect = stream.getBoundingClientRect();
       const basinRect = basinWrap.getBoundingClientRect();
 
       const gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--stream-stop-gap')) || 0;
 
-      // rimY = basin top + basinInner top padding (22px) + gap
+      
       const rimY = basinRect.top + 22 + gap;
       const topY = streamRect.top;
 
@@ -479,7 +477,7 @@
         basinWater.style.height = "95%";
       }, 220);
 
-      // hide basin + start flood + bubbles (same timing)
+      
       setTimeout(() => {
         document.body.classList.remove("filling");
         basinWrap.classList.add("hide");
@@ -487,7 +485,7 @@
         makeBubbles(22);
       }, 2650);
 
-      // stop pouring + hide tap (same timing)
+      
       setTimeout(() => {
         tapWrap.classList.remove("pouring");
         tapWrap.classList.add("hide");
@@ -505,7 +503,7 @@
     });
   </script>
 
-  <!-- DO NOT TOUCH YOUR CHART SCRIPT -->
+  
   <script type="module" src="/scripts/indiv_water_autoplay.js"></script>
 </body>
 </html>

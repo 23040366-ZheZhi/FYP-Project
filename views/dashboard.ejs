@@ -150,7 +150,7 @@ function lastValidIndexAny(values) {
   if (!Array.isArray(values) || values.length === 0) return -1;
   for (let i = values.length - 1; i >= 0; i--) {
     const n = Number(values[i]);
-    if (Number.isFinite(n)) return i; // includes 0 and negatives
+    if (Number.isFinite(n)) return i; 
   }
   return -1;
 }
@@ -199,9 +199,7 @@ if (nums.length === 0) return 0;
 return nums.reduce((a, b) => a + b, 0) / nums.length;
 }
 
-/* =======================
-   CHART BACKGROUND
-======================= */
+/*CHART BACKGROUND*/
 
 const chartBgPlugin = {
   id: "chartBg",
@@ -224,7 +222,7 @@ function createMiniTrendChart(id, labels, rawValues, color, unit, mode) {
 
   const values = toPlottable(rawValues, mode);
 
-  // pick last visible point for highlight
+  
   const lastPlotIdx = (() => {
     for (let i = values.length - 1; i >= 0; i--) {
       const n = Number(values[i]);
@@ -274,8 +272,8 @@ function createMiniTrendChart(id, labels, rawValues, color, unit, mode) {
           ticks: {
             color: "rgba(255,255,255,0.96)",
             font: { size: 12, weight: "700" },
-            autoSkip: false,          // show all 6
-            maxRotation: 45,          // slant to fit
+            autoSkip: false,         
+            maxRotation: 45,        
             minRotation: 45,
             padding: 6
           }
@@ -410,7 +408,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const video = activeItem.querySelector("video");
     const img = activeItem.querySelector("img");
 
-    // If it's a video → wait until finished
+    // If it's a video wait until finished
     if (video) {
       video.currentTime = 0;
       video.play();
@@ -420,15 +418,15 @@ document.addEventListener("DOMContentLoaded", function () {
       };
     }
 
-    // If it's an image → move after 3 seconds
+    // If it's an image move after 3 seconds
     else if (img) {
       imgTimer = setTimeout(() => {
         carousel.next();
-      }, 3000);   // change 3000 = 3s if you want longer
+      }, 3000);   //change this if you want it longer
     }
   }
 
-  // When slide changes → handle next media
+  // When slide changes  handle next media
   carouselEl.addEventListener("slid.bs.carousel", handleSlide);
 
   // Start first slide

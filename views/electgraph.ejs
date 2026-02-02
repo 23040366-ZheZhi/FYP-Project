@@ -22,7 +22,7 @@
       background: linear-gradient(to bottom, #29abe2, var(--sky));
     }
 
-    /* ===== BACKGROUND DECOR ===== */
+    /* BACKGROUND */
     .sun {
       position: absolute; top: 30px; left: 50px;
       width: 80px; height: 80px;
@@ -31,21 +31,21 @@
       z-index: 1;
     }
 
-    /* ✅ Make ground a bit taller so back button never covers turbines/generators */
+    
     .horizon {
       position: fixed;
       bottom: 0;
       width: 100%;
-      height: 140px;              /* CHANGED (was 100px) */
+      height: 140px;              
       background: var(--grass);
       z-index: 5;
       border-top: 5px solid #16a34a;
     }
 
-    /* ✅ Move turbines up to match new horizon height */
+    
     .turbine-farm {
       position: fixed;
-      bottom: 140px;              /* CHANGED (was 100px) */
+      bottom: 140px;              
       width: 100%;
       display: flex;
       justify-content: space-around;
@@ -97,7 +97,7 @@
       to { transform: rotate(360deg); }
     }
 
-    /* ===== GENERATOR ===== */
+    /* GENERATOR */
     .generator {
       position: absolute;
       bottom: -65px;
@@ -137,7 +137,7 @@
       50% { opacity: 0.4; }
     }
 
-    /* ===== CONTENT WRAPPER ===== */
+    /* CONTENT */
     .content {
       position: relative;
       z-index: 20;
@@ -171,7 +171,7 @@
       font-weight: 800;
     }
 
-    /* ✅ Back button MATCHES your other pages */
+    /* Back button */
     .graph-back-nav {
       position: fixed;
       bottom: 20px;
@@ -236,7 +236,7 @@
     </div>
   </div>
 
-  <!-- ✅ FIXED: removed the extra ">>" -->
+  
   <div class="graph-back-nav">
     <a href="/" class="graph-back-btn">Back</a>
   </div>

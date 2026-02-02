@@ -22,7 +22,7 @@ if (!canvas || !selector) {
     "July","August","September","October","November","December"
   ];
 
-  // ---------- helpers ----------
+  // Helpers
   function showMsg(text) {
     if (!msgBox) return;
     msgBox.textContent = text || "";
@@ -47,7 +47,7 @@ if (!canvas || !selector) {
     return (mon in map) ? map[mon] : null;
   }
 
-  // ✅ keep your rule: field3 must be numeric and not 0 (even if user selects field4/field5)
+  
   function passBaseRule(r) {
     const v = toNum(r.field3);
     if (!Number.isFinite(v)) return false;
@@ -55,7 +55,7 @@ if (!canvas || !selector) {
     return true;
   }
 
-  // ✅ selected field must be numeric (so dropdown changes work)
+  
   function hasValueForField(r, field) {
     const v = toNum(r[field]);
     return Number.isFinite(v);
@@ -64,13 +64,13 @@ if (!canvas || !selector) {
   async function loadWaterFromApi() {
     const res = await fetch("/api/water-detailed");
     if (!res.ok) throw new Error(`Water HTTP ${res.status}`);
-    return await res.json(); // { yearCount, allowedYears, data }
+    return await res.json(); 
   }
 
   async function loadGraphSettings() {
     const res = await fetch("/api/graph-settings");
     if (!res.ok) throw new Error(`Settings HTTP ${res.status}`);
-    return await res.json(); // { yearCount, graphType, ... }
+    return await res.json(); 
   }
 
   function styleFor(meta, color) {
@@ -98,11 +98,11 @@ if (!canvas || !selector) {
       return;
     }
 
-    // Build 12-month array for each year we want to show
+  
     const seriesByYear = new Map();
     yearsToShow.forEach(y => seriesByYear.set(y, Array(12).fill(null)));
 
-    // Your file format: field1 appears only at first row of year block
+   
     let activeYear = null;
 
     for (const r of rows) {
@@ -123,7 +123,7 @@ if (!canvas || !selector) {
       seriesByYear.get(activeYear)[idx] = val;
     }
 
-    // Labels: only months that have ANY data across selected years
+   
     const monthIndices = [];
     const labels = [];
     for (let i = 0; i < 12; i++) {
@@ -144,7 +144,7 @@ yearsToShow.forEach((year, idx) => {
   const arr12 = seriesByYear.get(year);
   const data = monthIndices.map(i => arr12[i]);
 
-  // ✅ if this year has NO valid numbers, skip it (no legend entry)
+
   const hasAnyPoint = data.some(v => Number.isFinite(v));
   if (!hasAnyPoint) return;
 
@@ -156,7 +156,7 @@ yearsToShow.forEach((year, idx) => {
   });
 });
 
-// if everything got skipped
+
 if (!datasets.length) {
   showMsg("No valid water data to display.");
   return;
@@ -218,7 +218,7 @@ if (!datasets.length) {
         showMsg("");
         const field = selector.value;
 
-        // ✅ apply your “base rule” + selected field rule
+       e
         const rows = baseRows
           .filter(passBaseRule)
           .filter(r => hasValueForField(r, field));
@@ -244,7 +244,7 @@ if (!datasets.length) {
     initWater();
   }, { once: true });
 }
-// ✅ auto-rotate 
+
 (function () {
   const routes = ["/", "/electgraph", "/solargraph", "/watergraph", "/waste"];
   const delay = 30000;

@@ -2,11 +2,11 @@ let chart;
 
 
 const WASTE_COLORS = [
-  "#1B5E20", // dark forest green
-  "#2E7D32", // recycle green
-  "#4CAF50", // leaf green
-  "#6D4C41", // organic brown
-  "#8D6E63"  // light brown
+  "#1B5E20", 
+  "#2E7D32", 
+  "#4CAF50", 
+  "#6D4C41", 
+  "#8D6E63" 
 ];
 
 
@@ -36,7 +36,7 @@ if (!canvas || !selector) {
     const s = String(raw ?? "").trim();
     if (!s) return NaN;
 
-    // allow "12.3%" values
+    
     if (s.includes("%")) {
       const n = Number(s.replace("%", "").trim());
       return Number.isFinite(n) ? n : NaN;
@@ -47,7 +47,7 @@ if (!canvas || !selector) {
   }
 
   function parseWasteLabel(label) {
-    // expects "Jan-2024"
+   
     const s = String(label ?? "").trim();
     const m = s.match(/^([A-Za-z]{3})-(\d{4})$/);
     if (!m) return null;
@@ -63,20 +63,20 @@ if (!canvas || !selector) {
   async function loadWasteDetailed() {
     const res = await fetch("/api/waste-detailed");
     if (!res.ok) throw new Error(`Waste HTTP ${res.status}`);
-    return await res.json(); // { yearCount, allowedYears, monthly, totals }
+    return await res.json(); 
   }
 
   async function loadGraphSettings() {
     const res = await fetch("/api/graph-settings");
     if (!res.ok) throw new Error(`Settings HTTP ${res.status}`);
-    return await res.json(); // { graphType, yearCount, ... }
+    return await res.json(); 
   }
 
   function updateTotals(fyTotals, field) {
     if (!totalsDiv) return;
 
     const lines = (fyTotals || []).map(row => {
-      const fy = row["General & Recyclable Waste"]; // e.g. "FY2024"
+      const fy = row["General & Recyclable Waste"];
       const val = row[field] ?? "-";
       return `${fy}: ${val}`;
     });
@@ -117,7 +117,7 @@ if (!canvas || !selector) {
     const seriesByYear = new Map();
     yearsToShow.forEach(y => seriesByYear.set(y, Array(12).fill(null)));
 
-    // Fill values
+    
     for (const row of monthlyRows) {
       const info = parseWasteLabel(row["General & Recyclable Waste"]);
       if (!info) continue;
@@ -129,7 +129,7 @@ if (!canvas || !selector) {
       seriesByYear.get(info.year)[info.monthIndex] = val;
     }
 
-    // Build labels only for months with ANY data across selected years
+    
     const monthIndices = [];
     const labels = [];
     for (let i = 0; i < 12; i++) {

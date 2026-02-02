@@ -1,11 +1,11 @@
 let chart;
 
 const SOLAR_COLORS = [
-  "#FFB300", // golden amber (bright, solar)
-  "#FB8C00", // strong orange
-  "#F4511E", // orange-red
-  "#E53935", // red
-  "#B71C1C"  // deep crimson
+  "#FFB300", 
+  "#FB8C00", 
+  "#F4511E", 
+  "#E53935",
+  "#B71C1C"  
 ];
 
 
@@ -24,7 +24,7 @@ if (!canvas || !selector) {
     "July","August","September","October","November","December"
   ];
 
-  // ---------- helpers ----------
+
   function showMsg(text) {
     if (!msgBox) return;
     msgBox.textContent = text || "";
@@ -49,7 +49,7 @@ if (!canvas || !selector) {
 
 
   function parseSolarLabel(label) {
-    // expects "Jan-24"
+    
     const s = String(label ?? "").trim();
     const m = s.match(/^([A-Za-z]{3})-(\d{2})$/);
     if (!m) return null;
@@ -66,13 +66,13 @@ if (!canvas || !selector) {
   async function loadSolarFromApi() {
     const res = await fetch("/api/solar-detailed");
     if (!res.ok) throw new Error(`Solar HTTP ${res.status}`);
-    return await res.json(); // {yearMode, latestYear, previousYear, data}
+    return await res.json(); 
   }
 
   async function loadGraphSettings() {
     const res = await fetch("/api/graph-settings");
     if (!res.ok) throw new Error(`Settings HTTP ${res.status}`);
-    return await res.json(); // {yearMode, graphType}
+    return await res.json(); 
   }
 
   function styleFor(meta, color) {
@@ -92,7 +92,7 @@ if (!canvas || !selector) {
 function renderChart(rows, field, titleText, meta) {
   if (chart) chart.destroy();
 
-  // years available in data
+  
   const yearsFound = [...new Set(
     rows
       .map(r => parseSolarLabel(r.Solar)?.year)
@@ -107,7 +107,7 @@ function renderChart(rows, field, titleText, meta) {
   const safeCount = Math.max(1, Math.min(meta.yearCount || 1, yearsFound.length, 5));
   const yearsToShow = yearsFound.slice(-safeCount);
 
-  // build 12-month series per year
+ 
   const seriesByYear = new Map();
   yearsToShow.forEach(y => seriesByYear.set(y, Array(12).fill(null)));
 
@@ -122,7 +122,7 @@ function renderChart(rows, field, titleText, meta) {
     seriesByYear.get(info.year)[info.monthIndex] = val;
   }
 
-  // build labels only for months that have ANY data
+  
   const monthIndices = [];
   const labels = [];
   for (let i = 0; i < 12; i++) {
@@ -138,7 +138,7 @@ function renderChart(rows, field, titleText, meta) {
     return;
   }
 
-  // newest year = strongest colour
+
   const datasets = yearsToShow.map((year, idx) => {
     const arr12 = seriesByYear.get(year);
     const data = monthIndices.map(i => arr12[i]);
@@ -231,7 +231,7 @@ function renderChart(rows, field, titleText, meta) {
   }, { once: true });
 
 
-  // ✅ auto-rotate
+  
   (function () {
     const routes = ["/", "/electgraph", "/solargraph", "/watergraph", "/waste"];
     const delay = 30000;

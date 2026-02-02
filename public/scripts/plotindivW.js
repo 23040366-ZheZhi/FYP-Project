@@ -1,22 +1,22 @@
-// /public/scripts/plotindivW.js
+
 let chartA = null;
 let chartB = null;
 
-// ✅ slideshow timers (same style as electricity)
-let intervalTimer = null; // bar slideshow
-let timeoutTimer = null;  // line slideshow
+
+let intervalTimer = null; 
+let timeoutTimer = null;  
 
 const WATER_COLORS = [
-  "#1E88E5", // latest year (blue)
-  "#43A047", // green
-  "#FB8C00", // orange
-  "#8E24AA", // purple
-  "#E53935"  // red
+  "#1E88E5", 
+  "#43A047", 
+  "#FB8C00", 
+  "#8E24AA", 
+  "#E53935" 
 ];
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-// DOM
+
 const canvasA = document.getElementById("buildingChartA");
 const canvasB = document.getElementById("buildingChartB");
 const selectA = document.getElementById("buildingSelectA");
@@ -30,7 +30,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
   const ctxA = canvasA.getContext("2d");
   const ctxB = canvasB.getContext("2d");
 
-  // Data & meta
+ 
   let globalRows = [];
   let buildings = [];
   let monthKey = "";
@@ -41,9 +41,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     rotateMs: 10000
   };
 
-  /* =========================
-     Helpers
-     ========================= */
+  
 
   function setMsg(which, text) {
     const el = which === "A" ? msgA : msgB;
@@ -59,7 +57,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     return Number.isFinite(n) ? n : NaN;
   }
 
-  // expects "25-Jan" (YY-Mon)
+  
   function parseLabel(val) {
     const s = String(val ?? "").trim();
     const m = s.match(/^(\d{2})-([A-Za-z]{3})$/);
@@ -89,13 +87,13 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
   async function loadGraphSettings() {
     const res = await fetch("/api/graph-settings");
     if (!res.ok) throw new Error(`Settings HTTP ${res.status}`);
-    return await res.json(); // includes graphType + rotateSeconds
+    return await res.json(); 
   }
 
   async function loadWaterData() {
     const res = await fetch("/api/water-individual");
     if (!res.ok) throw new Error(`Water-individual HTTP ${res.status}`);
-    return await res.json(); // { allowedYears, data:[header,...] }
+    return await res.json(); 
   }
 
   function fillDropdown(selectEl) {
@@ -108,10 +106,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     }
   }
 
-  /* =========================
-     Dataset styling (match elect)
-     ========================= */
-
+ 
   function styleFor(color) {
     if (meta.graphType === "line") {
       return {
@@ -142,18 +137,18 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     yearsToShow.forEach(y => seriesByYear.set(y, Array(12).fill(null)));
 
     for (const r of globalRows) {
-      const info = parseLabel(r[monthKey]); // {year, idx}
+      const info = parseLabel(r[monthKey]);
       if (!info) continue;
       if (!seriesByYear.has(info.year)) continue;
 
       const val = toNum(r[buildingKey]);
       if (!Number.isFinite(val)) continue;
 
-      // keep 0 as "no plot"
+
       seriesByYear.get(info.year)[info.idx] = (val !== 0 ? val : null);
     }
 
-    // only keep months that have ANY data in ANY selected year
+
     const labels = [];
     const monthIndices = [];
     for (let i = 0; i < 12; i++) {
@@ -170,7 +165,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
       const data = monthIndices.map(i => arr12[i]);
 
       const hasAnyPoint = data.some(v => Number.isFinite(v));
-      if (!hasAnyPoint) return; // ✅ hide empty year
+      if (!hasAnyPoint) return; 
 
       const color = WATER_COLORS[idx % WATER_COLORS.length];
       datasets.push({
@@ -187,9 +182,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     return datasets.every(ds => ds.data.every(v => v == null || v === 0));
   }
 
-  /* =========================
-     Render
-     ========================= */
+
 
   function renderChart(which, ctx, building) {
     const { labels, datasets } = buildDatasets(building.key, meta.allowedYears || []);
@@ -244,12 +237,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     else chartB = chart;
   }
 
-  /* =========================
-     ✅ Slideshow (same timer style as electricity)
-     - Bar: intervalTimer
-     - Line: timeoutTimer
-     - rotates building selections (does not touch routes)
-     ========================= */
+  
 
   function pickNextPair(currentAKey, currentBKey) {
     if (!buildings.length) return { a: currentAKey, b: currentBKey };
@@ -260,7 +248,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     const nextA = buildings[(idxA + 1) % buildings.length].key;
     const nextB = buildings[(idxB + 1) % buildings.length].key;
 
-    // avoid A == B when possible
+   
     if (buildings.length > 1 && nextA === nextB) {
       const altB = buildings[(idxB + 2) % buildings.length].key;
       return { a: nextA, b: altB };
@@ -283,7 +271,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
   function startAutoplay() {
     stopTimers();
 
-    // if only 1 building, no point autoplay
+
     if (buildings.length < 2) return;
 
     const step = () => {
@@ -292,7 +280,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
       return true;
     };
 
-    // first step after delay (optional)
+    
     if (meta.graphType === "bar") {
       intervalTimer = setInterval(() => {
         step();
@@ -308,9 +296,6 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     }
   }
 
-  /* =========================
-     Init
-     ========================= */
 
   async function init() {
     const [data, settings] = await Promise.all([loadWaterData(), loadGraphSettings()]);
@@ -351,14 +336,14 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
     fillDropdown(selectA);
     fillDropdown(selectB);
 
-    // defaults
+  
     selectA.value = buildings[0].key;
     selectB.value = buildings[1]?.key || buildings[0].key;
 
-    // first render
+   
     applyPair({ a: selectA.value, b: selectB.value });
 
-    // manual handlers still work (and restart autoplay)
+    
     selectA.addEventListener("change", () => {
       const b = buildings.find(x => x.key === selectA.value);
       if (b) renderChart("A", ctxA, b);
@@ -371,7 +356,7 @@ if (!canvasA || !canvasB || !selectA || !selectB) {
       startAutoplay();
     });
 
-    // ✅ start autoplay using intervalTimer/timeoutTimer (NO route changes)
+    
     startAutoplay();
   }
 

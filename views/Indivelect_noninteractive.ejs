@@ -22,7 +22,7 @@
       background: linear-gradient(to bottom, #29abe2, var(--sky));
     }
 
-    /* ===== BACKGROUND ELEMENTS ===== */
+    /*BACKGROUND ELEMENTS*/
     .sun {
       position: fixed;
       top: 30px; left: 50px;
@@ -38,17 +38,17 @@
       position: fixed;
       bottom: 0;
       width: 100%;
-      height: 100px;                 /* ✅ match energy graph */
+      height: 100px;                 
       background: var(--grass);
       z-index: 5;
       border-top: 5px solid #16a34a;
       pointer-events: none;
     }
 
-    /* ===== TURBINE FARM (4 turbines + generators) ===== */
+    /* TURBINE FARM */
     .turbine-farm {
       position: fixed;
-      bottom: 100px;                 /* ✅ sits on top of horizon */
+      bottom: 100px;                
       width: 100%;
       display: flex;
       justify-content: space-around;
@@ -90,7 +90,7 @@
       border-radius: 0 0 10px 10px;
     }
 
-    /* ✅ FIX: rotate blades so you see all 3 */
+    
     .blade:nth-child(1) { transform: translate(-50%, 0) rotate(0deg); }
     .blade:nth-child(2) { transform: translate(-50%, 0) rotate(120deg); }
     .blade:nth-child(3) { transform: translate(-50%, 0) rotate(240deg); }
@@ -100,9 +100,9 @@
       to   { transform: rotate(360deg); }
     }
 
-    /* ===== GENERATORS (under each turbine) ===== */
+    /* GENERATORS */
     .generator {
-      position: absolute;            /* ✅ attach to turbine */
+      position: absolute;            
       bottom: -65px;
       left: 50%;
       transform: translateX(-50%);
@@ -132,7 +132,7 @@
       50% { opacity: 0.4; }
     }
 
-    /* ===== MAIN WRAPPER ===== */
+    
     .main-reveal {
       position: relative;
       z-index: 20;
@@ -173,7 +173,7 @@
     }
     canvas { width: 100% !important; height: 100% !important; display: block; }
 
-    /* Back button (same style as your other graphs) */
+    /* Back button */
     .graph-back-nav {
       position: fixed;
       bottom: 18px;
@@ -205,7 +205,7 @@
 <body>
   <div class="sun"></div>
 
-  <!-- ✅ Fixed farm (proper closing tag) + generators under each turbine -->
+  
   <div class="turbine-farm">
     <div class="turbine" style="--speed: 3.5s;">
       <div class="blades"><div class="blade"></div><div class="blade"></div><div class="blade"></div></div>
@@ -263,7 +263,7 @@
     });
   </script>
 
-  <!-- ✅ DO NOT TOUCH: your chart logic -->
+ 
   <script type="module" src="/scripts/plotindivE_noninteractive.js"></script>
 </body>
 </html>

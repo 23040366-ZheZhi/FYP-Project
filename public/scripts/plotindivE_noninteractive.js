@@ -1,7 +1,7 @@
-// /public/scripts/plotindivE_noninteractive.js
+
 let chart = null;
-let intervalTimer = null;  // bar slideshow
-let timeoutTimer = null;   // line slideshow
+let intervalTimer = null;  
+let timeoutTimer = null;   
 
 const ctx = document.getElementById("chart")?.getContext("2d");
 const msg = document.getElementById("msg");
@@ -13,9 +13,7 @@ const MONTH_ORDER = [
   "July","August","September","October","November","December"
 ];
 
-/* =========================
-   Helpers
-   ========================= */
+
 
 function showMsg(text) {
   if (!msg) return;
@@ -52,9 +50,7 @@ function fmtNum(n) {
   return Number(n).toLocaleString();
 }
 
-/* =========================
-   Summary box
-   ========================= */
+
 
 const canvasEl = document.getElementById("chart");
 let summaryBox = document.getElementById("electricSummary");
@@ -86,9 +82,7 @@ function setSummaryHTML(html) {
   box.style.display = html ? "block" : "none";
 }
 
-/* =========================
-   API loaders
-   ========================= */
+
 
 async function loadGraphSettings() {
   const res = await fetch("/api/graph-settings");
@@ -99,7 +93,7 @@ async function loadGraphSettings() {
 async function loadElectricBuilding() {
   const res = await fetch("/api/electric-building");
   if (!res.ok) throw new Error(`electric-building HTTP ${res.status}`);
-  return await res.json(); // ✅ expects { yearCount, allowedYears, data }
+  return await res.json(); 
 }
 
 function getBuildingKeys(sampleRow) {
@@ -111,9 +105,7 @@ function colorForIndex(i, total) {
   return `hsl(${hue}, 70%, 45%)`;
 }
 
-/* =========================
-   BAR MODE (slideshow by month across allowed years)
-   ========================= */
+
 
 function buildMonthFrame(rows, buildingKeys, year, month) {
   const row = rows.find(r => Number(r.year) === Number(year) && String(r.month).trim() === String(month).trim());
@@ -289,9 +281,7 @@ function autoplayBar(rows, buildingKeys, allowedYears, rotateMs) {
   }, rotateMs);
 }
 
-/* =========================
-   LINE MODE (slideshow by year across allowed years)
-   ========================= */
+
 
 function buildTimelineForYear(rows, year, buildingKeys) {
   const seen = new Set();
@@ -401,12 +391,7 @@ function renderLineYear(title, timeline, rows, buildingKeys) {
   });
 }
 
-/* =========================
-   LINE MODE (slideshow by year across allowed years)
-   - ✅ timeoutTimer
-   - ✅ one year at a time
-   - ✅ stops at latest year (no looping)
-   ========================= */
+
 
 function autoplayLine(rows, buildingKeys, allowedYears, rotateMs) {
   stopTimers();
@@ -424,7 +409,7 @@ function autoplayLine(rows, buildingKeys, allowedYears, rotateMs) {
   let index = 0;
 
   const showNextYear = () => {
-    // ✅ STOP at latest year (no looping)
+   
     if (index >= years.length) {
       stopTimers();
       return false;
@@ -433,7 +418,7 @@ function autoplayLine(rows, buildingKeys, allowedYears, rotateMs) {
     const year = years[index++];
     const timeline = buildTimelineForYear(rows, year, buildingKeys);
 
-    // skip years with no valid months
+    
     if (!timeline.length) return showNextYear();
 
     renderLineYear(`Electricity (Line) — ${year}`, timeline, rows, buildingKeys);
@@ -455,9 +440,7 @@ function autoplayLine(rows, buildingKeys, allowedYears, rotateMs) {
 }
 
 
-/* =========================
-   INIT
-   ========================= */
+
 
 async function init() {
   try {

@@ -8,4 +8,4 @@ function readJson(filename) {
     return JSON.parse(jsonData); //return data as a object
 }
 
-module.exports = readJson;//It allows other Node.js files to import and use it with require().
+module.exports = readJson;//It allows other Node.js files to import and use it with require()

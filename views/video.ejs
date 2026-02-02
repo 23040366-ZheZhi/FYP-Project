@@ -70,7 +70,7 @@
   let imgTimer = null;
 
   function handleSlide() {
-    // clear previous image timer
+    
     if (imgTimer) {
       clearTimeout(imgTimer);
       imgTimer = null;
@@ -82,7 +82,7 @@
     const video = activeItem.querySelector("video");
     const img = activeItem.querySelector("img");
 
-    // If it's a video → wait until finished
+    
     if (video) {
       video.currentTime = 0;
       video.play();
@@ -92,18 +92,18 @@
       };
     }
 
-    // If it's an image → move after 3 seconds
+    
     else if (img) {
       imgTimer = setTimeout(() => {
         carousel.next();
-      }, 3000);   // change 3000 = 3s if you want longer
+      }, 3000);  
     }
   }
 
-  // When slide changes → handle next media
+  
   carouselEl.addEventListener("slid.bs.carousel", handleSlide);
 
-  // Start first slide
+  
   handleSlide();
 });
 </script>
