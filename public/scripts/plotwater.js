@@ -218,7 +218,7 @@ if (!datasets.length) {
         showMsg("");
         const field = selector.value;
 
-       e
+       
         const rows = baseRows
           .filter(passBaseRule)
           .filter(r => hasValueForField(r, field));
