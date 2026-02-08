@@ -7,6 +7,27 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
+    .page-title{
+  text-align: center;
+  font-size: 42px;
+  font-weight: 900;
+  margin-top: 25px;
+  margin-bottom: -60px;
+  color: #0b1220;
+
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+
+  position: relative;
+  z-index: 90;
+}
+
+.page-title.show{
+  opacity: 1;
+  transform: translateY(0);
+}
+
     :root{
       --bg:#ffffff;
       --ink:#0b1220;
@@ -411,6 +432,8 @@
       font-weight:800;
       box-shadow: 0 12px 30px rgba(0,0,0,.35);
     }
+  
+
   </style>
 </head>
 
@@ -431,6 +454,8 @@
 
     <!-- BUBBLES -->
     <div class="bubbles" id="bubbles" aria-hidden="true"></div>
+    <h2 class="page-title" id="pageTitle">Water Consumption by Building</h2>
+
 
     <!-- CHARTS -->
     <div class="compare-grid">
@@ -488,6 +513,8 @@
     const bubblesHost = document.getElementById("bubbles");
     const screenA = document.getElementById("screenA");
     const screenB = document.getElementById("screenB");
+    const pageTitle = document.getElementById("pageTitle");
+
 
     function makeBubbles(count = 22){
       bubblesHost.innerHTML = "";
@@ -564,6 +591,8 @@
 
       // show charts
       setTimeout(() => screenA.classList.add("on"), 3800);
+      setTimeout(() => pageTitle.classList.add("show"), 3800);
+
       setTimeout(() => screenB.classList.add("on"), 4000);
 
       // render charts

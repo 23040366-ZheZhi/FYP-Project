@@ -155,7 +155,7 @@ if (!datasets.length) {
       options: {
         responsive: true,
         plugins: {
-          title: { display: true, text: "Electricity Usage", font: { size: 18 } },
+          title: { display: true, text: "Electricity Usage", font: { size: 24 } },
           legend: { display: true, position: "top" },
           tooltip: {
             callbacks: {

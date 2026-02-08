@@ -41,15 +41,20 @@
     }
 
     /* Title and chart wrapper (same fade-in idea as your noninteractive) */
-    h2{
-      text-align:center;
-      margin: 12px 0 20px;
-      position: relative;
-      z-index: 80;
-      opacity: 0;
-      transform: translateY(18px) scale(.99);
-      transition: opacity 900ms ease, transform 1100ms cubic-bezier(.2,.9,.2,1);
-    }
+   h2{
+  text-align:center;
+  margin: 12px 0 20px;
+  position: relative;
+  z-index: 80;
+  opacity: 0;
+  transform: translateY(18px) scale(.99);
+  transition: opacity 900ms ease, transform 1100ms cubic-bezier(.2,.9,.2,1);
+
+  font-size: 44px;      /* ✅ bigger */
+  font-weight: 900;     /* ✅ bolder */
+  letter-spacing: 0.5px; /* optional nicer */
+}
+
     body.revealCharts h2{
       opacity: 1;
       transform: translateY(0) scale(1);

@@ -9,6 +9,24 @@
   <link href="https://fonts.googleapis.com/css2?family=Lalezar&display=swap" rel="stylesheet">
 
   <style>
+ .page-title{
+  text-align: center;
+  font-size: 56px;          /* bigger */
+  font-weight: 900;
+  color: #ffffff;
+  margin-bottom: 22px;
+  margin-top: -40px;        /* move slightly higher */
+  letter-spacing: 1px;
+  font-family: Arial, sans-serif;
+  text-shadow:
+    0 4px 10px rgba(0,0,0,.35),
+    0 10px 30px rgba(0,0,0,.25);
+
+  position: relative;
+  z-index: 5;               /* ensures it stays above waves */
+}
+
+
     
     .waste-bg{
       position: fixed;
@@ -302,6 +320,8 @@
 
     <!-- UI -->
     <div class="ui">
+      <h2 class="page-title">Whole Campus Waste Data</h2>
+
       <div class="chart-wrap">
         <div class="chart-body">
           <div class="chart-header">
